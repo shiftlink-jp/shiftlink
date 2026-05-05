@@ -227,16 +227,38 @@ tr:last-child td{border-bottom:none}
 .session-label{font-size:.7rem;color:var(--text3);font-weight:600;margin-bottom:.25rem}
 </style>
 <script>
+const SW_VER = 'v6';
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("/kyoukano/sw.js?v=6")
-    .then(r=>console.log("[SW] 登録成功:",r))
-    .catch(e=>console.error("[SW] 登録失敗:",e));
-  // 新しいSWに切り替わったら自動リロード
-  navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data && e.data.type === 'SW_UPDATED'){
-      console.log('[SW] 新バージョン検出 → 自動リロード');
-      window.location.reload();
-    }
+  // 古いSWをすべて解除してから新しいSWを登録
+  navigator.serviceWorker.getRegistrations().then(function(registrations){
+    var needReload = false;
+    var unregisterPromises = registrations.map(function(reg){
+      // バージョンが違うSWが動いていたら解除してリロード
+      var swURL = reg.active ? reg.active.scriptURL : (reg.installing ? reg.installing.scriptURL : '');
+      if(swURL && swURL.indexOf(SW_VER) === -1){
+        needReload = true;
+        return reg.unregister();
+      }
+      return Promise.resolve();
+    });
+    Promise.all(unregisterPromises).then(function(){
+      if(needReload){
+        console.log('[SW] 古いSW検出 → 強制リロード');
+        window.location.reload(true);
+        return;
+      }
+      // 新しいSWを登録
+      navigator.serviceWorker.register("/kyoukano/sw.js?" + SW_VER)
+        .then(r=>console.log("[SW] 登録成功:",r))
+        .catch(e=>console.error("[SW] 登録失敗:",e));
+      // SW更新時の自動リロード
+      navigator.serviceWorker.addEventListener('message', function(e){
+        if(e.data && e.data.type === 'SW_UPDATED'){
+          console.log('[SW] 新バージョン検出 → 自動リロード');
+          window.location.reload(true);
+        }
+      });
+    });
   });
 }
 </script>
