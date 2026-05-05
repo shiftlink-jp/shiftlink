@@ -1103,11 +1103,21 @@ function startApp(){
     document.querySelector('.owner-tab').classList.add('on')
     const ownerTabs=['owner-shift','today','owner-salary','owner-cast','owner-customer','owner-monthly']
     tab(savedTab&&ownerTabs.includes(savedTab)?savedTab:'owner-shift');
-    // オーナー用Push通知ボタン（登録済みの場合は非表示）
+    // オーナー用Push通知ボタン（この端末が未登録の場合のみ表示）
     ;(async function() {
       try {
-        const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", 0).maybeSingle();
-        if (dbSub) return;
+        // この端末のSubscriptionを取得
+        const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=5");
+        const existingSub = await reg.pushManager.getSubscription();
+        if (existingSub && Notification.permission === 'granted') {
+          // この端末のendpointがDBにあるか確認
+          const endpoint = existingSub.endpoint;
+          const { data: allSubs } = await sb.from("push_subscriptions").select("subscription").eq("cast_id", 0);
+          const alreadyRegistered = (allSubs || []).some(s => {
+            try { return JSON.parse(s.subscription).endpoint === endpoint; } catch { return false; }
+          });
+          if (alreadyRegistered) return;
+        }
       } catch(e) { console.warn('[Push] DB確認エラー:', e); }
       const pushBtn = document.createElement('button');
       pushBtn.textContent = '🔔 通知を有効にする';
@@ -1120,7 +1130,7 @@ function startApp(){
           if (oldSub) await oldSub.unsubscribe();
           const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E") });
           const subJson = sub.toJSON();
-          await sb.from("push_subscriptions").delete().eq("cast_id", 0);
+          // オーナーは複数台対応のため削除せず追加
           const { error } = await sb.from("push_subscriptions").insert({ cast_id: 0, subscription: subJson });
           if (error) { alert("登録失敗: " + JSON.stringify(error)); } else { alert("Push登録成功！"); }
         } catch(e) { alert("Pushエラー: " + e.name + " / " + e.message); }
