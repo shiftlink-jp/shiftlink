@@ -310,11 +310,8 @@ tr:last-child td{border-bottom:none}
         <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>却下</div>
       </div>
       <div id="cal-grid"></div>
-    </div>
-    <!-- シフト一覧パネル -->
-    <div class="panel" id="p-shift-list">
-      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem" id="shift-list-month">-</div>
-      <div id="shift-list-area"><div class="spin">読み込み中...</div></div>
+      <!-- シフト一覧（カレンダー下に統合） -->
+      <div id="shift-inline-list" style="margin-top:1.1rem"></div>
     </div>
 
     <!-- キャスト：委託金確認 -->
@@ -471,7 +468,6 @@ tr:last-child td{border-bottom:none}
   <div class="tbar" id="tbar">
     <!-- キャスト用 -->
     <button class="tbar-btn on cast-tab" onclick="tab('shift')"><span class="tbar-icon">📅</span>シフト申請</button>
-    <button class="tbar-btn cast-tab" onclick="tab('shift-list')"><span class="tbar-icon">📋</span>シフト一覧</button>
     <button class="tbar-btn cast-tab" onclick="tab('salary')"><span class="tbar-icon">💴</span>委託金確認</button>
     <button class="tbar-btn cast-tab" onclick="tab('cast-memo')"><span class="tbar-icon">📝</span>接客メモ</button>
     <!-- 店舗用 -->
@@ -1139,8 +1135,8 @@ function startApp(){
     })();
   } else {
     document.querySelector('.cast-tab').classList.add('on')
-    const castTabs=['shift','shift-list','salary','cast-memo']
-    tab(savedTab&&castTabs.includes(savedTab)?savedTab:'shift');
+    const castTabs=['shift','salary','cast-memo']
+    tab(savedTab&&castTabs.includes(savedTab)?savedTab:savedTab==='shift-list'?'shift':'shift');
     // Push通知ボタン（登録済みの場合は非表示）
     ;(async function() {
       const castId = me.id;
@@ -1209,11 +1205,10 @@ function tab(name){
   sessionStorage.setItem('kyoukano_tab',name)
   document.querySelectorAll('.tbar-btn').forEach(b=>b.classList.remove('on'))
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
-  const map={'shift':'.cast-tab:nth-child(1)','shift-list':'.cast-tab:nth-child(2)','salary':'.cast-tab:nth-child(3)','cast-memo':'.cast-tab:nth-child(4)','owner-shift':'.owner-tab:nth-child(1)','today':'.owner-tab:nth-child(2)','owner-salary':'.owner-tab:nth-child(3)','owner-cast':'.owner-tab:nth-child(4)','owner-customer':'.owner-tab:nth-child(5)','owner-monthly':'.owner-tab:nth-child(6)'}
+  const map={'shift':'.cast-tab:nth-child(1)','salary':'.cast-tab:nth-child(2)','cast-memo':'.cast-tab:nth-child(3)','owner-shift':'.owner-tab:nth-child(1)','today':'.owner-tab:nth-child(2)','owner-salary':'.owner-tab:nth-child(3)','owner-cast':'.owner-tab:nth-child(4)','owner-customer':'.owner-tab:nth-child(5)','owner-monthly':'.owner-tab:nth-child(6)'}
   document.querySelector(map[name])?.classList.add('on')
   document.getElementById('p-'+name)?.classList.add('on')
   if(name==='shift')        loadCal()
-  if(name==='shift-list')   loadShiftList()
   if(name==='salary')       loadMySalary()
   if(name==='owner-shift')  {loadOwnerCal()}
   if(name==='today')        loadToday()
@@ -1232,7 +1227,7 @@ function refreshCurrentTab(){
   // HTMLファイル自体のキャッシュはmetaタグで制御済み
   const name=sessionStorage.getItem('kyoukano_tab')||''
   if(name==='shift')         loadCal()
-  else if(name==='shift-list')    loadShiftList()
+  else if(name==='shift-list')    loadCal()
   else if(name==='salary')        loadMySalary()
   else if(name==='owner-shift')   loadOwnerCal()
   else if(name==='today')         loadToday()
@@ -1309,7 +1304,7 @@ async function loadCal(){
   const[y,m]=calMonth.split('-').map(Number)
   document.getElementById('cal-title').textContent=y+'年'+m+'月'
   const{data:shifts}=await sb.from('shifts').select('*').eq('cast_id',me.id).gte('date',calMonth+'-01').lt('date',nextYM(calMonth)+'-01')
-  myShifts=shifts||[]; renderCal()
+  myShifts=shifts||[]; renderCal(); renderInlineShiftList()
 }
 function renderCal(){
   const[y,m]=calMonth.split('-').map(Number)
@@ -1436,17 +1431,17 @@ async function submitShift(){
 }
 
 function renderShiftStatus(){}
-async function loadShiftList(){
-  if(!me||me.is_owner) return
+
+async function renderInlineShiftList(){
+  const area=document.getElementById('shift-inline-list')
+  if(!area) return
   const[y,m]=calMonth.split('-').map(Number)
-  const lbl=document.getElementById('shift-list-month')
-  if(lbl) lbl.textContent=y+'年'+m+'月のシフト'
-  // 常に最新データを取得
-  const{data:shifts}=await sb.from('shifts').select('*').eq('cast_id',me.id).gte('date',calMonth+'-01').lt('date',nextYM(calMonth)+'-01')
-  myShifts=shifts||[]
-  const list=[...myShifts.filter(s=>s.status==='approved'),...myShifts.filter(s=>s.status==='requested')].sort((a,b)=>a.date.localeCompare(b.date))
-  const area=document.getElementById('shift-list-area')
-  if(!list.length){area.innerHTML='<div class="empty">この月のシフトはありません</div>';return}
+  // タイトル
+  const list=[...myShifts.filter(s=>s.status==='approved'),...myShifts.filter(s=>s.status==='requested'),...myShifts.filter(s=>s.status==='rejected')].sort((a,b)=>a.date.localeCompare(b.date))
+  if(!list.length){
+    area.innerHTML=`<div style="font-size:.82rem;color:var(--text3);text-align:center;padding:.75rem 0">${y}年${m}月のシフトはありません</div>`
+    return
+  }
   // 承認済みシフトの予約件数を取得
   const approvedShiftIds=myShifts.filter(s=>s.status==='approved').map(s=>s.id)
   let rvByShift={}
@@ -1455,29 +1450,43 @@ async function loadShiftList(){
     if(rvs) rvs.forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=0;rvByShift[r.shift_id]++})
   }
   const td=today()
-  let html=''
+  let html=`<div style="font-size:.78rem;font-weight:700;color:var(--text3);letter-spacing:.05em;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1.5px solid var(--border)">📋 ${y}年${m}月のシフト（${list.length}件）</div>`
   list.forEach(s=>{
     const rc=getRoomColor(s.room)
-    const roomTag=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
+    const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
     const rvCount=rvByShift[s.id]||0
     const isToday=s.date===td
     const rvLabel=isToday?'予約':'事前予約'
-    const rvTag=rvCount>0?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1.5px solid var(--accent)">${rvLabel}${rvCount}件</span>`:''
+    const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1.5px solid var(--accent)">${rvLabel}${rvCount}件</span>`:''
     const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${me.name||''}')">予約確認</button>`:''
-    html+=`<div class="item">
-      <div class="ib">
-        <div class="it">${jpDate(s.date)}</div>
-        <div class="is">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}${s.note?' ／ '+s.note:''}</div>
-        <div class="tags">${roomTag}${rvTag}</div>
-        <div style="display:flex;gap:.35rem;margin-top:.4rem;flex-wrap:wrap">
-          ${s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${s.note||''}')">訂正・取消</button>`:''}
-          ${rvBtn}
+    const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${s.note||''}')">訂正・取消</button>`:''
+    // ステータスアイコン
+    const stIcon=s.status==='approved'?'✅':s.status==='requested'?'🔵':'❌'
+    const stLabel=s.status==='approved'?'承認済':s.status==='requested'?'申請中':'却下'
+    const stColor=s.status==='approved'?'var(--green)':s.status==='requested'?'var(--blue)':'var(--red)'
+    html+=`<div style="display:flex;align-items:flex-start;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:1.1rem;line-height:1;margin-top:.1rem">${stIcon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+          <span style="font-size:.88rem;font-weight:700">${jpDate(s.date)}</span>
+          <span style="font-size:.78rem;color:var(--text3)">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span>
+          ${s.note?`<span style="font-size:.72rem;color:var(--text3)">／ ${s.note}</span>`:''}
         </div>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem;align-items:center">
+          <span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:700;background:${stColor}22;color:${stColor};border:1.5px solid ${stColor}">${stLabel}</span>
+          ${roomTag}${rvTag}
+        </div>
+        ${editBtn||rvBtn?`<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">${editBtn}${rvBtn}</div>`:''}
       </div>
-      <div class="ir"><span class="tag ${s.status==='approved'?'tb':'tn'}">${s.status==='approved'?'承認済':'申請中'}</span></div>
     </div>`
   })
   area.innerHTML=html
+}
+
+async function loadShiftList(){
+  if(!me||me.is_owner) return
+  // 統合後はrenderInlineShiftListに委譲（後方互換のため残す）
+  renderInlineShiftList()
 }
 
 // ── キャスト：委託金確認 ──
