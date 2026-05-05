@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 
 self.addEventListener('install', function(event) {
   // 待機せず即座に新バージョンに切り替え
