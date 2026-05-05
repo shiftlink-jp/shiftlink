@@ -492,6 +492,7 @@ if("serviceWorker" in navigator){
           <button class="btn btn-red btn-sm2" onclick="openInactiveSheet()">退店済み</button>
           <button class="btn btn-blue btn-sm2" onclick="openStoreSettings()">⚙️ 料金設定</button>
           <button class="btn btn-gold btn-sm2" onclick="openAddCast()">＋ 追加</button>
+          <button class="btn btn-gold btn-sm2" id="owner-push-btn" onclick="registerOwnerPush()">🔔 通知設定</button>
 
         </div>
       </div>
@@ -1134,43 +1135,7 @@ function startApp(){
     document.querySelector('.owner-tab').classList.add('on')
     const ownerTabs=['owner-shift','today','owner-salary','owner-cast','owner-customer','owner-monthly']
     tab(savedTab&&ownerTabs.includes(savedTab)?savedTab:'owner-shift');
-    // オーナー用Push通知（ログイン時に自動でSubscriptionをDBと同期）
-    ;(async function() {
-      try {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=7');
-        const sub = await reg.pushManager.getSubscription();
-        if (!sub) {
-          // 未登録 → ボタンを表示して許可を促す
-          const pushBtn = document.createElement('button');
-          pushBtn.textContent = '🔔 通知を有効にする';
-          pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8a06a;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;';
-          pushBtn.onclick = async function() {
-            pushBtn.remove();
-            try {
-              const s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E') });
-              const sJson = s.toJSON();
-              // endpointで重複チェックしてから登録
-              const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
-              const exists = (allSubs||[]).some(r=>{ try{return JSON.parse(r.subscription).endpoint===sJson.endpoint}catch{return false} });
-              if (!exists) await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: sJson });
-              alert('Push登録成功！');
-            } catch(e) { alert('Pushエラー: ' + e.name + ' / ' + e.message); }
-          };
-          document.body.appendChild(pushBtn);
-        } else {
-          // Subscription取得済み → endpointがDBにあるか確認して自動同期
-          const endpoint = sub.endpoint;
-          const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
-          const exists = (allSubs||[]).some(r=>{ try{return JSON.parse(r.subscription).endpoint===endpoint}catch{return false} });
-          if (!exists) {
-            // DBに未登録 → 自動登録（ボタン不要）
-            await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: sub.toJSON() });
-          }
-          // 登録済み or 自動登録完了 → ボタン非表示
-        }
-      } catch(e) { console.warn('[Push] オーナー通知エラー:', e); }
-    })();
+    // オーナー用Push通知はキャスト管理画面の🔔ボタンから設定
   } else {
     document.querySelector('.cast-tab').classList.add('on')
     const castTabs=['shift','salary','cast-memo']
@@ -1223,6 +1188,28 @@ function startApp(){
   }
 }
 
+async function registerOwnerPush(){
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('このブラウザはPush通知に対応していません。
+ホーム画面に追加してPWAとして開いてください。'); return;
+    }
+    const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=7');
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) await oldSub.unsubscribe();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
+    });
+    const subJson = sub.toJSON();
+    const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
+    const exists = (allSubs||[]).some(r=>{ try{return JSON.parse(r.subscription).endpoint===subJson.endpoint}catch{return false} });
+    if (exists) { alert('この端末は既に通知登録済みです！'); return; }
+    const { error } = await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: subJson });
+    if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
+    alert('通知登録完了！予約・シフトの通知が届きます。');
+  } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
+}
 function doLogout(){
   me=null; myShifts=[]
   sessionStorage.removeItem('kyoukano_me')
