@@ -1,7 +1,6 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 
 self.addEventListener('install', function(event) {
-  // 待機せず即座に新バージョンに切り替え
   self.skipWaiting();
 });
 
@@ -16,7 +15,6 @@ self.addEventListener('activate', function(event) {
     }).then(function() {
       return self.clients.claim();
     }).then(function() {
-      // 全クライアント（PWA含む）にリロードを通知
       return self.clients.matchAll({ type: 'window' }).then(function(clients) {
         clients.forEach(function(client) {
           client.postMessage({ type: 'SW_UPDATED' });
@@ -24,6 +22,19 @@ self.addEventListener('activate', function(event) {
       });
     })
   );
+});
+
+// index.htmlは常にネットワークから取得（キャッシュしない）
+self.addEventListener('fetch', function(event) {
+  const url = new URL(event.request.url);
+  if (url.pathname === '/kyoukano/' || url.pathname === '/kyoukano/index.html') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(function() {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
 });
 
 self.addEventListener('push', function(event) {

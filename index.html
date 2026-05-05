@@ -227,7 +227,7 @@ tr:last-child td{border-bottom:none}
 .session-label{font-size:.7rem;color:var(--text3);font-weight:600;margin-bottom:.25rem}
 </style>
 <script>
-const SW_VER = 'v7';
+const SW_VER = 'v8';
 if("serviceWorker" in navigator){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -1168,7 +1168,7 @@ function startApp(){
         pushBtn.remove();
         const castId = me.id;
         try {
-          const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=7");
+          const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=8");
           const oldSub = await reg.pushManager.getSubscription();
           if (oldSub) await oldSub.unsubscribe();
           const sub = await reg.pushManager.subscribe({
@@ -1194,7 +1194,7 @@ async function registerOwnerPush(){
       alert('このブラウザはPush通知に対応していません。
 ホーム画面に追加してPWAとして開いてください。'); return;
     }
-    const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=7');
+    const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=8');
     const oldSub = await reg.pushManager.getSubscription();
     if (oldSub) await oldSub.unsubscribe();
     const sub = await reg.pushManager.subscribe({
@@ -6128,7 +6128,7 @@ async function subscribePush(castId) {
   if (permission !== "granted") { alert("通知許可されず"); return; }
 
   try {
-    const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=7");
+    const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=8");
     alert("SW登録成功: " + reg.scope);
     const oldSub = await reg.pushManager.getSubscription();
     if (oldSub) await oldSub.unsubscribe();
