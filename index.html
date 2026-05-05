@@ -1426,7 +1426,7 @@ async function submitShift(){
   // オーナーへPush通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
       body:JSON.stringify({cast_id:0, title:'シフトが提出されました📅', body:me.name+'さんが'+selectedDate+'のシフトを申請しました。'})
     });
   } catch(e) { console.error('通知エラー',e); }
@@ -2132,7 +2132,7 @@ async function saveCastMemo(){
   // オーナーへPush通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
       body:JSON.stringify({cast_id:0, title:'接客メモが保存されました📝', body:me.name+'さんが接客メモを入力しました。'})
     });
   } catch(e) { console.error('通知エラー',e); }
@@ -2502,7 +2502,7 @@ async function saveReservation(){
       const timeStr = checkin ? `（${checkin}〜）` : '';
       await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
         body:JSON.stringify({cast_id:shiftData.cast_id, title:'予約が入りました📋', body:`${finalName}様 ${course}${timeStr}`})
       });
     }
@@ -3155,7 +3155,7 @@ async function approveShift(id){
     const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
       body:JSON.stringify({cast_id:shift.cast_id, title:'シフトが承認されました✅', body:'オーナーがあなたのシフトを承認しました。'})
     });
   } catch(e) { console.error('通知エラー',e); }
@@ -3170,7 +3170,7 @@ async function rejectShift(id){
     const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
       body:JSON.stringify({cast_id:shift.cast_id, title:'シフトが却下されました❌', body:'オーナーがあなたのシフトを却下しました。'})
     });
   } catch(e) { console.error('通知エラー',e); }
@@ -4282,7 +4282,7 @@ async function saveWork(){
   // キャストへPush通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
       body:JSON.stringify({cast_id:sheetCastId, title:'委託金が入力されました💴', body:sheetDate+'の委託金が確定しました。'})
     });
   } catch(e) { console.error('通知エラー',e); }
