@@ -1144,7 +1144,7 @@ function startApp(){
         let sub = await reg.pushManager.getSubscription();
 
         // Subscriptionがない場合はボタンで許可を促す
-        if (!sub || Notification.permission !== 'granted') {
+        if (!sub) {
           const pushBtn = document.createElement('button');
           pushBtn.textContent = '🔔 通知を有効にする';
           pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8a06a;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;';
