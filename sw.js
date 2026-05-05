@@ -1,6 +1,7 @@
 const CACHE_VERSION = 'v6';
 
 self.addEventListener('install', function(event) {
+  // 待機せず即座に新バージョンに切り替え
   self.skipWaiting();
 });
 
@@ -14,6 +15,13 @@ self.addEventListener('activate', function(event) {
       );
     }).then(function() {
       return self.clients.claim();
+    }).then(function() {
+      // 全クライアント（PWA含む）にリロードを通知
+      return self.clients.matchAll({ type: 'window' }).then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SW_UPDATED' });
+        });
+      });
     })
   );
 });
