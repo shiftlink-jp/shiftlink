@@ -1134,46 +1134,32 @@ function startApp(){
     document.querySelector('.owner-tab').classList.add('on')
     const ownerTabs=['owner-shift','today','owner-salary','owner-cast','owner-customer','owner-monthly']
     tab(savedTab&&ownerTabs.includes(savedTab)?savedTab:'owner-shift');
-    // オーナー用Push通知（ボタン押下方式→自動登録方式に変更）
+    // オーナー用Push通知ボタン（localStorageで登録済み管理）
     ;(async function() {
-      try {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
-        const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=7");
+      // localStorageに登録済みフラグがあればボタン非表示
+      if (localStorage.getItem('owner_push_registered') === '1') return;
 
-        // 既存のSubscriptionを確認
-        let sub = await reg.pushManager.getSubscription();
-
-        // Subscriptionがない場合はボタンで許可を促す
-        if (!sub) {
-          const pushBtn = document.createElement('button');
-          pushBtn.textContent = '🔔 通知を有効にする';
-          pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8a06a;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;';
-          pushBtn.onclick = async function() {
-            pushBtn.remove();
-            try {
-              const s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E") });
-              const sJson = s.toJSON();
-              await sb.from("push_subscriptions").delete().eq("cast_id", 0).like("subscription", '%' + sJson.endpoint + '%');
-              await sb.from("push_subscriptions").insert({ cast_id: 0, subscription: sJson });
-              alert("Push登録成功！");
-            } catch(e) { alert("Pushエラー: " + e.name + " / " + e.message); }
-          };
-          document.body.appendChild(pushBtn);
-          return;
-        }
-
-        // Subscription取得済み → endpointがDBにあるか確認
-        const endpoint = sub.endpoint;
-        const { data: allSubs } = await sb.from("push_subscriptions").select("subscription").eq("cast_id", 0);
-        const alreadyRegistered = (allSubs || []).some(s => {
-          try { return JSON.parse(s.subscription).endpoint === endpoint; } catch { return false; }
-        });
-        if (alreadyRegistered) return; // 登録済み → ボタン非表示
-
-        // DBに未登録 → 自動登録（ボタン不要）
-        const subJson = sub.toJSON();
-        await sb.from("push_subscriptions").insert({ cast_id: 0, subscription: subJson });
-      } catch(e) { console.warn('[Push] オーナー通知エラー:', e); }
+      const pushBtn = document.createElement('button');
+      pushBtn.textContent = '🔔 通知を有効にする';
+      pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8a06a;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;';
+      pushBtn.onclick = async function() {
+        pushBtn.remove();
+        try {
+          const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=7");
+          const oldSub = await reg.pushManager.getSubscription();
+          if (oldSub) await oldSub.unsubscribe();
+          const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E") });
+          const subJson = sub.toJSON();
+          // この端末のcast_id=0レコードを更新
+          await sb.from("push_subscriptions").delete().eq("cast_id", 0);
+          const { error } = await sb.from("push_subscriptions").insert({ cast_id: 0, subscription: subJson });
+          if (error) { alert("登録失敗: " + JSON.stringify(error)); return; }
+          // 登録済みフラグをlocalStorageに保存
+          localStorage.setItem('owner_push_registered', '1');
+          alert("Push登録成功！");
+        } catch(e) { alert("Pushエラー: " + e.name + " / " + e.message); }
+      };
+      document.body.appendChild(pushBtn);
     })();
   } else {
     document.querySelector('.cast-tab').classList.add('on')
