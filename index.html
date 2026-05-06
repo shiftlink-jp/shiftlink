@@ -1614,7 +1614,7 @@ async function loadCastToday() {
     const today = bizDay();
     // 自分の今日承認済みシフトを取得
     const { data: shifts, error: shiftErr } = await sb.from('shifts')
-      .select('id,checkin,checkout')
+      .select('id,start_time,end_time')
       .eq('cast_id', me.id)
       .eq('date', today)
       .eq('status', 'approved');
