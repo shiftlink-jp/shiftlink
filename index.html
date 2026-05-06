@@ -1143,27 +1143,37 @@ function startApp(){
     ;(async function() {
       const castId = me.id;
 
-      // DBに登録済み かつ 通知許可済みの場合はボタン非表示
+      // ボタンを作成（常に表示、状態で切り替え）
+      const pushBtn = document.createElement('button');
+      pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;color:white;';
+
+      // DB登録済み＆許可済みか確認
       try {
         const permission = Notification.permission;
-        const { data: dbSub, error: dbErr } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", castId).maybeSingle();
-        console.log("[Push] castId=" + castId + " permission=" + permission + " data=" + JSON.stringify(dbSub));
-        if (!dbErr && dbSub && permission === "granted") return; // DB登録済み＆許可済み → ボタン非表示
+        const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", castId).maybeSingle();
+        if (dbSub && permission === "granted") {
+          // 設定済み状態で表示
+          pushBtn.textContent = '✅ 通知設定済み';
+          pushBtn.style.background = '#888';
+          pushBtn.style.opacity = '0.7';
+          pushBtn.style.cursor = 'default';
+          pushBtn.disabled = true;
+          document.body.appendChild(pushBtn);
+          return;
+        }
       } catch(e) {
         console.warn("[Push] DB確認エラー:", e);
       }
 
-      // ボタン表示
-      const pushBtn = document.createElement('button');
+      // 未登録 → 有効にするボタン
       pushBtn.textContent = '🔔 通知を有効にする';
-      pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8a06a;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;';
+      pushBtn.style.background = '#b8a06a';
       pushBtn.onclick = async function() {
         const isPWA = window.navigator.standalone === true;
         if (!isPWA) {
           alert('通知を有効にするには\nホーム画面に追加してから\nアプリとして開いてください。');
           return;
         }
-        pushBtn.remove();
         const castId = me.id;
         try {
           // 通知許可ダイアログを明示的に表示
@@ -1183,7 +1193,18 @@ function startApp(){
           const subJson = sub.toJSON();
           await sb.from("push_subscriptions").delete().eq("cast_id", castId);
           const { error } = await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
-          if (error) { alert("登録失敗: " + JSON.stringify(error)); } else { alert("Push登録成功！"); }
+          if (error) {
+            alert("登録失敗: " + JSON.stringify(error));
+          } else {
+            alert("通知登録完了！予約・シフトの通知が届きます。");
+            // ボタンを設定済みに変更
+            pushBtn.textContent = '✅ 通知設定済み';
+            pushBtn.style.background = '#888';
+            pushBtn.style.opacity = '0.7';
+            pushBtn.style.cursor = 'default';
+            pushBtn.disabled = true;
+            pushBtn.onclick = null;
+          }
         } catch(e) {
           alert("Pushエラー: " + e.name + " / " + e.message);
         }
