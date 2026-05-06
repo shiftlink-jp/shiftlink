@@ -1699,10 +1699,10 @@ function renderCastTodayCards(rvs) {
 
     const actionBtns = isPast ? '' : `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
-        <button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#4e9e6e;color:white;font-weight:700;font-size:.8rem;cursor:pointer">入室</button>
-        <button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c96060;color:white;font-weight:700;font-size:.8rem;cursor:pointer">退室</button>
-        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#8b6bba;color:white;font-weight:700;font-size:.8rem;cursor:pointer">＋OP</button>
-        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9913a;color:white;font-weight:700;font-size:.8rem;cursor:pointer">延長</button>
+        <button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">入室</button>
+        <button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">退室</button>
+        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">＋OP</button>
+        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">延長</button>
       </div>`;
 
     html += `<div style="${cardStyle}">
