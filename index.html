@@ -1167,6 +1167,12 @@ function startApp(){
         pushBtn.remove();
         const castId = me.id;
         try {
+          // 通知許可ダイアログを明示的に表示
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            alert('通知が許可されませんでした。\niPhone設定 → 通知 → アプリ名 から許可してください。');
+            return;
+          }
           const reg = await navigator.serviceWorker.register("/kyoukano/sw.js?v=9");
           const oldSub = await reg.pushManager.getSubscription();
           if (oldSub) await oldSub.unsubscribe();
@@ -1210,6 +1216,12 @@ async function registerOwnerPush(){
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('このブラウザはPush通知に対応していません。\nホーム画面に追加してPWAとして開いてください。'); return;
+    }
+    // 通知許可ダイアログを明示的に表示
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('通知が許可されませんでした。\niPhone設定 → 通知 → アプリ名 から許可してください。');
+      return;
     }
     const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=9');
     const oldSub = await reg.pushManager.getSubscription();
