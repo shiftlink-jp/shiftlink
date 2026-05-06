@@ -1214,6 +1214,12 @@ async function checkOwnerPushBtn(){
 
 async function registerOwnerPush(){
   try {
+    // デバッグ情報
+    const dbgSW = 'serviceWorker' in navigator;
+    const dbgPM = 'PushManager' in window;
+    const dbgPerm = Notification.permission;
+    const dbgPWA = window.navigator.standalone;
+    alert('[DEBUG]\nSW:' + dbgSW + '\nPushManager:' + dbgPM + '\npermission:' + dbgPerm + '\nstandalone:' + dbgPWA);
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('このブラウザはPush通知に対応していません。\nホーム画面に追加してPWAとして開いてください。'); return;
     }
