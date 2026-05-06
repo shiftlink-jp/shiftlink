@@ -1682,34 +1682,35 @@ function renderCastTodayCards(rvs) {
       return found ? found.name : o;
     }).join('、');
 
-    let borderLeft, bg, badge = '', opacity = '1';
+    let cardStyle = 'border-radius:14px;padding:1rem;margin-bottom:.85rem;border:2px solid transparent;';
+    let badge = '';
     if (isPast) {
-      borderLeft = '3px solid #ccc'; bg = 'var(--surface2)'; opacity = '0.5';
-      badge = '<span style="font-size:.63rem;background:#bbb;color:white;border-radius:3px;padding:.1rem .4rem;margin-left:.4rem;font-weight:600;letter-spacing:.03em">終了</span>';
+      cardStyle += 'background:#f0ede8;opacity:.6;';
+      badge = '<span style="font-size:.7rem;background:#b0a898;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600">終了</span>';
     } else if (isNow) {
-      borderLeft = '3px solid var(--accent)'; bg = '#fffcf5';
-      badge = '<span style="font-size:.63rem;background:var(--accent);color:white;border-radius:3px;padding:.1rem .4rem;margin-left:.4rem;font-weight:600;animation:pulse 1.5s infinite;letter-spacing:.03em">接客中</span>';
+      cardStyle += 'background:#fffbf2;border-color:#c9a84c;';
+      badge = '<span style="font-size:.7rem;background:#c9a84c;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600;animation:pulse 1.5s infinite">● 接客中</span>';
     } else if (isComing) {
-      borderLeft = '3px solid #5b9bd5'; bg = '#f6faff';
-      badge = '<span style="font-size:.63rem;background:#5b9bd5;color:white;border-radius:3px;padding:.1rem .4rem;margin-left:.4rem;font-weight:600;letter-spacing:.03em">まもなく</span>';
+      cardStyle += 'background:#f4f8ff;border-color:#7aaee0;';
+      badge = '<span style="font-size:.7rem;background:#7aaee0;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600">まもなく</span>';
     } else {
-      borderLeft = '3px solid var(--border)'; bg = 'var(--surface)';
+      cardStyle += 'background:white;border-color:#e8dcc8;';
     }
 
     const actionBtns = isPast ? '' : `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.6rem">
-        <button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="padding:.5rem 0;border:none;border-radius:7px;background:#3a9e5f;color:white;font-weight:700;font-size:.75rem;cursor:pointer;letter-spacing:.03em">入室</button>
-        <button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="padding:.5rem 0;border:none;border-radius:7px;background:#d94f4f;color:white;font-weight:700;font-size:.75rem;cursor:pointer;letter-spacing:.03em">退室</button>
-        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="padding:.5rem 0;border:none;border-radius:7px;background:#7c4daa;color:white;font-weight:700;font-size:.75rem;cursor:pointer;letter-spacing:.03em">＋OP</button>
-        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="padding:.5rem 0;border:none;border-radius:7px;background:#c97a1a;color:white;font-weight:700;font-size:.75rem;cursor:pointer;letter-spacing:.03em">延長</button>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
+        <button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#4e9e6e;color:white;font-weight:700;font-size:.8rem;cursor:pointer">入室</button>
+        <button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c96060;color:white;font-weight:700;font-size:.8rem;cursor:pointer">退室</button>
+        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#8b6bba;color:white;font-weight:700;font-size:.8rem;cursor:pointer">＋OP</button>
+        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9913a;color:white;font-weight:700;font-size:.8rem;cursor:pointer">延長</button>
       </div>`;
 
-    html += `<div style="background:${bg};border-left:${borderLeft};border-radius:0 8px 8px 0;padding:.7rem .8rem;margin-bottom:.55rem;opacity:${opacity}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.2rem">
-        <div style="font-size:.92rem;font-weight:700;display:flex;align-items:center;gap:.1rem">${r.customer_name || '（名前なし）'}${badge}</div>
-        <div style="font-size:.82rem;font-weight:700;color:var(--accent);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
+    html += `<div style="${cardStyle}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+        <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${r.customer_name || '（名前なし）'}${badge}</div>
+        <div style="font-size:.9rem;font-weight:700;color:var(--accent);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
-      <div style="font-size:.75rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'&ensp;<span style="color:var(--accent);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'&ensp;OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
+      <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--accent);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
       ${actionBtns}
     </div>`;
   });
