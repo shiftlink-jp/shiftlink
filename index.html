@@ -323,6 +323,7 @@ if("serviceWorker" in navigator){
     <div class="app-logo" style="font-family:Georgia,serif;font-size:.7rem;letter-spacing:.12em;font-weight:700;background:linear-gradient(135deg,#c9a84c,#f5e07a,#c9a84c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.3">KYOUKANO<br>NAGOYA</div>
     <div class="hdr-r">
       <span class="badge" id="hdr-name">-</span>
+      <button class="btn-sm" id="hdr-push-btn" style="display:none;font-size:.7rem" onclick="hdrPushBtnClick()">🔔 通知設定</button>
       <button class="btn-sm" onclick="doLogout()">ログアウト</button>
     </div>
   </div>
@@ -492,7 +493,7 @@ if("serviceWorker" in navigator){
           <button class="btn btn-red btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openInactiveSheet()">退店済み</button>
           <button class="btn btn-blue btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openStoreSettings()">⚙️ 料金設定</button>
           <button class="btn btn-gold btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openAddCast()">＋ 追加</button>
-          <button class="btn btn-gold btn-sm2" style="white-space:nowrap;font-size:.7rem" id="owner-push-btn" onclick="registerOwnerPush()">🔔 通知設定</button>
+
         </div>
       </div>
       <div id="cast-area"><div class="spin">読み込み中...</div></div>
@@ -1134,100 +1135,97 @@ function startApp(){
     document.querySelector('.owner-tab').classList.add('on')
     const ownerTabs=['owner-shift','today','owner-salary','owner-cast','owner-customer','owner-monthly']
     tab(savedTab&&ownerTabs.includes(savedTab)?savedTab:'owner-shift');
-    // オーナー用Push通知はキャスト管理画面の🔔ボタンから設定
+    // オーナー用Push通知ヘッダーボタン
+    checkOwnerPushBtn();
   } else {
     document.querySelector('.cast-tab').classList.add('on')
     const castTabs=['shift','salary','cast-memo']
     tab(savedTab&&castTabs.includes(savedTab)?savedTab:savedTab==='shift-list'?'shift':'shift');
-    // Push通知ボタン（登録済みの場合は非表示）
+    // Push通知ボタン（ヘッダーに表示）
     ;(async function() {
       const castId = me.id;
-
-      // ボタンを作成（常に表示、状態で切り替え）
-      const pushBtn = document.createElement('button');
-      pushBtn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);border:none;padding:12px 24px;border-radius:8px;font-size:16px;z-index:9999;cursor:pointer;color:white;';
-
-      // DB登録済み＆許可済みか確認
+      const btn = document.getElementById('hdr-push-btn');
+      if (!btn) return;
       try {
         const permission = Notification.permission;
         const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", castId).maybeSingle();
         if (dbSub && permission === "granted") {
-          // 設定済み状態で表示
-          pushBtn.textContent = '✅ 通知設定済み';
-          pushBtn.style.background = '#888';
-          pushBtn.style.opacity = '0.7';
-          pushBtn.style.cursor = 'default';
-          pushBtn.disabled = true;
-          document.body.appendChild(pushBtn);
-          return;
+          btn.textContent = '✅ 設定済み';
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'default';
+        } else {
+          btn.textContent = '🔔 通知設定';
         }
       } catch(e) {
+        btn.textContent = '🔔 通知設定';
         console.warn("[Push] DB確認エラー:", e);
       }
-
-      // 未登録 → 有効にするボタン
-      pushBtn.textContent = '🔔 通知を有効にする';
-      pushBtn.style.background = '#b8a06a';
-      pushBtn.onclick = async function() {
-        const isPWA = window.navigator.standalone === true;
-        if (!isPWA) {
-          alert('通知を有効にするには\nホーム画面に追加してから\nアプリとして開いてください。');
-          return;
-        }
-        const castId = me.id;
-        try {
-          // 通知許可ダイアログを明示的に表示
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-            alert('通知が許可されませんでした。\niPhone設定 → 通知 → アプリ名 から許可してください。');
-            return;
-          }
-          // register()ではなくreadyを使う（SW_UPDATEDによるリロードを防ぐ）
-          const reg = await navigator.serviceWorker.ready;
-          const oldSub = await reg.pushManager.getSubscription();
-          if (oldSub) await oldSub.unsubscribe();
-          const sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E")
-          });
-          const subJson = sub.toJSON();
-          await sb.from("push_subscriptions").delete().eq("cast_id", castId);
-          const { error } = await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
-          if (error) {
-            alert("登録失敗: " + JSON.stringify(error));
-          } else {
-            alert("通知登録完了！予約・シフトの通知が届きます。");
-            // ボタンを設定済みに変更
-            pushBtn.textContent = '✅ 通知設定済み';
-            pushBtn.style.background = '#888';
-            pushBtn.style.opacity = '0.7';
-            pushBtn.style.cursor = 'default';
-            pushBtn.disabled = true;
-            pushBtn.onclick = null;
-          }
-        } catch(e) {
-          alert("Pushエラー: " + e.name + " / " + e.message);
-        }
-      };
-      document.body.appendChild(pushBtn);
+      btn.style.display = '';
     })();
   }
 }
 
-async function checkOwnerPushBtn(){
-  // オーナーの🔔ボタン：登録済み＆許可済みなら非表示
-  const btn = document.getElementById('owner-push-btn');
-  if (!btn) return;
+async function hdrPushBtnClick(){
+  if (me && me.is_owner) {
+    await registerOwnerPush();
+  } else {
+    await registerCastPush();
+  }
+}
+
+async function registerCastPush(){
+  const castId = me.id;
+  const btn = document.getElementById('hdr-push-btn');
+  const isPWA = window.navigator.standalone === true;
+  if (!isPWA) {
+    alert('通知を有効にするには\nホーム画面に追加してから\nアプリとして開いてください。');
+    return;
+  }
   try {
-    if (Notification.permission !== 'granted') return; // 未許可 → ボタン表示のまま
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('通知が許可されませんでした。\niPhone設定 → 通知 → アプリ名 から許可してください。');
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) await oldSub.unsubscribe();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E")
+    });
+    const subJson = sub.toJSON();
+    await sb.from("push_subscriptions").delete().eq("cast_id", castId);
+    const { error } = await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
+    if (error) {
+      alert("登録失敗: " + JSON.stringify(error));
+    } else {
+      alert("通知登録完了！予約・シフトの通知が届きます。");
+      if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+    }
+  } catch(e) {
+    alert("Pushエラー: " + e.name + " / " + e.message);
+  }
+}
+
+async function checkOwnerPushBtn(){
+  const btn = document.getElementById('hdr-push-btn');
+  if (!btn) return;
+  btn.style.display = '';
+  btn.textContent = '🔔 通知設定';
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+  try {
+    if (Notification.permission !== 'granted') return;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if (!sub) return; // 未登録 → ボタン表示のまま
+    if (!sub) return;
     const subJson = sub.toJSON();
     const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
     const exists = (allSubs||[]).some(r=>{
       try {
-        // DBがJSON文字列の場合もオブジェクトの場合も両対応
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
         return s.endpoint === subJson.endpoint;
       } catch { return false; }
@@ -1237,7 +1235,6 @@ async function checkOwnerPushBtn(){
       btn.disabled = true;
       btn.style.opacity = '0.6';
       btn.style.cursor = 'default';
-      console.log('[OwnerPush] 登録済みのため🔔ボタンを設定済みに変更');
     }
   } catch(e) { console.warn('[OwnerPush] チェックエラー:', e); }
 }
@@ -1273,11 +1270,8 @@ async function registerOwnerPush(){
     const { error } = await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: subJson });
     if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
     alert('通知登録完了！予約・シフトの通知が届きます。');
-    const btn = document.getElementById('owner-push-btn');
-    btn.textContent = '✅ 設定済み';
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-    btn.style.cursor = 'default';
+    const btn = document.getElementById('hdr-push-btn');
+    if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
   } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
 }
 function doLogout(){
