@@ -1161,9 +1161,7 @@ function startApp(){
       pushBtn.onclick = async function() {
         const isPWA = window.navigator.standalone === true;
         if (!isPWA) {
-          alert('通知を有効にするには
-ホーム画面に追加してから
-アプリとして開いてください。');
+          alert('通知を有効にするには\nホーム画面に追加してから\nアプリとして開いてください。');
           return;
         }
         pushBtn.remove();
@@ -1211,8 +1209,7 @@ async function checkOwnerPushBtn(){
 async function registerOwnerPush(){
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('このブラウザはPush通知に対応していません。
-ホーム画面に追加してPWAとして開いてください。'); return;
+      alert('このブラウザはPush通知に対応していません。\nホーム画面に追加してPWAとして開いてください。'); return;
     }
     const reg = await navigator.serviceWorker.register('/kyoukano/sw.js?v=9');
     const oldSub = await reg.pushManager.getSubscription();
