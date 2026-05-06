@@ -1207,8 +1207,11 @@ async function checkOwnerPushBtn(){
     const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
     const exists = (allSubs||[]).some(r=>{ try{return JSON.parse(r.subscription).endpoint===subJson.endpoint}catch{return false} });
     if (exists) {
-      btn.style.display = 'none'; // 登録済み → ボタン非表示
-      console.log('[OwnerPush] 登録済みのため🔔ボタン非表示');
+      btn.textContent = '✅ 通知設定済み';
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'default';
+      console.log('[OwnerPush] 登録済みのため🔔ボタンを設定済みに変更');
     }
   } catch(e) { console.warn('[OwnerPush] チェックエラー:', e); }
 }
@@ -1239,7 +1242,11 @@ async function registerOwnerPush(){
     const { error } = await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: subJson });
     if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
     alert('通知登録完了！予約・シフトの通知が届きます。');
-    document.getElementById('owner-push-btn').style.display = 'none'; // 登録後に非表示
+    const btn = document.getElementById('owner-push-btn');
+    btn.textContent = '✅ 通知設定済み';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'default';
   } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
 }
 function doLogout(){
