@@ -489,10 +489,10 @@ if("serviceWorker" in navigator){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.35rem">
         <div style="font-size:1rem;font-weight:700;white-space:nowrap">キャスト管理</div>
         <div style="display:flex;gap:.3rem;flex-wrap:nowrap;align-items:center">
-          <button class="btn btn-red btn-sm2" onclick="openInactiveSheet()">退店済み</button>
-          <button class="btn btn-blue btn-sm2" onclick="openStoreSettings()">⚙️ 料金設定</button>
-          <button class="btn btn-gold btn-sm2" onclick="openAddCast()">＋ 追加</button>
-          <button class="btn btn-gold btn-sm2" id="owner-push-btn" onclick="registerOwnerPush()">🔔 通知設定</button>
+          <button class="btn btn-red btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openInactiveSheet()">退店済み</button>
+          <button class="btn btn-blue btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openStoreSettings()">⚙️ 料金設定</button>
+          <button class="btn btn-gold btn-sm2" style="white-space:nowrap;font-size:.7rem" onclick="openAddCast()">＋ 追加</button>
+          <button class="btn btn-gold btn-sm2" style="white-space:nowrap;font-size:.7rem" id="owner-push-btn" onclick="registerOwnerPush()">🔔 通知設定</button>
         </div>
       </div>
       <div id="cast-area"><div class="spin">読み込み中...</div></div>
@@ -1212,7 +1212,7 @@ async function checkOwnerPushBtn(){
       } catch { return false; }
     });
     if (exists) {
-      btn.textContent = '✅ 通知設定済み';
+      btn.textContent = '✅ 設定済み';
       btn.disabled = true;
       btn.style.opacity = '0.6';
       btn.style.cursor = 'default';
@@ -1253,7 +1253,7 @@ async function registerOwnerPush(){
     if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
     alert('通知登録完了！予約・シフトの通知が届きます。');
     const btn = document.getElementById('owner-push-btn');
-    btn.textContent = '✅ 通知設定済み';
+    btn.textContent = '✅ 設定済み';
     btn.disabled = true;
     btn.style.opacity = '0.6';
     btn.style.cursor = 'default';
