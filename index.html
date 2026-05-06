@@ -486,14 +486,13 @@ if("serviceWorker" in navigator){
 
     <!-- 店舗：キャスト管理 -->
     <div class="panel" id="p-owner-cast">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-        <div style="font-size:1rem;font-weight:700">キャスト管理</div>
-        <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.35rem">
+        <div style="font-size:1rem;font-weight:700;white-space:nowrap">キャスト管理</div>
+        <div style="display:flex;gap:.3rem;flex-wrap:nowrap;align-items:center">
           <button class="btn btn-red btn-sm2" onclick="openInactiveSheet()">退店済み</button>
           <button class="btn btn-blue btn-sm2" onclick="openStoreSettings()">⚙️ 料金設定</button>
           <button class="btn btn-gold btn-sm2" onclick="openAddCast()">＋ 追加</button>
           <button class="btn btn-gold btn-sm2" id="owner-push-btn" onclick="registerOwnerPush()">🔔 通知設定</button>
-
         </div>
       </div>
       <div id="cast-area"><div class="spin">読み込み中...</div></div>
