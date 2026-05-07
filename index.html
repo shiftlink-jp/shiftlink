@@ -1505,6 +1505,7 @@ function tab(name){
   if(name==='cast-memo')      loadCastMemoPage()
   if(name==='cast-memo')     loadCastMemoList()
   if(name==='cast-today')    loadCastToday()
+  else { clearInterval(castTodayClockTimer); clearTimeout(castTodayTimer); }
   if(name==='owner-customer') loadCustomers()
   if(name==='owner-salary') loadOwnerSalary()
   if(name==='owner-cast')   { loadCastMgmt(); checkOwnerPushBtn(); }
@@ -1852,10 +1853,15 @@ function startCastTodayClock() {
   clearInterval(castTodayClockTimer);
   function tick() {
     const now = new Date();
-    el.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
+    el.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
   }
   tick();
-  castTodayClockTimer = setInterval(tick, 1000);
+  // 次の分の0秒に合わせてスタート
+  const msToNextMin = (60 - new Date().getSeconds()) * 1000;
+  setTimeout(() => {
+    tick();
+    castTodayClockTimer = setInterval(tick, 60000);
+  }, msToNextMin);
 }
 
 function renderCastTodayCards(rvs) {
