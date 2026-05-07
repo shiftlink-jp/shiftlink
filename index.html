@@ -1546,49 +1546,63 @@ async function renderInlineShiftList(){
   if(!area) return
   const[y,m]=calMonth.split('-').map(Number)
   // タイトル
-  const list=[...myShifts.filter(s=>s.status==='approved'),...myShifts.filter(s=>s.status==='requested'),...myShifts.filter(s=>s.status==='rejected')].sort((a,b)=>a.date.localeCompare(b.date))
-  if(!list.length){
+  const approved = myShifts.filter(s=>s.status==='approved').sort((a,b)=>a.date.localeCompare(b.date))
+  const requested = myShifts.filter(s=>s.status==='requested').sort((a,b)=>a.date.localeCompare(b.date))
+  const rejected = myShifts.filter(s=>s.status==='rejected').sort((a,b)=>a.date.localeCompare(b.date))
+
+  if(!myShifts.length){
     area.innerHTML=`<div style="font-size:.82rem;color:var(--text3);text-align:center;padding:.75rem 0">${y}年${m}月のシフトはありません</div>`
     return
   }
+
   // 承認済みシフトの予約件数を取得
-  const approvedShiftIds=myShifts.filter(s=>s.status==='approved').map(s=>s.id)
+  const approvedShiftIds = approved.map(s=>s.id)
   let rvByShift={}
   if(approvedShiftIds.length){
     const{data:rvs}=await sb.from('reservations').select('shift_id').in('shift_id',approvedShiftIds)
     if(rvs) rvs.forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=0;rvByShift[r.shift_id]++})
   }
   const td=today()
-  let html=`<div style="font-size:.78rem;font-weight:700;color:var(--text3);letter-spacing:.05em;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1.5px solid var(--border)">📋 ${y}年${m}月のシフト（${list.length}件）</div>`
-  list.forEach(s=>{
-    const rc=getRoomColor(s.room)
-    const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
-    const rvCount=rvByShift[s.id]||0
-    const isToday=s.date===td
-    const rvLabel=isToday?'予約':'事前予約'
-    const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1.5px solid var(--accent)">${rvLabel}${rvCount}件</span>`:''
-    const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${me.name||''}')">予約確認</button>`:''
-    const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${s.note||''}')">訂正・取消</button>`:''
-    // ステータスアイコン
-    const stIcon=s.status==='approved'?'✅':s.status==='requested'?'🔵':'❌'
-    const stLabel=s.status==='approved'?'承認済':s.status==='requested'?'申請中':'却下'
-    const stColor=s.status==='approved'?'var(--green)':s.status==='requested'?'var(--blue)':'var(--red)'
-    html+=`<div style="display:flex;align-items:flex-start;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:1.1rem;line-height:1;margin-top:.1rem">${stIcon}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
-          <span style="font-size:.88rem;font-weight:700">${jpDate(s.date)}</span>
-          <span style="font-size:.78rem;color:var(--text3)">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span>
-          ${s.note?`<span style="font-size:.72rem;color:var(--text3)">／ ${s.note}</span>`:''}
+
+  function buildShiftRows(list) {
+    if (!list.length) return '<div style="font-size:.8rem;color:var(--text3);padding:.5rem 0 .25rem;text-align:center">なし</div>'
+    return list.map(s=>{
+      const rc=getRoomColor(s.room)
+      const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
+      const rvCount=rvByShift[s.id]||0
+      const isToday=s.date===td
+      const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1.5px solid var(--accent)">${isToday?'予約':'事前予約'}${rvCount}件</span>`:''
+      const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${me.name||''}')">予約確認</button>`:''
+      const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${s.note||''}')">訂正・取消</button>`:''
+      return `<div style="display:flex;align-items:flex-start;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+            <span style="font-size:.88rem;font-weight:700">${jpDate(s.date)}</span>
+            <span style="font-size:.78rem;color:var(--text3)">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span>
+            ${s.note?`<span style="font-size:.72rem;color:var(--text3)">／ ${s.note}</span>`:''}
+          </div>
+          <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem;align-items:center">${roomTag}${rvTag}</div>
+          ${editBtn||rvBtn?`<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">${editBtn}${rvBtn}</div>`:''}
         </div>
-        <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem;align-items:center">
-          <span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:700;background:${stColor}22;color:${stColor};border:1.5px solid ${stColor}">${stLabel}</span>
-          ${roomTag}${rvTag}
-        </div>
-        ${editBtn||rvBtn?`<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">${editBtn}${rvBtn}</div>`:''}
-      </div>
-    </div>`
-  })
+      </div>`
+    }).join('')
+  }
+
+  function accordion(id, label, count, color, defaultOpen, rows) {
+    const open = defaultOpen ? 'open' : ''
+    return `<details ${open} style="margin-bottom:.5rem;border:1.5px solid ${color}44;border-radius:10px;overflow:hidden">
+      <summary style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;cursor:pointer;background:${color}11;font-size:.85rem;font-weight:700;color:${color};list-style:none;-webkit-appearance:none">
+        <span>${label}</span>
+        <span style="font-size:.75rem;background:${color};color:white;border-radius:20px;padding:.1rem .55rem;font-weight:700">${count}件</span>
+      </summary>
+      <div style="padding:.25rem .8rem .5rem">${rows}</div>
+    </details>`
+  }
+
+  let html = `<div style="font-size:.78rem;font-weight:700;color:var(--text3);letter-spacing:.05em;margin-bottom:.6rem">${y}年${m}月のシフト</div>`
+  html += accordion('approved', '✅ 承認済みシフト', approved.length, 'var(--green)', true, buildShiftRows(approved))
+  html += accordion('requested', '🔵 承認待ちシフト', requested.length, 'var(--blue)', requested.length>0, buildShiftRows(requested))
+  html += accordion('rejected', '❌ 却下済みシフト', rejected.length, 'var(--red)', false, buildShiftRows(rejected))
   area.innerHTML=html
 }
 
