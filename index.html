@@ -1640,7 +1640,7 @@ async function loadCastToday() {
 
     const sids = shifts.map(s => s.id);
     const { data: rvs, error: rvErr } = await sb.from('reservations')
-      .select('*')
+      .select('*,room_in_at,room_out_at')
       .in('shift_id', sids)
       .order('checkin_time');
 
@@ -1711,12 +1711,22 @@ function renderCastTodayCards(rvs) {
       cardStyle += 'background:white;border-color:#e8dcc8;';
     }
 
-    const actionBtns = isPast ? '' : `
+    const hasRoomIn = !!r.room_in_at;
+    const hasRoomOut = !!r.room_out_at;
+    const btnBase = 'padding:.6rem 0;border:none;border-radius:10px;font-weight:700;font-size:.8rem;cursor:pointer;';
+    const goldBtn = btnBase + 'background:#c9a84c;color:white;';
+    const doneBtn = btnBase + 'background:#d0c9b8;color:#888;cursor:default;';
+
+    const actionBtns = isPast && hasRoomOut ? '' : `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
-        <button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">入室</button>
-        <button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">退室</button>
-        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">＋OP</button>
-        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="padding:.6rem 0;border:none;border-radius:10px;background:#c9a84c;color:white;font-weight:700;font-size:.8rem;cursor:pointer">延長</button>
+        ${hasRoomIn
+          ? `<button disabled style="${doneBtn}">入室済み</button>`
+          : `<button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="${goldBtn}">入室</button>`}
+        ${hasRoomOut
+          ? `<button disabled style="${doneBtn}">退室済み</button>`
+          : `<button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="${goldBtn}">退室</button>`}
+        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="${goldBtn}">＋OP</button>
+        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="${goldBtn}">延長</button>
       </div>`;
 
     html += `<div style="${cardStyle}">
@@ -1740,6 +1750,8 @@ function timeStrToMin2(t) {
 
 async function castRoomIn(rvId, custName, time) {
   if (!confirm(custName + 'さんが入室しますか？')) return;
+  // DBに入室時刻を保存
+  await sb.from('reservations').update({ room_in_at: new Date().toISOString() }).eq('id', rvId);
   // オーナーに通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
@@ -1749,10 +1761,13 @@ async function castRoomIn(rvId, custName, time) {
     });
   } catch(e) { console.error('通知エラー', e); }
   toast('入室通知を送りました');
+  loadCastToday();
 }
 
 async function castRoomOut(rvId, custName, time) {
   if (!confirm(custName + 'さんが退室しますか？')) return;
+  // DBに退室時刻を保存
+  await sb.from('reservations').update({ room_out_at: new Date().toISOString() }).eq('id', rvId);
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
       method: 'POST',
@@ -1761,6 +1776,7 @@ async function castRoomOut(rvId, custName, time) {
     });
   } catch(e) { console.error('通知エラー', e); }
   toast('退室通知を送りました');
+  loadCastToday();
 }
 
 async function castAddOption(rvId, custName) {
