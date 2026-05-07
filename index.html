@@ -1244,7 +1244,7 @@ async function offerPasskeyRegistration(castId, castName){
     if(error) { alert('DB保存エラー: ' + error.message + ' / ' + JSON.stringify(error)); throw new Error(error.message) }
     toast('🔐 生体認証を登録しました！次回からすぐログインできます')
   } catch(e){
-    alert('登録エラー: ' + e.name + '\n' + e.message)
+    if(e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
   }
 }
 
