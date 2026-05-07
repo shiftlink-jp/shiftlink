@@ -1162,11 +1162,9 @@ async function passkeyLogin(){
 
 // PINログイン後に生体認証登録を促す
 async function offerPasskeyRegistration(castId, castName){
-  alert('[DEBUG] passkey開始 PublicKeyCredential=' + (!!window.PublicKeyCredential))
   if(!window.PublicKeyCredential) return
   // 既に登録済みならスキップ
   const{data:existing}=await sb.from('passkeys').select('id').eq('cast_id',castId).maybeSingle()
-  alert('[DEBUG] existing=' + JSON.stringify(existing))
   if(existing) return
 
   if(!confirm('顔認証・指紋認証でログインできるように設定しますか？\n次回から素早くログインできます。')) return
