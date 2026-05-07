@@ -313,6 +313,7 @@ if("serviceWorker" in navigator){
       <label class="lbl">PIN（最大8桁）</label>
       <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key='Enter')doCastLogin()">
       <button class="btn-login" style="background:linear-gradient(135deg,#b8893a,#d4a855)" onclick="doCastLogin()" id="btn-cast">ログイン</button>
+      <button class="btn-login" id="btn-passkey" style="display:none;background:#3a3a3c;margin-top:.5rem" onclick="passkeyLogin()">🔐 顔認証・指紋認証でログイン</button>
     </div>
     <div class="lerr" id="cast-err"></div>
   </div>
@@ -1071,6 +1072,101 @@ async function init(){
   }
 }
 
+// ── WebAuthn（生体認証）──
+function bufToB64(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
+}
+function b64ToBuf(b64){
+  const s=atob(b64.replace(/-/g,'+').replace(/_/g,'/'))
+  return Uint8Array.from(s,c=>c.charCodeAt(0)).buffer
+}
+
+// キャスト選択時にpasskeyが登録済みか確認してボタン表示
+async function checkPasskeyBtn(castId){
+  const btn=document.getElementById('btn-passkey')
+  if(!btn||!castId) return
+  if(!window.PublicKeyCredential){ btn.style.display='none'; return }
+  const{data}=await sb.from('passkeys').select('id').eq('cast_id',castId).maybeSingle()
+  btn.style.display = data ? '' : 'none'
+}
+
+// 生体認証でログイン
+async function passkeyLogin(){
+  const cid = document.getElementById('cast-sel').value
+  if(!cid){ document.getElementById('cast-err').textContent='名前を選んでください'; return }
+  const btn = document.getElementById('btn-passkey')
+  btn.disabled=true; btn.textContent='認証中...'
+  try {
+    // DBからcredential_idを取得
+    const{data:pk}=await sb.from('passkeys').select('*').eq('cast_id',cid).single()
+    if(!pk){ throw new Error('登録済みの認証情報がありません') }
+
+    // チャレンジ生成（ランダム）
+    const challenge = crypto.getRandomValues(new Uint8Array(32))
+
+    const assertion = await navigator.credentials.get({
+      publicKey:{
+        challenge,
+        allowCredentials:[{ type:'public-key', id: b64ToBuf(pk.credential_id) }],
+        userVerification:'required',
+        timeout:60000
+      }
+    })
+
+    // 認証成功 → ユーザー情報取得してログイン
+    const{data:c}=await sb.from('casts').select('*').eq('id',cid).single()
+    if(!c){ throw new Error('ユーザー情報の取得に失敗しました') }
+    me={...c,is_owner:false}
+    sessionStorage.setItem('kyoukano_me',JSON.stringify(me))
+    startApp()
+  } catch(e){
+    document.getElementById('cast-err').textContent = e.name==='NotAllowedError' ? '認証がキャンセルされました' : '認証失敗: '+e.message
+  } finally {
+    btn.disabled=false; btn.textContent='🔐 顔認証・指紋認証でログイン'
+  }
+}
+
+// PINログイン後に生体認証登録を促す
+async function offerPasskeyRegistration(castId, castName){
+  if(!window.PublicKeyCredential) return
+  // 既に登録済みならスキップ
+  const{data:existing}=await sb.from('passkeys').select('id').eq('cast_id',castId).maybeSingle()
+  if(existing) return
+  // 対応端末か確認
+  const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(()=>false)
+  if(!available) return
+
+  if(!confirm('顔認証・指紋認証でログインできるように設定しますか？\n次回から素早くログインできます。')) return
+
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32))
+    const credential = await navigator.credentials.create({
+      publicKey:{
+        challenge,
+        rp:{ name:'KYOUKANO NAGOYA', id: location.hostname },
+        user:{ id: new TextEncoder().encode(String(castId)), name: castName, displayName: castName },
+        pubKeyCredParams:[
+          {type:'public-key', alg:-7},   // ES256
+          {type:'public-key', alg:-257}  // RS256
+        ],
+        authenticatorSelection:{ authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred' },
+        timeout:60000
+      }
+    })
+
+    const credId = bufToB64(credential.rawId)
+    // 公開鍵はclientDataJSONで代用（簡易実装）
+    const pubKey = bufToB64(credential.response.clientDataJSON)
+
+    const{error}=await sb.from('passkeys').upsert({ cast_id:castId, credential_id:credId, public_key:pubKey },{onConflict:'cast_id'})
+    if(error) throw new Error(error.message)
+    toast('🔐 生体認証を登録しました！次回からすぐログインできます')
+  } catch(e){
+    if(e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
+  }
+}
+
 async function doOwnerLogin(){
   const pin=document.getElementById('owner-pin').value
   const err=document.getElementById('owner-err')
@@ -1100,6 +1196,7 @@ function selectCastCard(castId, castName){
   if(badge) badge.textContent=castName
   document.getElementById('cast-pin')?.focus()
   document.getElementById('cast-err').textContent=''
+  checkPasskeyBtn(castId)
 }
 
 function clearCastSelection(){
@@ -1130,6 +1227,8 @@ async function doCastLogin(){
   me={...c,is_owner:false}
   sessionStorage.setItem('kyoukano_me',JSON.stringify(me))
   startApp()
+  // 生体認証未登録なら登録を促す
+  setTimeout(()=>offerPasskeyRegistration(c.id, c.name), 800)
 }
 
 function startApp(){
