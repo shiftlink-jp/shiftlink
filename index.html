@@ -1783,7 +1783,7 @@ async function renderInlineShiftList(){
   }
 
   let html = `<div style="font-size:.78rem;font-weight:700;color:var(--text3);letter-spacing:.05em;margin-bottom:.6rem">${y}年${m}月のシフト</div>`
-  html += accordion('approved', '✅ 承認済みシフト', approved.length, 'var(--green)', true, buildShiftRows(approved))
+  html += accordion('approved', '✅ 承認済みシフト', approved.length, 'var(--green)', false, buildShiftRows(approved))
   html += accordion('requested', '🔵 承認待ちシフト', requested.length, 'var(--blue)', requested.length>0, buildShiftRows(requested))
   html += accordion('rejected', '❌ 却下済みシフト', rejected.length, 'var(--red)', false, buildShiftRows(rejected))
   area.innerHTML=html
