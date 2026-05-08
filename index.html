@@ -1216,34 +1216,10 @@ async function passkeyLogin(){
 // PINログイン後に生体認証登録を促す
 async function offerPasskeyRegistration(castId, castName){
   if(!window.PublicKeyCredential) return
-  // この端末のcredential_idがDBにあるか確認
-  try {
-    const reg = await navigator.serviceWorker.ready
-    // まずこの端末にパスキーがあるか確認
-    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(()=>false)
-    if(!available) return
-    // DBの全credential_idを取得してgetで確認
-    const{data:pks}=await sb.from('passkeys').select('credential_id').eq('cast_id',castId)
-    if(pks&&pks.length>0){
-      // この端末のパスキーがDBにあるか確認
-      try {
-        const challenge = crypto.getRandomValues(new Uint8Array(32))
-        await navigator.credentials.get({
-          publicKey:{
-            challenge,
-            allowCredentials: pks.map(pk=>({type:'public-key', id:b64ToBuf(pk.credential_id)})),
-            userVerification:'required',
-            timeout:3000
-          }
-        })
-        // 認証成功 = この端末は登録済み → スキップ
-        return
-      } catch(e){
-        // NotAllowedError = キャンセル、その他 = この端末未登録 → 登録へ進む
-        if(e.name==='NotAllowedError') return
-      }
-    }
-  } catch(e){ console.warn('passkey check:', e) }
+  // localStorage でこの端末の登録状態を確認
+  const localKey = 'passkey_registered_' + castId
+  const localRegistered = localStorage.getItem(localKey)
+  if(localRegistered === '1') return // この端末は登録済み
 
   if(!confirm('顔認証・指紋認証でログインできるように設定しますか？\n次回から素早くログインできます。')) return
 
@@ -1278,6 +1254,8 @@ async function offerPasskeyRegistration(castId, castName){
       saveError=error
     }
     if(saveError) { alert('DB保存エラー: ' + saveError.message); throw new Error(saveError.message) }
+    // この端末の登録状態をlocalStorageに保存
+    localStorage.setItem('passkey_registered_' + castId, '1')
     toast('🔐 生体認証を登録しました！次回からすぐログインできます')
   } catch(e){
     if(e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
