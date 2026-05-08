@@ -1785,7 +1785,11 @@ async function submitShift(){
   let err
   if(existing){const r=await sb.from('shifts').update(payload).eq('id',existing.id);err=r.error}
   else{const r=await sb.from('shifts').insert(payload);err=r.error}
-  if(err){toast('保存エラー: '+(err.message||JSON.stringify(err)));console.error('saveWork error:',err);return}
+  if(err){
+    if(err.code==='23505') toast('この日はすでにシフトが申請されています')
+    else toast('保存エラー: '+(err.message||JSON.stringify(err)))
+    return
+  }
   // オーナーへPush通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
@@ -2822,12 +2826,12 @@ function openCastMemoSheet(custId,custName){
 async function saveCastMemo(){
   const memo=document.getElementById('cm-memo').value.trim()
   if(!memo){toast('メモを入力してください');return}
-  const{error}=await sb.from('customer_visits').insert({
+  const{error}=await sb.from('customer_visits').upsert({
     customer_id:castMemoCustomerId,
     cast_name:me.name,
     cast_memo:memo,
     visit_date:today()
-  })
+  },{onConflict:'customer_id,cast_name,visit_date'})
   if(error){toast('エラー: '+error.message);return}
   // オーナーへPush通知
   try {
@@ -4978,7 +4982,11 @@ async function saveWork(){
     else{const r=await sb.from('works').insert(p2);err=r.error}
   }
   btn.disabled=false;btn.textContent='保存する'
-  if(err){toast('保存エラー: '+(err.message||JSON.stringify(err)));console.error('saveWork error:',err);return}
+  if(err){
+    if(err.code==='23505') toast('この日はすでにシフトが申請されています')
+    else toast('保存エラー: '+(err.message||JSON.stringify(err)))
+    return
+  }
   // キャストへPush通知
   try {
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
