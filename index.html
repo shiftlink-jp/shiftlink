@@ -1030,14 +1030,14 @@ function closeSheet(id){
 // ── ログイン ──
 async function autoOwnerPasskeyLogin(){
   if(!window.PublicKeyCredential) return
-  const{data:pk}=await sb.from('passkeys').select('*').eq('cast_id',0).maybeSingle()
-  if(!pk) return // 未登録ならPIN入力に任せる
+  const{data:pks}=await sb.from('passkeys').select('*').eq('cast_id',0)
+  if(!pks||!pks.length) return // 未登録ならPIN入力に任せる
   try {
     const challenge = crypto.getRandomValues(new Uint8Array(32))
     await navigator.credentials.get({
       publicKey:{
         challenge,
-        allowCredentials:[{ type:'public-key', id: b64ToBuf(pk.credential_id) }],
+        allowCredentials: pks.map(pk=>({ type:'public-key', id: b64ToBuf(pk.credential_id) })),
         userVerification:'required',
         timeout:60000
       }
@@ -1054,13 +1054,13 @@ async function ownerPasskeyLogin(){
   const btn = document.getElementById('btn-owner-passkey')
   btn.disabled=true; btn.textContent='認証中...'
   try {
-    const{data:pk}=await sb.from('passkeys').select('*').eq('cast_id',0).single()
-    if(!pk){ throw new Error('登録済みの認証情報がありません') }
+    const{data:pks}=await sb.from('passkeys').select('*').eq('cast_id',0)
+    if(!pks||!pks.length){ throw new Error('登録済みの認証情報がありません') }
     const challenge = crypto.getRandomValues(new Uint8Array(32))
     await navigator.credentials.get({
       publicKey:{
         challenge,
-        allowCredentials:[{ type:'public-key', id: b64ToBuf(pk.credential_id) }],
+        allowCredentials: pks.map(pk=>({ type:'public-key', id: b64ToBuf(pk.credential_id) })),
         userVerification:'required',
         timeout:60000
       }
@@ -1078,8 +1078,8 @@ async function ownerPasskeyLogin(){
 async function checkOwnerPasskeyBtn(){
   const btn = document.getElementById('btn-owner-passkey')
   if(!btn||!window.PublicKeyCredential) return
-  const{data}=await sb.from('passkeys').select('id').eq('cast_id',0).maybeSingle()
-  btn.style.display = data ? '' : 'none'
+  const{data:pks2}=await sb.from('passkeys').select('id').eq('cast_id',0)
+  btn.style.display = (pks2&&pks2.length) ? '' : 'none'
 }
 
 function showLogin(type){
@@ -1238,10 +1238,17 @@ async function offerPasskeyRegistration(castId, castName){
     // 公開鍵はclientDataJSONで代用（簡易実装）
     const pubKey = bufToB64(credential.response.clientDataJSON)
 
-    // 既存レコードを削除してから新規insert
-    await sb.from('passkeys').delete().eq('cast_id', castId)
-    const{error}=await sb.from('passkeys').insert({ cast_id:castId, credential_id:credId, public_key:pubKey })
-    if(error) { alert('DB保存エラー: ' + error.message + ' / ' + JSON.stringify(error)); throw new Error(error.message) }
+    // 同じcredential_idが既にあれば更新、なければ追加（複数台対応）
+    const{data:existing2}=await sb.from('passkeys').select('id').eq('credential_id',credId).maybeSingle()
+    let saveError
+    if(existing2){
+      const{error}=await sb.from('passkeys').update({ cast_id:castId, public_key:pubKey }).eq('credential_id',credId)
+      saveError=error
+    } else {
+      const{error}=await sb.from('passkeys').insert({ cast_id:castId, credential_id:credId, public_key:pubKey })
+      saveError=error
+    }
+    if(saveError) { alert('DB保存エラー: ' + saveError.message); throw new Error(saveError.message) }
     toast('🔐 生体認証を登録しました！次回からすぐログインできます')
   } catch(e){
     if(e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
