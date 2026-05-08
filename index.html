@@ -60,7 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .tbar{display:flex;background:var(--surface);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:50;padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);overflow-x:hidden}
 .tbar::-webkit-scrollbar{display:none}
 .tbar-btn{flex:1;min-width:0;padding:.85rem .1rem .7rem;font-size:.62rem;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s;white-space:nowrap;overflow:hidden}
-.tbar-icon{font-size:1.9rem;line-height:1}
+.tbar-icon{font-size:1.5rem;line-height:1}
 .tbar-btn.on{color:var(--accent)}
 
 .app-body{flex:1;overflow-y:auto;padding:.3rem .4rem 0;padding-bottom:calc(62px + env(safe-area-inset-bottom))}
@@ -369,7 +369,7 @@ if("serviceWorker" in navigator){
 
     <!-- キャスト：接客メモ -->
     <div class="panel" id="p-cast-memo">
-      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem">接客メモ</div>
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.75rem">メモ</div>
       <!-- 当日予約一覧（常時表示） -->
       <div id="cast-memo-today-area" style="margin-bottom:1rem"></div>
       <!-- 検索バー + 顧客を選んでメモ ボタン（横並び） -->
@@ -519,13 +519,13 @@ if("serviceWorker" in navigator){
   <div class="tbar" id="tbar">
     <!-- キャスト用 -->
     <button class="tbar-btn on cast-tab" onclick="tab('cast-today')"><span class="tbar-icon">🏠</span>本日</button>
-    <button class="tbar-btn cast-tab" onclick="tab('shift')"><span class="tbar-icon">📅</span>シフト申請</button>
-    <button class="tbar-btn cast-tab" onclick="tab('salary')"><span class="tbar-icon">💴</span>委託金確認</button>
-    <button class="tbar-btn cast-tab" onclick="tab('cast-memo')"><span class="tbar-icon">📝</span>接客メモ</button>
+    <button class="tbar-btn cast-tab" onclick="tab('shift')"><span class="tbar-icon">📅</span>シフト</button>
+    <button class="tbar-btn cast-tab" onclick="tab('salary')"><span class="tbar-icon">💴</span>委託金</button>
+    <button class="tbar-btn cast-tab" onclick="tab('cast-memo')"><span class="tbar-icon">📝</span>メモ</button>
     <!-- 店舗用 -->
-    <button class="tbar-btn owner-tab" onclick="tab('owner-shift')"><span class="tbar-icon">📋</span>シフト管理</button>
+    <button class="tbar-btn owner-tab" onclick="tab('owner-shift')"><span class="tbar-icon">📋</span>シフト</button>
     <button class="tbar-btn owner-tab" onclick="tab('today')"><span class="tbar-icon">🏠</span>本日</button>
-    <button class="tbar-btn owner-tab" onclick="tab('owner-salary')"><span class="tbar-icon">💰</span>委託金精算</button>
+    <button class="tbar-btn owner-tab" onclick="tab('owner-salary')"><span class="tbar-icon">💰</span>委託金</button>
     <button class="tbar-btn owner-tab" onclick="tab('owner-cast')"><span class="tbar-icon">👥</span>キャスト</button>
     <button class="tbar-btn owner-tab" onclick="tab('owner-customer')"><span class="tbar-icon">👤</span>顧客</button>
     <button class="tbar-btn owner-tab" onclick="tab('owner-monthly')"><span class="tbar-icon">📊</span>売上</button>
@@ -565,7 +565,7 @@ if("serviceWorker" in navigator){
     </div>
     <div class="sheet-overlay" id="cast-memo-overlay">
       <div class="sheet">
-        <div class="sheet-hdr"><span id="cast-memo-title">接客メモ</span><button class="sheet-close" onclick="closeSheet('cast-memo')">✕</button></div>
+        <div class="sheet-hdr"><span id="cast-memo-title">メモ</span><button class="sheet-close" onclick="closeSheet('cast-memo')">✕</button></div>
         <div style="display:flex;flex-direction:column;gap:.75rem;padding-bottom:1rem">
           <input type="hidden" id="cm-customer-id">
           <div><div class="fi-lbl">施術日</div><input class="fi" id="cm-date" type="date"></div>
@@ -5020,7 +5020,7 @@ async function loadCastMgmt(){
       <div class="cast-btns">
         <button class="btn btn-blue btn-xs" onclick="openFeeSheet(${c.id},'${c.name}')">委託金設定</button>
         <button class="btn btn-gray btn-xs" onclick="changePIN(${c.id},'${c.name}')">PIN変更</button>
-        <button class="btn btn-purple btn-xs" onclick="openCastMemoLog(${c.id},'${c.name}')">接客メモ</button>
+        <button class="btn btn-purple btn-xs" onclick="openCastMemoLog(${c.id},'${c.name}')">メモ</button>
         <button class="btn btn-red btn-xs" onclick="toggleActive(${c.id},true)">退店</button>
       </div>
     </div>`
