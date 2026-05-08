@@ -1087,7 +1087,7 @@ async function checkOwnerPasskeyBtn(){
 function showLogin(type){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   if(type==='top') document.getElementById('s-top').classList.add('on')
-  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn() }
+  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); setTimeout(doOwnerLoginSmart, 500) }
   else if(type==='cast') document.getElementById('s-cast-login').classList.add('on')
 }
 
@@ -1355,6 +1355,7 @@ function selectCastCard(castId, castName){
   document.getElementById('cast-pin')?.focus()
   document.getElementById('cast-err').textContent=''
   checkPasskeyBtn(castId)
+  setTimeout(()=>doCastLoginSmart(), 300)
 }
 
 function clearCastSelection(){
