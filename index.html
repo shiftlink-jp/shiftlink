@@ -6627,8 +6627,10 @@ function renderMonthlyDaily(area,dailyRows,tot){
   const thS=(c,i)=>`padding:.3rem ${i===0?'.35rem':'.2rem'};text-align:${i===0?'left':'center'};font-size:.6rem;font-weight:700;white-space:nowrap;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:${c.sticky?3:2};${c.sticky?'left:0;':''}${c.color?'color:'+c.color:''}`
   const thead=`<thead><tr>${cols.map((c,i)=>`<th style="${thS(c,i)};min-width:${c.w}">${c.l}</th>`).join('')}</tr></thead>`
 
-  // 数値セル：白背景・中央揃え
-  const C=(v,color='',bold=false)=>`<td style="padding:.12rem .08rem"><div style="background:#fff;border-radius:5px;padding:.2rem .15rem;text-align:center;font-size:.63rem;min-width:0;${color?'color:'+color:''}${bold?';font-weight:700':''}">${v}</div></td>`
+  // 数値セル：金額系(CA:52px)・カウント系(CB:28px)
+  const CA=(v,color='',bold=false)=>`<td style="padding:.1rem .06rem"><div style="background:#fff;border-radius:5px;padding:.2rem .1rem;text-align:center;font-size:.63rem;width:52px;box-sizing:border-box;${color?'color:'+color:''}${bold?';font-weight:700':''}">${v}</div></td>`
+  const CB=(v,color='',bold=false)=>`<td style="padding:.1rem .04rem"><div style="background:#fff;border-radius:5px;padding:.2rem .05rem;text-align:center;font-size:.63rem;width:28px;box-sizing:border-box;${color?'color:'+color:''}${bold?';font-weight:700':''}">${v}</div></td>`
+  const C=(v,color='',bold=false)=>CA(v,color,bold)
   // 日付列（sticky）
   const Dsticky=(txt,bg='#faf6f0',sub='')=>`<td style="position:sticky;left:0;z-index:1;background:${bg};padding:.15rem .3rem;font-size:.66rem;font-weight:700;white-space:nowrap;border-right:1px solid var(--border)">${txt}${sub?'<div style="font-size:.5rem;color:var(--text3);font-weight:400">'+sub+'</div>':''}</td>`
   // キャスト内訳の日付列（インデント）
