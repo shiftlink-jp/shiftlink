@@ -1262,9 +1262,10 @@ async function offerPasskeyRegistration(castId, castName){
 
 // ログインボタン押下時：生体認証が使えれば使う、なければPIN認証
 async function doOwnerLoginSmart(){
+  const pin = document.getElementById('owner-pin')?.value
   const localKey = 'passkey_registered_0'
-  if(window.PublicKeyCredential && localStorage.getItem(localKey)==='1'){
-    // 生体認証を試みる
+  // PINが空 かつ 生体認証登録済みなら生体認証
+  if(!pin && window.PublicKeyCredential && localStorage.getItem(localKey)==='1'){
     const{data:pks}=await sb.from('passkeys').select('*').eq('cast_id',0)
     if(pks&&pks.length>0){
       try {
@@ -1282,19 +1283,21 @@ async function doOwnerLoginSmart(){
         startApp()
         return
       } catch(e){
-        if(e.name==='NotAllowedError') return // キャンセル
-        // 失敗したらPIN認証にフォールバック
+        if(e.name==='NotAllowedError') return
       }
     }
   }
+  // PINが入力されている or 生体認証未登録 → PIN認証
   doOwnerLogin()
 }
 
 async function doCastLoginSmart(){
   const cid = document.getElementById('cast-sel').value
   if(!cid){ document.getElementById('cast-err').textContent='名前を選んでください'; return }
+  const pin = document.getElementById('cast-pin')?.value
   const localKey = 'passkey_registered_' + cid
-  if(window.PublicKeyCredential && localStorage.getItem(localKey)==='1'){
+  // PINが空 かつ 生体認証登録済みなら生体認証
+  if(!pin && window.PublicKeyCredential && localStorage.getItem(localKey)==='1'){
     const{data:pks}=await sb.from('passkeys').select('*').eq('cast_id', parseInt(cid))
     if(pks&&pks.length>0){
       try {
