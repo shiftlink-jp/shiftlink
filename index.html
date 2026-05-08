@@ -6747,14 +6747,14 @@ function renderMonthlyCast(area,castStats,fmt2){
   const totTotal=rows.reduce((s,r)=>s+r.total,0),totFree=rows.reduce((s,r)=>s+r.free,0)
   const totNetS=rows.reduce((s,r)=>s+r.net_shimei,0),totHon=rows.reduce((s,r)=>s+r.hon_shimei,0)
   let html=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--border);max-height:70vh">
-    <table style="width:100%;border-collapse:collapse;font-size:.68rem">
+    <table style="width:100%;border-collapse:collapse;font-size:.68rem;table-layout:auto">
       <thead><tr style="background:var(--surface2)">
-        <th style="padding:.3rem .35rem;text-align:left;font-size:.6rem;position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px">キャスト</th>
+        <th style="padding:.3rem .35rem;text-align:left;font-size:.6rem;position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px;width:60px">キャスト</th>
         ${th('本数')}${th('フリー')}${th('ネット')}${th('本指')}${th('総売上')}${hasDisc?th('割引','#c62828'):''}${th('純売上')}${th('委託金','#c62828')}${th('保証')}
       </tr></thead>
       <tbody>
         ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:.25rem .35rem;position:sticky;left:0;background:#faf6f0;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1">${r.name}</td>
+          <td style="padding:.25rem .35rem;position:sticky;left:0;background:#faf6f0;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${r.name}</td>
           ${CB2(r.total,true)}${CB2(r.free)}${CB2(r.net_shimei)}${CB2(r.hon_shimei)}
           ${cell('¥'+(r.sales+r.disc).toLocaleString(),true)}
           ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'#c62828'):''}
