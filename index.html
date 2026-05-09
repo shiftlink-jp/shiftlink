@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260509000004 -->
+<!DOCTYPE html><!-- build:20260509000005 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -2301,7 +2301,7 @@ async function loadMySalary(){
           const op=opts.find(x=>x.name===o);return s+(op?.price||0)
         },0)
         // 指名料
-        const shimeiPrice=r.shimei_type==='本指名'?(storeSettings.shop_shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shop_shimei_net||1000):0
+        const shimeiPrice=r.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
         const sessionSales=coursePrice+shimeiPrice+optTotal
         todaySalesTotal+=sessionSales
         if(pj2.course==='カード') todayCardTotal+=coursePrice; else todayCashTotal+=coursePrice
@@ -2337,7 +2337,7 @@ async function loadMySalary(){
           const optPay=pj.optPay||{}
           const courseObj3=courses.find(c=>c.name===r.course)
           const courseSale2=courseObj3?.price||0
-          const shimeiSale2=r.shimei_type==='本指名'?(storeSettings.shop_shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shop_shimei_net||1000):0
+          const shimeiSale2=r.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
           const rows=[]
           rows.push({cat:'コース',name:(r.course||'').replace(/コース$/,'').trim(),sale:courseSale2,back:est.cb,pay:payLabel(pj.course||'現金')})
           if(r.shimei_type) rows.push({cat:'指名料',name:r.shimei_type,sale:hasShimei?shimeiSale2:0,back:hasShimei?est.sb2:0,pay:payLabel(pj.shimei||'現金')})
@@ -2451,7 +2451,7 @@ async function loadMySalary(){
       const payLbl=p=>p==='カード'?'カード':'現金'
       const courseObj2=courses.find(c=>c.name===s.course_name)
       const courseSale=courseObj2?.price||0
-      const shimeiSale=s.shimei_type==='本指名'?(storeSettings.shop_shimei_hon||2000):s.shimei_type==='ネット指名'?(storeSettings.shop_shimei_net||1000):0
+      const shimeiSale=s.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):s.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
       const sRows=[]
       sRows.push({cat:'コース',name:(s.course_name||'').replace(/コース$/,'').trim(),sale:courseSale,back:courseBack,pay:payLbl(s.pay_course)})
       if(s.shimei_type) sRows.push({cat:'指名料',name:s.shimei_type,sale:hasShimei?shimeiSale:0,back:hasShimei?shimeiBack:0,pay:payLbl(s.pay_shimei)})
