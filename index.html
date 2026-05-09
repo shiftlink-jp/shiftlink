@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260509000008 -->
+<!DOCTYPE html><!-- build:20260510000001 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -4479,8 +4479,8 @@ async function openWorkSheet(shiftId,castName,date,castId){
   const autoMisc=sheetFee.misc_enabled!==false
   if(autoMisc) document.getElementById('w-misc').value=sheetFee.misc_0??0
   else document.getElementById('w-misc').value='0'
-  if(w&&w.sessions&&w.sessions.length){
-    // 保存済みデータがあればそれを使う
+  if(w&&w.sessions!==null&&w.sessions!==undefined){
+    // 保存済みデータがあればそれを使う（sessionsが空配列でもworksレコードがあれば予約自動生成しない）
     if(w.misc) document.getElementById('w-misc').value=w.misc
     if(w.hosho&&document.getElementById('w-hosho')) document.getElementById('w-hosho').value=w.hosho
     w.sessions.forEach(s=>{
