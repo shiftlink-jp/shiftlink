@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260510000001 -->
+<!DOCTYPE html><!-- build:20260510000002 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -5527,7 +5527,7 @@ async function loadOwnerSalary(){
       </div>
       ${detail?`<div style="padding:.4rem 0;margin-top:.25rem">${detail}</div>`:''}
       <div style="display:flex;gap:.35rem;margin-top:.5rem">
-        <button class="btn btn-blue btn-xs" onclick="openWorkSheet('${w.id}','${name}','${w.date}',${w.cast_id})">修正</button>
+        <button class="btn btn-blue btn-xs" onclick="openWorkSheet(null,'${name}','${w.date}',${w.cast_id})">修正</button>
         <button class="btn btn-red btn-xs" onclick="deleteWork(${w.id})">削除</button>
       </div>
     </div>`
