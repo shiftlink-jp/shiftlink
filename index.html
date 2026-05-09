@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260509000001 -->
+<!DOCTYPE html><!-- build:20260509000002 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1534,14 +1534,25 @@ async function registerOwnerPush(){
       applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
     });
     const subJson = sub.toJSON();
-    const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
-    const exists = (allSubs||[]).some(r=>{
+    const { data: allSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0);
+    // 同じendpointが既に登録済みか確認
+    const alreadyExists = (allSubs||[]).some(r=>{
       try {
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
         return s.endpoint === subJson.endpoint;
       } catch { return false; }
     });
-    if (exists) { alert('この端末は既に通知登録済みです！'); return; }
+    if (alreadyExists) { alert('この端末は既に通知登録済みです！'); return; }
+    // ★ 同一端末の古いsubscription（endpoint originが同じ）を削除して重複通知を防ぐ
+    const staleIds = (allSubs||[]).filter(r=>{
+      try {
+        const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+        return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+      } catch { return false; }
+    }).map(r=>r.id);
+    if (staleIds.length > 0) {
+      await sb.from('push_subscriptions').delete().in('id', staleIds);
+    }
     const { error } = await sb.from('push_subscriptions').insert({ cast_id: 0, subscription: subJson });
     if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
     alert('通知登録完了！予約・シフトの通知が届きます。');
