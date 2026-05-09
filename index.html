@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260505142823 -->
+<!DOCTYPE html><!-- build:20260509000001 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -978,7 +978,7 @@ if("serviceWorker" in navigator){
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 const SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
-const OWNER_PIN = localStorage.getItem('kyoukano_owner_pin') || '2580'
+let OWNER_PIN = '2580' // DBから上書きされる（後方互換でlocalStorageも参照）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -1114,6 +1114,9 @@ async function init(){
   const{data:op}=await sb.from('options').select('*').order('id')
   const{data:ss}=await sb.from('store_settings').select('*').single()
   courses=cs||[]; opts=op||[]; storeSettings=ss||{}
+  // DBにowner_pinがあればそれを使う、なければlocalStorageにフォールバック
+  if(ss&&ss.owner_pin) OWNER_PIN = String(ss.owner_pin)
+  else OWNER_PIN = localStorage.getItem('kyoukano_owner_pin') || '2580'
   // リロード時：sessionStorageにログイン情報があれば自動復元
   const savedMe=sessionStorage.getItem('kyoukano_me')
   if(savedMe){
@@ -5553,8 +5556,12 @@ async function openStoreSettings(){
     const shEl=document.getElementById('st-shimei-hon');if(shEl) shEl.value=ss.shimei_hon||2000
   }
   document.getElementById('store-overlay').classList.add('on')
+  // DBから最新のPINを取得して表示
+  const{data:pinSs}=await sb.from('store_settings').select('owner_pin').eq('id',1).single()
+  const latestPin = (pinSs&&pinSs.owner_pin) ? String(pinSs.owner_pin) : OWNER_PIN
+  OWNER_PIN = latestPin
   const pinDisp = document.getElementById('current-owner-pin-display')
-  if(pinDisp) pinDisp.textContent = OWNER_PIN
+  if(pinDisp) pinDisp.textContent = latestPin
 }
 
 async function renderStoreCourseList(){
@@ -5662,19 +5669,28 @@ async function saveShimeiSettings(){
 }
 
 // 料金設定シートからオーナーPINを変更
-function changeOwnerPinFromSheet(){
+async function changeOwnerPinFromSheet(){
   const input = document.getElementById('new-owner-pin')
   const pin = String(input.value).trim()
   if(!pin || pin.length < 1 || pin.length > 8 || !/^\d+$/.test(pin)){
     toast('PINは1〜8桁の数字で入力してください'); return
   }
-  // localStorageに保存（リロード後も有効にするためページにも反映）
-  localStorage.setItem('kyoukano_owner_pin', pin)
-  // ページ変数も更新（ただしconst宣言のため再代入できない→保存はlocalStorageのみ）
-  input.value = ''
-  const pinDisp = document.getElementById('current-owner-pin-display')
-  if(pinDisp) pinDisp.textContent = pin
-  toast('店舗PINを変更しました。次回ログインから有効です。')
+  // DBに保存（全端末で共有）
+  const{error} = await sb.from('store_settings').update({owner_pin: pin}).eq('id',1)
+  if(error){
+    // store_settingsにowner_pinカラムがない場合はlocalStorageのみに保存
+    console.warn('DB保存エラー（owner_pinカラム未作成の可能性）:', error.message)
+    localStorage.setItem('kyoukano_owner_pin', pin)
+    toast('⚠️ DB保存に失敗。この端末のみPINを変更しました。')
+  } else {
+    // DB保存成功→メモリとlocalStorageも更新
+    OWNER_PIN = pin
+    localStorage.setItem('kyoukano_owner_pin', pin)
+    input.value = ''
+    const pinDisp = document.getElementById('current-owner-pin-display')
+    if(pinDisp) pinDisp.textContent = pin
+    toast('✅ 店舗PINを変更しました（全端末に反映）')
+  }
 }
 
 async function saveStoreSettings(){
