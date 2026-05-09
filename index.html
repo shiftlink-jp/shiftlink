@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260509000002 -->
+<!DOCTYPE html><!-- build:20260509000003 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1923,6 +1923,7 @@ async function loadCastToday() {
       .select('*,room_in_at,room_out_at')
       .in('shift_id', sids)
       .order('checkin_time');
+    if(rvData) rvData = sortRvsByTime(rvData);
 
     if (rvErr || !rvs || rvs.length === 0) {
       area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません<br><small>shift_ids:' + JSON.stringify(sids) + (rvErr?' err:'+rvErr.message:'') + '</small></div>';
@@ -2030,7 +2031,16 @@ function renderCastTodayCards(rvs) {
 function timeStrToMin2(t) {
   if (!t) return null;
   const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
+  // 深夜2時区切り：0〜10時台は翌日扱いで+1440
+  return h < 11 ? h * 60 + m + 1440 : h * 60 + m;
+}
+// 予約配列を深夜2時区切りで時間順ソートする共通関数
+function sortRvsByTime(rvs) {
+  return [...(rvs||[])].sort((a, b) => {
+    const ta = timeStrToMin2(a.checkin_time?.slice(0,5)) ?? 9999;
+    const tb = timeStrToMin2(b.checkin_time?.slice(0,5)) ?? 9999;
+    return ta - tb;
+  });
 }
 
 async function castRoomIn(rvId, custName, time) {
@@ -2266,7 +2276,8 @@ async function loadMySalary(){
     let todayHtml=''
     if(todayShifts&&todayShifts.length){
       const sids=todayShifts.map(s=>s.id)
-      const{data:todayRvs}=await sb.from('reservations').select('*').in('shift_id',sids).order('checkin_time')
+      const{data:todayRvs_raw}=await sb.from('reservations').select('*').in('shift_id',sids).order('checkin_time')
+      const todayRvs=sortRvsByTime(todayRvs_raw)
       // customer_noからcustomer_nameを補完
       const custNos=[...new Set((todayRvs||[]).map(r=>r.customer_no).filter(Boolean))]
       let custMap={}
@@ -3260,7 +3271,7 @@ async function loadGantt(){
   if(castIdsG.length){const{data:cr}=await sb.from('casts').select('id,name').in('id',castIdsG);if(cr)cr.forEach(c=>{castMapG[c.id]=c.name})}
   const shifts=(rawShiftsG||[]).map(s=>({...s,casts:{name:castMapG[s.cast_id]||'?'}}))
   const{data:rvs}=shifts&&shifts.length
-    ? await sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time')
+    ? await sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time').then(r=>({...r,data:sortRvsByTime(r.data)}))
     : {data:[]}
   const rvByShift={}
   ;(rvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
@@ -3438,6 +3449,7 @@ async function renderGanttInto(area, date, filterShifts=null){
   }
   if(!shifts.length){area.innerHTML='<div class="empty">この日の承認済みシフトはありません</div>';return}
   const{data:rvs}=await sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time')
+    if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   const rvByShift={}
   ;(rvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
   // インターバル設定取得
@@ -4003,6 +4015,7 @@ async function loadToday(){
   let rvByShift2={}
   if(shiftIds.length){
     const{data:rvs2}=await sb.from('reservations').select('*').in('shift_id',shiftIds).order('checkin_time')
+    if(rvs2) rvs2.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
     if(rvs2) rvs2.forEach(r=>{if(!rvByShift2[r.shift_id])rvByShift2[r.shift_id]=[];rvByShift2[r.shift_id].push(r)})
   }
   // インターバル設定を取得（cast_feesのinterval_minカラム）
@@ -4192,9 +4205,10 @@ async function loadGanttModal(){
   const allShifts=(rawShifts||[]).map(s=>({...s,casts:{name:castNameMap[s.cast_id]||'?'}}))
   const targetShifts=allShifts.filter(s=>norm(s.room)===targetRoom)
 
-  const{data:allRvs}=targetShifts.length
+  const{data:allRvs_raw}=targetShifts.length
     ?await sb.from('reservations').select('*').in('shift_id',targetShifts.map(s=>s.id)).order('checkin_time')
     :{data:[]}
+  const allRvs=sortRvsByTime(allRvs_raw)
   const rvByShift={}
   ;(allRvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
 
@@ -4477,6 +4491,7 @@ async function openWorkSheet(shiftId,castName,date,castId){
   } else {
     // 予約データから自動生成
     const{data:rvs}=await sb.from('reservations').select('*').eq('shift_id',shiftId).order('checkin_time')
+    if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
     if(rvs&&rvs.length){
       // 入室時間順にソートして1本目から割り当て
       const sorted=[...rvs].sort((a,b)=>(a.checkin_time||'').localeCompare(b.checkin_time||''))
@@ -5781,6 +5796,7 @@ async function openShiftReservations(shiftId, castName){
   const body = document.getElementById('shift-reservations-body')
   body.innerHTML = '<div class="spin">読み込み中...</div>'
   const {data:rvs, error} = await sb.from('reservations').select('*').eq('shift_id', shiftId).order('checkin_time')
+    if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   if(error){body.innerHTML='<div class="empty">取得エラー: '+error.message+'</div>';return}
   if(!rvs||!rvs.length){body.innerHTML='<div class="empty">予約はまだありません</div>';return}
   // 課金テーブルを取得（受取金額計算用）
@@ -6184,10 +6200,11 @@ async function renderMyCastMemoLog(){
   }
 
   const sids = shifts.map(s=>s.id)
-  const {data:rvs} = await sb.from('reservations')
+  const {data:rvs_raw6} = await sb.from('reservations')
     .select('*')
     .in('shift_id', sids)
     .order('checkin_time')
+  const rvs = sortRvsByTime(rvs_raw6)
 
   // シフト日付ごとにグループ化
   const shiftMap = {}
@@ -6257,6 +6274,7 @@ async function loadCastMemoPage(){
   if(!shifts||!shifts.length){area.innerHTML='<div style="font-size:.8rem;color:var(--text3);margin-bottom:.5rem">本日のシフトがありません</div>';return}
   const sids = shifts.map(s=>s.id)
   const {data:rvs} = await sb.from('reservations').select('*').in('shift_id', sids).order('checkin_time')
+    if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   if(!rvs||!rvs.length){area.innerHTML='<div style="font-size:.8rem;color:var(--text3);margin-bottom:.5rem">本日の予約はありません</div>';return}
   area.innerHTML = `<div class="sec" style="margin-top:0">本日の予約（${rvs.length}件）</div>`
   + rvs.map(r=>`<div class="item" style="flex-direction:column;align-items:stretch;gap:.2rem;margin-bottom:.4rem">
