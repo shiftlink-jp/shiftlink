@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- build:20260509000003 -->
+<!DOCTYPE html><!-- build:20260509000004 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1923,7 +1923,7 @@ async function loadCastToday() {
       .select('*,room_in_at,room_out_at')
       .in('shift_id', sids)
       .order('checkin_time');
-    if(rvData) rvData = sortRvsByTime(rvData);
+    const rvsSorted = sortRvsByTime(rvs);
 
     if (rvErr || !rvs || rvs.length === 0) {
       area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません<br><small>shift_ids:' + JSON.stringify(sids) + (rvErr?' err:'+rvErr.message:'') + '</small></div>';
@@ -1933,7 +1933,7 @@ async function loadCastToday() {
       return;
     }
 
-    renderCastTodayCards(rvs);
+    renderCastTodayCards(rvsSorted);
 
     // 1分ごとに再描画（時刻チェック）
     clearTimeout(castTodayTimer);
@@ -1965,7 +1965,9 @@ function renderCastTodayCards(rvs) {
   const area = document.getElementById('cast-today-area');
   if (!area) return;
   const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  // 深夜2時区切り：0〜10時台は+1440して前日の深夜として扱う
+  const rawH = now.getHours(), rawM = now.getMinutes();
+  const nowMin = rawH < 11 ? rawH * 60 + rawM + 1440 : rawH * 60 + rawM;
 
   let html = '';
   rvs.forEach(r => {
