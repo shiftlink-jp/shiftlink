@@ -6989,7 +6989,7 @@ function renderMonthlyCast(area,castStats,fmt2){
           ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'var(--rtx)'):''}
           ${cell('¥'+r.sales.toLocaleString())}
           ${cell('¥'+r.net.toLocaleString(),false,'var(--rtx)')}
-          ${cell(r.hosho>0?'¥'+r.hosho.toLocaleString():'-',false,'var(--blue)')}
+          ${cell(r.hosho>0?'¥'+r.hosho.toLocaleString():'-',false,'var(--rtx)')}
         </tr>`).join('')}
       </tbody>
       <tfoot><tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--accent);font-size:.68rem">
