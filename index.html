@@ -6787,7 +6787,7 @@ function renderMonthlyFromCache(){
 
 function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
   const pct=(a,b)=>b>0?Math.round(a/b*100)+'%':'-'
-  const pctColor=(a,b)=>a>=b?'color:var(--gtx)':'color:var(--text)'
+  const pctColor=(a,b)=>!b?'color:var(--text)':a>=b?'color:var(--btx)':'color:var(--rtx)'
   // KPIカード（白背景、2列×3行 + 2列×3行）
   const kpiCard=(l,v,col='')=>`<div style="background:#fff;border-radius:10px;padding:.6rem .5rem;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.07)"><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">${l}</div><div style="font-size:.82rem;font-weight:700${col?';color:'+col:''}">${v}</div></div>`
   let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem;margin-bottom:.5rem">
