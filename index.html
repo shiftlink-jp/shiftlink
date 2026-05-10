@@ -273,8 +273,8 @@ if("serviceWorker" in navigator){
 
     <div style="margin-top:1.5rem">
     <div style="display:grid;gap:.75rem">
-      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('owner')">🏠 店舗ログイン</button>
-      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('cast')">👤 セラピストログイン</button>
+      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('owner')">店舗ログイン</button>
+      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('cast')">セラピストログイン</button>
     </div>
     </div>
   </div>
@@ -288,7 +288,7 @@ if("serviceWorker" in navigator){
     <div class="login-sub">店舗ログイン</div>
     <label class="lbl">オーナーPIN（最大8桁）</label>
     <input class="linput" type="password" id="owner-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doOwnerLogin()">
-    <button class="btn-login" style="background:var(--accent)" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
+    <button class="btn-login" style="background:#ff8c00" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
     <div class="lerr" id="owner-err"></div>
   </div>
 </div>
@@ -312,7 +312,7 @@ if("serviceWorker" in navigator){
       </div>
       <label class="lbl">PIN（最大8桁）</label>
       <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key='Enter')doCastLogin()">
-      <button class="btn-login" style="background:linear-gradient(135deg,#b8893a,#d4a855)" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
+      <button class="btn-login" style="background:#ff8c00" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
     </div>
     <div class="lerr" id="cast-err"></div>
   </div>
