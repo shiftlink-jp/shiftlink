@@ -7029,92 +7029,75 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
 }
 
 
-function drawDailyBarChart(canvasId,labels,sales,nets,profits){
-  const canvas=document.getElementById(canvasId); if(!canvas)return
-  const area=document.getElementById('monthly-area')
-  const W=Math.max(canvas.parentElement?.offsetWidth||0,area?.offsetWidth||0,300)-16
-  const barCount=labels.length, groupW=Math.max(Math.floor((W-40)/Math.max(barCount,1)),4)
-  const bW=Math.max(Math.floor(groupW/4),2), gap=1
-  const H=220; canvas.width=W; canvas.height=H
-  const ctx=canvas.getContext('2d')
-  const allVals=[...sales,...nets,...profits].filter(v=>v>0)
-  const maxV=allVals.length?Math.max(...allVals):1
-  const pY=30, bH=H-pY-20
-  // Y軸グリッド
-  [0,.25,.5,.75,1].forEach(f=>{
-    const y=pY+bH*(1-f)
-    ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1
-    ctx.beginPath(); ctx.moveTo(38,y); ctx.lineTo(W,y); ctx.stroke()
-    const v=Math.round(maxV*f)
-    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='right'
-    ctx.fillText(v>=10000?'¥'+(v/10000).toFixed(0)+'万':'¥'+v,36,y+3)
+function makeDailyBarSVG(labels,sales,nets,profits){
+  const n=labels.length; if(!n) return '<div style="color:#999;font-size:.8rem">データなし</div>'
+  const W=340,H=200,pL=44,pR=8,pT=24,pB=28
+  const cW=W-pL-pR, cH=H-pT-pB
+  const allV=[...sales,...nets,...profits].filter(v=>v>0)
+  const maxV=allV.length?Math.max(...allV):1
+  const gW=cW/n, bW=Math.max(Math.floor(gW/4)-1,2)
+  const fmt=v=>v>=10000?'¥'+(v/10000).toFixed(0)+'万':'¥'+v.toLocaleString()
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`
+  // グリッド・Y軸
+  ;[0,.25,.5,.75,1].forEach(f=>{
+    const y=pT+cH*(1-f)
+    s+=`<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="#eee" stroke-width="1"/>`
+    s+=`<text x="${pL-3}" y="${y+3}" text-anchor="end" font-size="7" fill="#aaa">${fmt(Math.round(maxV*f))}</text>`
   })
+  // バー
   labels.forEach((lbl,i)=>{
-    const x=40+i*groupW
-    const draw=(val,offset,color)=>{
+    const xBase=pL+i*gW+2
+    const bar=(val,offset,fill)=>{
       if(!val)return
-      const h=Math.round(bH*val/maxV)
-      ctx.fillStyle=color; ctx.fillRect(x+offset,pY+bH-h,bW,h)
+      const h=Math.round(cH*val/maxV)
+      s+=`<rect x="${xBase+offset}" y="${pT+cH-h}" width="${bW}" height="${h}" fill="${fill}" rx="1"/>`
     }
-    draw(sales[i],0,'rgba(255,140,0,.6)')
-    draw(nets[i],bW+gap,'rgba(220,53,69,.55)')
-    draw(profits[i],(bW+gap)*2,'rgba(30,120,200,.55)')
-    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='center'
-    ctx.fillText(lbl,x+groupW/2-bW/2,H-4)
+    bar(sales[i],0,'rgba(255,140,0,.7)')
+    bar(nets[i],bW+1,'rgba(220,53,69,.6)')
+    bar(profits[i],(bW+1)*2,'rgba(30,120,200,.6)')
+    // X軸ラベル（間引き）
+    if(i%Math.max(1,Math.floor(n/10))===0||i===n-1)
+      s+=`<text x="${xBase+gW/2-2}" y="${H-8}" text-anchor="middle" font-size="7" fill="#aaa">${lbl}</text>`
   })
   // 凡例
-  const leg=[['売上','rgba(255,140,0,.7)'],['委託金','rgba(220,53,69,.7)'],['粗利益','rgba(30,120,200,.7)']]
+  const leg=[['売上','rgba(255,140,0,.8)'],['委託金','rgba(220,53,69,.7)'],['粗利益','rgba(30,120,200,.7)']]
   leg.forEach(([l,c],i)=>{
-    ctx.fillStyle=c; ctx.fillRect(42+i*60,6,10,8)
-    ctx.fillStyle='#555'; ctx.font='9px sans-serif'; ctx.textAlign='left'
-    ctx.fillText(l,54+i*60,14)
+    s+=`<rect x="${pL+i*72}" y="6" width="8" height="8" fill="${c}" rx="1"/>`
+    s+=`<text x="${pL+i*72+11}" y="14" font-size="8" fill="#555">${l}</text>`
   })
+  s+='</svg>'
+  return s
 }
 
-function drawDailyLineChart(canvasId,labels,counts){
-  const canvas=document.getElementById(canvasId); if(!canvas)return
-  const area=document.getElementById('monthly-area')
-  const W=Math.max(canvas.parentElement?.offsetWidth||0,area?.offsetWidth||0,300)-16
-  const H=160; canvas.width=W; canvas.height=H
-  const ctx=canvas.getContext('2d')
-  const maxV=Math.max(...counts,1)
-  const pL=36,pR=10,pT=20,pB=22
+function makeDailyLineSVG(labels,counts){
+  const n=labels.length; if(!n) return '<div style="color:#999;font-size:.8rem">データなし</div>'
+  const W=340,H=140,pL=28,pR=8,pT=16,pB=22
   const cW=W-pL-pR, cH=H-pT-pB
-  const n=labels.length; if(!n)return
-  // グリッド
-  [0,.5,1].forEach(f=>{
+  const maxV=Math.max(...counts,1)
+  const pts=counts.map((v,i)=>({
+    x:pL+i*(cW/(n-1||1)),
+    y:pT+cH*(1-v/maxV)
+  }))
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`
+  ;[0,.5,1].forEach(f=>{
     const y=pT+cH*(1-f)
-    ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1
-    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke()
-    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='right'
-    ctx.fillText(Math.round(maxV*f),pL-2,y+3)
+    s+=`<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="#eee" stroke-width="1"/>`
+    s+=`<text x="${pL-2}" y="${y+3}" text-anchor="end" font-size="7" fill="#aaa">${Math.round(maxV*f)}</text>`
   })
-  // 折れ線
-  const pts=counts.map((v,i)=>({x:pL+i*(cW/(n-1||1)),y:pT+cH*(1-v/maxV)}))
   // 塗りつぶし
-  ctx.beginPath(); ctx.moveTo(pts[0].x,pT+cH)
-  pts.forEach(p=>ctx.lineTo(p.x,p.y))
-  ctx.lineTo(pts[pts.length-1].x,pT+cH); ctx.closePath()
-  ctx.fillStyle='rgba(255,140,0,.12)'; ctx.fill()
-  // 線
-  ctx.beginPath(); ctx.strokeStyle='rgba(255,140,0,.85)'; ctx.lineWidth=2
-  pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.stroke()
-  // 点
+  const area=`${pts.map(p=>`${p.x},${p.y}`).join(' ')} ${pts[n-1].x},${pT+cH} ${pts[0].x},${pT+cH}`
+  s+=`<polygon points="${area}" fill="rgba(255,140,0,.1)"/>`
+  // 折れ線
+  s+=`<polyline points="${pts.map(p=>`${p.x},${p.y}`).join(' ')}" fill="none" stroke="rgba(255,140,0,.85)" stroke-width="2" stroke-linejoin="round"/>`
+  // 点・ラベル
   pts.forEach((p,i)=>{
-    ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2)
-    ctx.fillStyle='rgba(255,140,0,.9)'; ctx.fill()
-    if(counts[i]>0){
-      ctx.fillStyle='#555'; ctx.font='8px sans-serif'; ctx.textAlign='center'
-      ctx.fillText(counts[i],p.x,p.y-6)
-    }
+    s+=`<circle cx="${p.x}" cy="${p.y}" r="3" fill="rgba(255,140,0,.9)"/>`
+    if(counts[i]>0)s+=`<text x="${p.x}" y="${p.y-6}" text-anchor="middle" font-size="8" fill="#555">${counts[i]}</text>`
+    if(i%Math.max(1,Math.floor(n/10))===0||i===n-1)
+      s+=`<text x="${p.x}" y="${H-5}" text-anchor="middle" font-size="7" fill="#aaa">${labels[i]}</text>`
   })
-  // X軸ラベル（間引き）
-  const step=Math.max(1,Math.floor(n/10))
-  labels.forEach((l,i)=>{
-    if(i%step!==0&&i!==n-1)return
-    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='center'
-    ctx.fillText(l,pts[i].x,H-6)
-  })
+  s+='</svg>'
+  return s
 }
 
 function drawPieChart(canvasId,data,colors){
@@ -7158,20 +7141,16 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const dailyChartHtml=vr.length?`
     <div class="card" style="margin-bottom:.55rem">
       <div style="font-weight:700;font-size:.85rem;margin-bottom:.6rem">📊 日別売上</div>
-      <canvas id="chart-daily-bar"></canvas>
+      <div id="chart-daily-bar">${makeDailyBarSVG(labels,salesData,netData,profitData)}</div>
     </div>
     <div class="card" style="margin-bottom:.55rem">
       <div style="font-weight:700;font-size:.85rem;margin-bottom:.6rem">📈 日別本数</div>
-      <canvas id="chart-daily-line"></canvas>
+      <div id="chart-daily-line">${makeDailyLineSVG(labels,countData)}</div>
     </div>`:'';
 
   area.innerHTML=dailyChartHtml+pie('chart-route',routeData,routeColors,'📣 集客経路')+pie('chart-shimei',shimeiData,shimeiColors,'👆 指名内訳')+pie('chart-visit',visitData,visitColors,'👥 来店分類')
   
   setTimeout(()=>{
-    if(vr.length){
-      drawDailyBarChart('chart-daily-bar',labels,salesData,netData,profitData)
-      drawDailyLineChart('chart-daily-line',labels,countData)
-    }
     if(routeData.length) drawPieChart('chart-route',routeData,routeColors)
     if(shimeiData.length) drawPieChart('chart-shimei',shimeiData,shimeiColors)
     if(visitData.length) drawPieChart('chart-visit',visitData,visitColors)
