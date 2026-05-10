@@ -17,14 +17,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#ffffff;--marble:none;--surface:rgba(255,255,255,0.92);--surface2:#f2f2f7;
-  --accent:#b8893a;--accent-l:#d4aa60;--accent-f:#fdf6ec;
-  --text:#1c1c1e;--text2:#3a3a3c;--text3:#8e8e93;--border:#e5e5ea;
+  --bg:#ffffff;--marble:none;--surface:#ffffff;--surface2:#fafafa;
+  --accent:#e87c2e;--accent-l:#f0a060;--accent-f:#fff4ed;
+  --text:#1c1c1e;--text2:#3a3a3c;--text3:#8e8e93;--border:#e8e8e8;
   --green:#34c759;--gbg:#f0fdf4;--gbd:#bbf7d0;--gtx:#15803d;
   --red:#ff3b30;--rbg:#fff1f0;--rbd:#fecaca;--rtx:#dc2626;
   --blue:#007aff;--bbg:#eff6ff;--bbd:#bfdbfe;--btx:#1d4ed8;
   --purple:#8b5cf6;--pbg:#f5f3ff;--pbd:#ddd6fe;--ptx:#6d28d9;
-  --r:12px;--rs:8px;--sh:0 1px 4px rgba(0,0,0,.06);--shl:0 4px 20px rgba(0,0,0,.12);
+  --r:12px;--rs:8px;--sh:0 1px 3px rgba(0,0,0,.05);--shl:0 4px 16px rgba(0,0,0,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#ffffff;overflow-x:hidden}
@@ -38,7 +38,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .login-wrap{align-items:center;justify-content:center;min-height:100svh;padding:0;background:#ffffff}
 .login-box{width:100%;max-width:420px;padding:2.5rem 1.5rem}
 .login-logo{font-size:1.5rem;font-family:Georgia,serif;letter-spacing:.18em;color:#B8893A;font-weight:700;margin-bottom:.4rem;text-align:center;text-shadow:0 1px 4px rgba(184,137,58,.2)}
-.login-sub{font-size:.72rem;letter-spacing:.15em;color:rgba(100,60,40,.7);margin-bottom:1rem;text-align:center;font-weight:600}
+.login-sub{font-size:.72rem;letter-spacing:.15em;color:var(--text3);margin-bottom:1rem;text-align:center;font-weight:600}
 .lbl{font-size:.82rem;color:var(--text2);font-weight:600;display:block;margin-bottom:.4rem}
 .linput{width:100%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:var(--r);padding:.9rem 1rem;font-size:1rem;font-family:inherit;outline:none;margin-bottom:1rem;-webkit-appearance:none;transition:border-color .2s}
 .linput:focus{border-color:var(--accent)}
@@ -50,18 +50,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .back-btn{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text3);padding:.2rem .5rem;margin-bottom:1.5rem;display:block}
 
 /* APP SHELL */
-.app-hdr{background:#ffffff;border-bottom:1px solid #e8dcc8;padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.app-hdr{background:#ffffff;border-bottom:1px solid var(--border);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .app-logo{font-family:Georgia,serif;font-size:.68rem;letter-spacing:.1em;color:var(--accent);line-height:1.3;max-width:120px}
 .hdr-r{display:flex;align-items:center;gap:.3rem;flex-shrink:0}
-.badge{font-size:.65rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.85);color:var(--accent);font-weight:600;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:.65rem;padding:2px 8px;border-radius:99px;background:var(--accent-f);color:var(--accent);border:1px solid rgba(232,124,46,.2);font-weight:600;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
 .btn-sm{font-size:.65rem;color:var(--text);background:rgba(255,255,255,0.85);border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap}
 
 /* TAB BAR */
-.tbar{display:flex;background:var(--surface);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:50;padding-bottom:env(safe-area-inset-bottom);padding-left:max(env(safe-area-inset-left),12px);padding-right:max(env(safe-area-inset-right),12px);overflow-x:hidden}
+.tbar{display:flex;background:#ffffff;border-top:1.5px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:50;padding-bottom:env(safe-area-inset-bottom);padding-left:max(env(safe-area-inset-left),12px);padding-right:max(env(safe-area-inset-right),12px);overflow-x:hidden}
 .tbar::-webkit-scrollbar{display:none}
 .tbar-btn{flex:1;min-width:0;padding:.85rem .1rem .7rem;font-size:.62rem;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s;white-space:nowrap;overflow:hidden}
 .tbar-icon{font-size:1.5rem;line-height:1}
-.tbar-btn.on{color:var(--accent)}
+.tbar-btn.on{color:var(--accent);position:relative}.tbar-btn.on::before{content:"";position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
 
 .app-body{flex:1;overflow-y:auto;padding:.3rem .4rem 0;padding-bottom:calc(62px + env(safe-area-inset-bottom))}
 .panel{display:none}
@@ -86,7 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .leg-dot{width:6px;height:6px;border-radius:50%}
 
 /* CARDS */
-.card{background:var(--surface);border-radius:var(--r);padding:1rem;margin-bottom:.75rem;box-shadow:var(--sh)}
+.card{background:#ffffff;border-radius:var(--r);padding:1rem;margin-bottom:.75rem;box-shadow:var(--sh);border:1px solid var(--border)}
 .card-title{font-size:.7rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.75rem}
 .fg{margin-bottom:.75rem}
 .fg:last-child{margin-bottom:0}
@@ -97,7 +97,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 /* シートフォーム用 */
 .fi{width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);border-radius:var(--rs);padding:.72rem .9rem;font-size:.95rem;font-family:inherit;outline:none;-webkit-appearance:none;appearance:none;transition:all .2s;display:block}
 .pay-sel{-webkit-appearance:none;appearance:none;background-image:none !important;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);border-radius:var(--rs);font-family:inherit;outline:none;cursor:pointer;text-align:center;font-weight:600}
-.fi:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(184,137,58,.12)}
+.fi:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(232,124,46,.12)}
 .fi option{background:var(--surface)}
 .fi-lbl{font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.04em;margin-bottom:.3rem;display:block}
 /* セレクトのカスタムスタイル */
@@ -273,8 +273,8 @@ if("serviceWorker" in navigator){
 
     <div style="margin-top:1.5rem">
     <div style="display:grid;gap:.75rem">
-      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('owner')">店舗ログイン</button>
-      <button class="btn-login" style="background:#ff8c00" onclick="showLogin('cast')">セラピストログイン</button>
+      <button class="btn-login" style="background:var(--accent)" onclick="showLogin('owner')">店舗ログイン</button>
+      <button class="btn-login" style="background:var(--accent)" onclick="showLogin('cast')">セラピストログイン</button>
     </div>
     </div>
   </div>
@@ -288,7 +288,7 @@ if("serviceWorker" in navigator){
     <div class="login-sub">店舗ログイン</div>
     <label class="lbl">オーナーPIN（最大8桁）</label>
     <input class="linput" type="password" id="owner-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doOwnerLogin()">
-    <button class="btn-login" style="background:#ff8c00" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
+    <button class="btn-login" style="background:var(--accent)" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
     <div class="lerr" id="owner-err"></div>
   </div>
 </div>
@@ -312,7 +312,7 @@ if("serviceWorker" in navigator){
       </div>
       <label class="lbl">PIN（最大8桁）</label>
       <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key='Enter')doCastLogin()">
-      <button class="btn-login" style="background:#ff8c00" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
+      <button class="btn-login" style="background:var(--accent)" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
     </div>
     <div class="lerr" id="cast-err"></div>
   </div>
