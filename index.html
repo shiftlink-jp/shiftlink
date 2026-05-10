@@ -529,9 +529,8 @@ if("serviceWorker" in navigator){
     <button class="tbar-btn owner-tab" onclick="tab('owner-shift')"><span class="tbar-icon">📋</span>シフト</button>
     <button class="tbar-btn owner-tab" onclick="tab('today')"><span class="tbar-icon">🏠</span>本日</button>
     <button class="tbar-btn owner-tab" onclick="tab('owner-salary')"><span class="tbar-icon">💰</span>委託金</button>
-    <button class="tbar-btn owner-tab" onclick="tab('owner-cast')"><span class="tbar-icon">👥</span>キャスト</button>
-    <button class="tbar-btn owner-tab" onclick="tab('owner-customer')"><span class="tbar-icon">👤</span>顧客</button>
     <button class="tbar-btn owner-tab" onclick="tab('owner-monthly')"><span class="tbar-icon">📊</span>売上</button>
+    <button class="tbar-btn owner-tab" onclick="tabMgmt()"><span class="tbar-icon">⚙️</span>管理</button>
   </div>
 
 </div>
@@ -1585,9 +1584,10 @@ function salTab(mode){
 }
 function tab(name){
   sessionStorage.setItem('kyoukano_tab',name)
+  const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   document.querySelectorAll('.tbar-btn').forEach(b=>b.classList.remove('on'))
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
-  const map={'cast-today':'.cast-tab:nth-child(1)','shift':'.cast-tab:nth-child(2)','salary':'.cast-tab:nth-child(3)','cast-memo':'.cast-tab:nth-child(4)','owner-shift':'.owner-tab:nth-child(1)','today':'.owner-tab:nth-child(2)','owner-salary':'.owner-tab:nth-child(3)','owner-cast':'.owner-tab:nth-child(4)','owner-customer':'.owner-tab:nth-child(5)','owner-monthly':'.owner-tab:nth-child(6)'}
+  const map={'cast-today':'.cast-tab:nth-child(1)','shift':'.cast-tab:nth-child(2)','salary':'.cast-tab:nth-child(3)','cast-memo':'.cast-tab:nth-child(4)','owner-shift':'.owner-tab:nth-child(1)','today':'.owner-tab:nth-child(2)','owner-salary':'.owner-tab:nth-child(3)','owner-monthly':'.owner-tab:nth-child(4)','owner-cast':'.owner-tab:nth-child(5)','owner-customer':'.owner-tab:nth-child(5)'}
   document.querySelector(map[name])?.classList.add('on')
   document.getElementById('p-'+name)?.classList.add('on')
   if(name==='shift')        loadCal()
@@ -1602,6 +1602,41 @@ function tab(name){
   if(name==='owner-salary') loadOwnerSalary()
   if(name==='owner-cast')   { loadCastMgmt(); checkOwnerPushBtn(); }
   if(name==='owner-monthly') loadMonthly()
+}
+
+// 管理タブ：キャストと顧客をサブメニューで切り替え
+let mgmtSub = 'owner-cast' // 最後に開いたサブ
+function tabMgmt(){
+  // 管理ボタン（5番目）をアクティブに
+  document.querySelectorAll('.tbar-btn').forEach(b=>b.classList.remove('on'))
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
+  document.querySelector('.owner-tab:nth-child(5)')?.classList.add('on')
+  // サブメニューシートを表示
+  let sheet = document.getElementById('mgmt-subsheet')
+  if(!sheet){
+    sheet = document.createElement('div')
+    sheet.id = 'mgmt-subsheet'
+    sheet.style.cssText='position:fixed;bottom:62px;left:0;right:0;background:#fff;border-top:1px solid #e0e0e0;display:flex;gap:0;z-index:40;box-shadow:0 -2px 8px rgba(0,0,0,.08)'
+    sheet.innerHTML=`
+      <button id="mgmt-cast-btn" onclick="tabMgmtSub('owner-cast')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-right:1px solid #e0e0e0;cursor:pointer;font-weight:600;color:#555">👥 キャスト</button>
+      <button id="mgmt-customer-btn" onclick="tabMgmtSub('owner-customer')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;cursor:pointer;font-weight:600;color:#555">👤 顧客</button>`
+    document.body.appendChild(sheet)
+  }
+  sheet.style.display='flex'
+  tabMgmtSub(mgmtSub)
+}
+function tabMgmtSub(name){
+  mgmtSub = name
+  sessionStorage.setItem('kyoukano_tab', name)
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
+  document.getElementById('p-'+name)?.classList.add('on')
+  // サブボタンのハイライト
+  const cb=document.getElementById('mgmt-cast-btn')
+  const kb=document.getElementById('mgmt-customer-btn')
+  if(cb) cb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;border-right:1px solid #e0e0e0;'+(name==='owner-cast'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
+  if(kb) kb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;'+(name==='owner-customer'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
+  if(name==='owner-cast') { loadCastMgmt(); checkOwnerPushBtn(); }
+  if(name==='owner-customer') loadCustomers()
 }
 
 // ── プルトゥリフレッシュ ──
