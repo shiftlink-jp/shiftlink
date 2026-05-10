@@ -841,6 +841,7 @@ if("serviceWorker" in navigator){
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:.4rem;margin-top:.4rem;align-items:center">
         <input type="text" class="fi2" id="st-new-course-name" placeholder="コース名">
         <input type="number" class="fi2" id="st-new-course-price" min="0" step="100" placeholder="料金">
+        <input type="number" class="fi2" id="st-new-course-duration" min="0" step="10" placeholder="分数" style="width:70px">
         <button class="btn btn-gold btn-sm2" onclick="addStoreCourse()" style="white-space:nowrap">＋追加</button>
       </div>
     </div>
@@ -3084,11 +3085,19 @@ function updateOptPay(chk){
 
 // コース時間から退室時間を自動計算
 const COURSE_MINUTES={'50分':50,'80分':80,'100分':100,'130分':130,'延長':30}
+function getCourseMinutes(courseName){
+  // DBのcoursesからdurationを優先、なければCOURSE_MINUTESの固定値、なければコース名から抽出
+  const c=courses.find(x=>x.name===courseName)
+  if(c?.duration) return c.duration
+  if(COURSE_MINUTES[courseName]) return COURSE_MINUTES[courseName]
+  const m=courseName.match(/(\d+)分/)
+  return m?parseInt(m[1]):0
+}
 function autoCalcCheckout(){
   const checkin=document.getElementById('rv-checkin').value
   const course=document.getElementById('rv-course').value
   if(!checkin||!course)return
-  const mins=COURSE_MINUTES[course]||parseInt(course)||0
+  const mins=getCourseMinutes(course)
   if(!mins)return
   const[h,m]=checkin.split(':').map(Number)
   const total=h*60+m+mins
@@ -3101,7 +3110,7 @@ function autoCalcRveCheckout(){
   const checkin=document.getElementById('rve-checkin')?.value
   const course=document.getElementById('rve-course')?.value
   if(!checkin||!course)return
-  const mins=COURSE_MINUTES[course]||parseInt(course)||0
+  const mins=getCourseMinutes(course)
   if(!mins)return
   const[h,m]=checkin.split(':').map(Number)
   const total=h*60+m+mins
@@ -5665,6 +5674,8 @@ async function renderStoreCourseList(){
       <input type="text" class="fee-input" style="flex:1;font-size:.8rem" value="${c.name}" id="cn-${c.id}">
       <input type="number" class="fee-input" style="width:80px" value="${c.price}" id="cp-${c.id}" min="0" step="100">
       <span class="fee-unit">円</span>
+      <input type="number" class="fee-input" style="width:56px" value="${c.duration||''}" id="cd-${c.id}" min="0" step="10" placeholder="分">
+      <span class="fee-unit">分</span>
       <button onclick="updateStoreCourse(${c.id})" style="padding:.3rem .5rem;border:none;border-radius:6px;background:var(--accent);color:white;font-size:.7rem;cursor:pointer;white-space:nowrap">保存</button>
       <button onclick="deleteStoreCourse(${c.id})" style="padding:.3rem .5rem;border:none;border-radius:6px;background:var(--red);color:white;font-size:.7rem;cursor:pointer">削除</button>
     </div>`).join('')
@@ -5688,7 +5699,8 @@ async function updateStoreCourse(id){
   const name=document.getElementById('cn-'+id)?.value.trim()
   const price=parseInt(document.getElementById('cp-'+id)?.value)||0
   if(!name){toast('コース名を入力してください');return}
-  const{error}=await sb.from('courses').update({name,price}).eq('id',id)
+  const duration=parseInt(document.getElementById('cd-'+id)?.value)||null
+  const{error}=await sb.from('courses').update({name,price,...(duration!==null?{duration}:{})}).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('コースを更新しました')
   await renderStoreCourseList()
@@ -5708,10 +5720,12 @@ async function addStoreCourse(){
   const name=document.getElementById('st-new-course-name')?.value.trim()
   const price=parseInt(document.getElementById('st-new-course-price')?.value)||0
   if(!name){toast('コース名を入力してください');return}
-  const{error}=await sb.from('courses').insert({name,price})
+  const duration=parseInt(document.getElementById('st-new-course-duration')?.value)||null
+  const{error}=await sb.from('courses').insert({name,price,...(duration?{duration}:{})})
   if(error){toast('エラー: '+error.message);return}
   document.getElementById('st-new-course-name').value=''
   document.getElementById('st-new-course-price').value=''
+  document.getElementById('st-new-course-duration').value=''
   toast('コースを追加しました')
   await renderStoreCourseList()
   await loadGlobalData()
