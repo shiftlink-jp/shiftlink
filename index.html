@@ -150,7 +150,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .sal-hero{background:linear-gradient(135deg,#fffbf4,var(--accent-f));border:1.5px solid var(--accent);border-radius:var(--r);padding:1.1rem;margin-bottom:.75rem}
 .sal-lbl{font-size:.7rem;font-weight:700;color:var(--accent);margin-bottom:.15rem}
 .sal-amt{font-size:1.9rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:.5rem}
-.sal-row{display:flex;justify-content:space-between;font-size:.8rem;padding:.28rem 0;border-bottom:1px solid rgba(184,137,58,.15)}
+.sal-row{display:flex;justify-content:space-between;font-size:.8rem;padding:.28rem 0;border-bottom:1px solid var(--border)}
 .sal-row:last-child{border-bottom:none}
 .sal-rl{color:var(--text3)}
 .sal-rv{font-weight:600;color:var(--text)}
@@ -3138,7 +3138,7 @@ function autoFillCustomer(){
     if(banWarn){
       document.getElementById('rv-cust-name').textContent='⛔ '+c.name
       document.getElementById('rv-cust-name').style.color='var(--rtx)'
-      if(warn){warn.style.display='block';warn.style.color='#c62828';warn.textContent=banWarn}
+      if(warn){warn.style.display='block';warn.style.color='var(--rtx)';warn.textContent=banWarn}
     } else {
       document.getElementById('rv-cust-name').textContent='✓ '+c.name
       document.getElementById('rv-cust-name').style.color='var(--green)'
@@ -4907,7 +4907,7 @@ function calcTotal2(){
       const billedPrice=isCard?Math.round(basePrice*1.1):basePrice
       const shop=billedPrice-back
       return `<div style="${G}">
-        <span style="color:var(--text3);font-size:.75rem">${label}${isCard?'<span style="font-size:.6rem;color:#1565c0;margin-left:.2rem">C</span>':''}</span>
+        <span style="color:var(--text3);font-size:.75rem">${label}${isCard?'<span style="font-size:.6rem;color:var(--btx);margin-left:.2rem">C</span>':''}</span>
         <span style="text-align:right;font-size:.75rem">${fmt(billedPrice)}</span>
         <span style="text-align:right;font-size:.72rem;color:var(--accent)">${fmt(back)}</span>
         <span style="text-align:right;font-size:.72rem;color:var(--text3)">${shop>0?fmt(shop):'-'}</span>
@@ -4938,10 +4938,10 @@ function calcTotal2(){
     })
     if(blockCardFee>0){
       brows+=`<div style="${G}">
-        <span style="color:#1565c0;font-size:.72rem">└ 決済手数料(6%+80円)</span>
-        <span style="text-align:right;font-size:.72rem;color:#1565c0">-${fmt(blockCardFee)}</span>
+        <span style="color:var(--btx);font-size:.72rem">└ 決済手数料(6%+80円)</span>
+        <span style="text-align:right;font-size:.72rem;color:var(--btx)">-${fmt(blockCardFee)}</span>
         <span style="text-align:right;font-size:.7rem;color:var(--text3)">-</span>
-        <span style="text-align:right;font-size:.72rem;color:#1565c0">-${fmt(blockCardFee)}</span>
+        <span style="text-align:right;font-size:.72rem;color:var(--btx)">-${fmt(blockCardFee)}</span>
       </div>`
     }
     const sessionShop=blockSales-blockBack-blockCardFee
@@ -4966,7 +4966,7 @@ function calcTotal2(){
   bd+=`<div class="sal-row"><span class="sal-rl">売上（お客様請求）</span><span class="sal-rv">${fmt(totalSales)}</span></div>`
   if(totalCardBase>0){
     bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--text3)">└ 現金</span><span class="sal-rv" style="font-size:.78rem">${fmt(totalSales-Math.round(totalCardBase*1.1))}</span></div>`
-    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:#1565c0">└ カード請求(10%込)</span><span class="sal-rv" style="font-size:.78rem;color:#1565c0">${fmt(Math.round(totalCardBase*1.1))}</span></div>`
+    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--btx)">└ カード請求(10%込)</span><span class="sal-rv" style="font-size:.78rem;color:var(--btx)">${fmt(Math.round(totalCardBase*1.1))}</span></div>`
   }
   if(totalDiscAll>0) bd+=`<div class="sal-row"><span class="sal-rl">└ 割引</span><span class="sal-rv neg">-${fmt(totalDiscAll)}</span></div>`
   bd+=`<div style="border-top:1px dashed var(--border);margin:.2rem 0"></div>`
@@ -5907,15 +5907,15 @@ async function openShiftReservations(shiftId, castName){
         </div>
         <div style="background:#e8f4fd;border-radius:8px;padding:.3rem .5rem;text-align:center">
           <div style="font-size:.6rem;color:var(--text3)">💳カード</div>
-          <div style="font-size:.82rem;font-weight:700;color:#1565c0">${fmt(cardAmt)}</div>
+          <div style="font-size:.82rem;font-weight:700;color:var(--btx)">${fmt(cardAmt)}</div>
         </div>
       </div>
       ${cardAmt>0?`<div style="background:#e8f4fd;border-radius:8px;padding:.35rem .6rem;margin-top:.15rem">
-        <div style="font-size:.6rem;color:#1565c0;font-weight:700;margin-bottom:.2rem">💳 カード内訳</div>
+        <div style="font-size:.6rem;color:var(--btx);font-weight:700;margin-bottom:.2rem">💳 カード内訳</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;text-align:center">
-          <div><div style="font-size:.58rem;color:#555">カード金額</div><div style="font-size:.78rem;font-weight:700;color:#1565c0">${fmt(cardAmt)}</div></div>
-          <div><div style="font-size:.58rem;color:#555">お客請求(10%)</div><div style="font-size:.78rem;font-weight:700;color:#1565c0">${fmt(Math.round(cardAmt*1.1))}</div></div>
-          <div><div style="font-size:.58rem;color:#555">手数料(6%+80円)</div><div style="font-size:.78rem;font-weight:700;color:#c62828">-${fmt(Math.floor(cardAmt*0.06)+80)}</div></div>
+          <div><div style="font-size:.58rem;color:#555">カード金額</div><div style="font-size:.78rem;font-weight:700;color:var(--btx)">${fmt(cardAmt)}</div></div>
+          <div><div style="font-size:.58rem;color:#555">お客請求(10%)</div><div style="font-size:.78rem;font-weight:700;color:var(--btx)">${fmt(Math.round(cardAmt*1.1))}</div></div>
+          <div><div style="font-size:.58rem;color:#555">手数料(6%+80円)</div><div style="font-size:.78rem;font-weight:700;color:var(--rtx)">-${fmt(Math.floor(cardAmt*0.06)+80)}</div></div>
         </div>
       </div>`:''}
       ${r.note?`<div style="font-size:.75rem;color:var(--text3)">📝 ${r.note}</div>`:''}
@@ -6033,25 +6033,25 @@ async function openRvDetail(rvId, shiftId, castName){
         </div>
         <div style="background:#e8f4fd;border-radius:10px;padding:.5rem;text-align:center">
           <div style="font-size:.62rem;color:var(--text3)">💳 カード</div>
-          <div style="font-size:.95rem;font-weight:800;color:#1565c0">${fmt(cardAmt)}</div>
+          <div style="font-size:.95rem;font-weight:800;color:var(--btx)">${fmt(cardAmt)}</div>
         </div>
       </div>
       ${cardAmt>0?`<div style="background:#e8f4fd;border-radius:8px;padding:.45rem .7rem;margin-top:-.1rem">
-        <div style="font-size:.62rem;color:#1565c0;font-weight:700;margin-bottom:.25rem">💳 カード内訳</div>
+        <div style="font-size:.62rem;color:var(--btx);font-weight:700;margin-bottom:.25rem">💳 カード内訳</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;text-align:center">
-          <div><div style="font-size:.6rem;color:#555">カード金額</div><div style="font-size:.85rem;font-weight:700;color:#1565c0">${fmt(cardAmt)}</div></div>
-          <div><div style="font-size:.6rem;color:#555">お客請求(10%)</div><div style="font-size:.85rem;font-weight:700;color:#1565c0">${fmt(Math.round(cardAmt*1.1))}</div></div>
-          <div><div style="font-size:.6rem;color:#555">手数料(6%+80円)</div><div style="font-size:.85rem;font-weight:700;color:#c62828">-${fmt(Math.floor(cardAmt*0.06)+80)}</div></div>
+          <div><div style="font-size:.6rem;color:#555">カード金額</div><div style="font-size:.85rem;font-weight:700;color:var(--btx)">${fmt(cardAmt)}</div></div>
+          <div><div style="font-size:.6rem;color:#555">お客請求(10%)</div><div style="font-size:.85rem;font-weight:700;color:var(--btx)">${fmt(Math.round(cardAmt*1.1))}</div></div>
+          <div><div style="font-size:.6rem;color:#555">手数料(6%+80円)</div><div style="font-size:.85rem;font-weight:700;color:var(--rtx)">-${fmt(Math.floor(cardAmt*0.06)+80)}</div></div>
         </div>
       </div>`:''}
       <div class="fee-sec">
         <div class="fee-row"><div class="fee-lbl">来店区分</div><div>${r.is_new===true||r.is_new==='true'?'<span style="color:#4CAF50;font-weight:700">新規</span>':'再訪'}</div></div>
         <div class="fee-row"><div class="fee-lbl">顧客番号</div><div>${r.customer_no?'No.'+r.customer_no:'未登録'}</div></div>
         <div class="fee-row"><div class="fee-lbl">入室〜退室</div><div>${r.checkin_time?.slice(0,5)||'未入力'} 〜 ${r.checkout_time?.slice(0,5)||'未入力'}</div></div>
-        <div class="fee-row"><div class="fee-lbl">指名区分</div><div>${r.shimei_type||'-'} <span style="font-size:.72rem;color:${payShimei==='カード'?'#1565c0':'var(--text3)'}">(${payShimei})</span></div></div>
-        <div class="fee-row"><div class="fee-lbl">コース</div><div>${r.course||'-'} <span style="font-size:.72rem;color:${payCourse==='カード'?'#1565c0':'var(--text3)'}">(${payCourse})</span></div></div>
-        ${opts.length?`<div class="fee-row"><div class="fee-lbl">オプション</div><div>${opts.join('・')} <span style="font-size:.72rem;color:${payOpt==='カード'?'#1565c0':'var(--text3)'}">(${payOpt})</span></div></div>`:''}
-        ${extCount>0?`<div class="fee-row"><div class="fee-lbl">延長</div><div>${extCount}回（${fmt(extTotal)}） <span style="font-size:.72rem;color:${payExt==='カード'?'#1565c0':'var(--text3)'}">(${payExt})</span></div></div>`:''}
+        <div class="fee-row"><div class="fee-lbl">指名区分</div><div>${r.shimei_type||'-'} <span style="font-size:.72rem;color:${payShimei==='カード'?'var(--btx)':'var(--text3)'}">(${payShimei})</span></div></div>
+        <div class="fee-row"><div class="fee-lbl">コース</div><div>${r.course||'-'} <span style="font-size:.72rem;color:${payCourse==='カード'?'var(--btx)':'var(--text3)'}">(${payCourse})</span></div></div>
+        ${opts.length?`<div class="fee-row"><div class="fee-lbl">オプション</div><div>${opts.join('・')} <span style="font-size:.72rem;color:${payOpt==='カード'?'var(--btx)':'var(--text3)'}">(${payOpt})</span></div></div>`:''}
+        ${extCount>0?`<div class="fee-row"><div class="fee-lbl">延長</div><div>${extCount}回（${fmt(extTotal)}） <span style="font-size:.72rem;color:${payExt==='カード'?'var(--btx)':'var(--text3)'}">(${payExt})</span></div></div>`:''}
         ${discs.length?`<div class="fee-row"><div class="fee-lbl">割引</div><div style="color:var(--rtx)">-${fmt(discTotal)}（${discs.join('・')}）</div></div>`:''}
         ${r.note?`<div class="fee-row"><div class="fee-lbl">備考</div><div>${r.note}</div></div>`:''}
       </div>
@@ -6665,14 +6665,14 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
   const kpiCard=(l,v,col='')=>`<div style="background:#fff;border-radius:10px;padding:.6rem .5rem;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.07)"><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">${l}</div><div style="font-size:.82rem;font-weight:700${col?';color:'+col:''}">${v}</div></div>`
   let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem;margin-bottom:.5rem">
     ${kpiCard('総売上高',fmt2(tot.gross))}
-    ${kpiCard('割引',tot.disc>0?'-¥'+tot.disc.toLocaleString():'¥0','#c62828')}
+    ${kpiCard('割引',tot.disc>0?'-¥'+tot.disc.toLocaleString():'¥0','var(--rtx)')}
     ${kpiCard('純売上高',fmt2(tot.gross_work))}
-    ${kpiCard('委託金',fmt2(tot.net))}
-    ${kpiCard('雑費',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0')}
-    ${kpiCard('粗利益',fmt2(tot.profit),'#1565c0')}
+    ${kpiCard('委託金',fmt2(tot.net),'var(--rtx)')}
+    ${kpiCard('雑費',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
+    ${kpiCard('粗利益',fmt2(tot.profit),'var(--btx)')}
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
-    ${kpiCard('カード手数料',tot.cardFee>0?'-¥'+tot.cardFee.toLocaleString():'¥0')}
+    ${kpiCard('カード手数料',tot.cardFee>0?'-¥'+tot.cardFee.toLocaleString():'¥0','var(--text3)')}
     ${kpiCard('出勤延べ',tot.attendance+'名')}
     ${kpiCard('施術件数',tot.count+'本')}
     ${kpiCard('平均客単価',fmt2(tot.avg_unit))}
@@ -6698,7 +6698,7 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
   if(total_expenses>0){
     html+=`<div class="card" style="margin-bottom:.55rem">
       <div style="font-weight:700;font-size:.85rem;margin-bottom:.3rem">💸 経費合計</div>
-      <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">¥${total_expenses.toLocaleString()}</div></div>`
+      <div style="font-size:1.1rem;font-weight:700;color:var(--rtx)">¥${total_expenses.toLocaleString()}</div></div>`
   }
   area.innerHTML=html
 }
@@ -6718,10 +6718,10 @@ function renderMonthlyDaily(area,dailyRows,tot){
   // 0:日付 1:総売上 2:純売上 3:現金売上 4:カード 5:手数料 6:委託金 7:立替金 8:粗利益 9:現金残 10:客単価 11:出勤 12:フリー 13:ネット 14:本指 15:合計 16:総数
   const cols=[
     {l:'日付',w:'46px',align:'left',sticky:true},
-    {l:'総売上',w:'56px'},{l:'割引',w:'44px',color:'#c62828'},{l:'純売上',w:'56px'},{l:'現金売上',w:'56px'},
-    {l:'カード',w:'56px'},{l:'手数料',w:'46px',color:'#c62828'},
-    {l:'委託金',w:'54px',color:'#c62828'},{l:'立替金',w:'50px',color:'#c62828'},
-    {l:'粗利益',w:'54px',color:'#1565c0'},{l:'現金残',w:'54px',color:'#1565c0'},
+    {l:'総売上',w:'56px'},{l:'割引',w:'44px',color:'var(--rtx)'},{l:'純売上',w:'56px'},{l:'現金売上',w:'56px'},
+    {l:'カード',w:'56px'},{l:'手数料',w:'46px',color:'var(--rtx)'},
+    {l:'委託金',w:'54px',color:'var(--rtx)'},{l:'立替金',w:'50px',color:'var(--rtx)'},
+    {l:'粗利益',w:'54px',color:'var(--btx)'},{l:'現金残',w:'54px',color:'var(--btx)'},
     {l:'客単価',w:'52px'},{l:'出勤',w:'30px'},
     {l:'フリー',w:'36px'},{l:'ネット',w:'32px'},{l:'本指',w:'28px'},{l:'合計',w:'28px'},{l:'総数',w:'28px'}
   ]
@@ -6756,15 +6756,15 @@ function renderMonthlyDaily(area,dailyRows,tot){
     let html=`<tr style="border-bottom:1px solid var(--border);${rowBg}${multiCast?';cursor:pointer':''}" ${onclickAttr}>`
     html+=Dsticky(r.day+'('+r.dow+')'+(multiCast?'▾':''),hasAdv?'#fff5f5':'#ffffff')
     html+=C(Ns(r.gross))
-    html+=C(r.disc>0?'-'+Ns(r.disc):'—',r.disc>0?'#c62828':'#ccc')
+    html+=C(r.disc>0?'-'+Ns(r.disc):'—',r.disc>0?'var(--rtx)':'#ccc')
     html+=C(r.disc>0?Ns(r.gross_work):Ns(r.gross))
     html+=C(Ns(r.cash))
     html+=C(Ns(r.card))
-    html+=C(r.cardFee>0?Ns(r.cardFee):'—','#c62828')
-    html+=C(Ns(r.net),'#c62828')
-    html+=C(hasAdv?Ns(r.advance):'—',hasAdv?'#c62828':'#ccc',hasAdv)
-    html+=C(Ns(r.profit),'#1565c0',true)
-    html+=C(cashNeg?'▲'+N(r.cashRemain):Ns(r.cashRemain),cashNeg?'#c62828':'#1565c0')
+    html+=C(r.cardFee>0?Ns(r.cardFee):'—','var(--rtx)')
+    html+=C(Ns(r.net),'var(--rtx)')
+    html+=C(hasAdv?Ns(r.advance):'—',hasAdv?'var(--rtx)':'#ccc',hasAdv)
+    html+=C(Ns(r.profit),'var(--btx)',true)
+    html+=C(cashNeg?'▲'+N(r.cashRemain):Ns(r.cashRemain),cashNeg?'var(--rtx)':'var(--btx)')
     html+=C(avgUnit>0?Ns(avgUnit):'—')
     html+=CB(r.attendance||0)
     html+=CB(r.free||0)
@@ -6782,22 +6782,22 @@ function renderMonthlyDaily(area,dailyRows,tot){
         const cAdv=c.advance>0
         const cNeg=c.cashRemain<0
         const baseBg=cAdv?'#fff0f0':castBgPalette[ci%castBgPalette.length]
-        const accentColor=cAdv?'#c62828':['#1565c0','#2e7d32','#e65100','#6a1b9a','#00695c','#ad1457'][ci%6]
+        const accentColor=cAdv?'var(--rtx)':['var(--btx)','#2e7d32','#e65100','#6a1b9a','#00695c','#ad1457'][ci%6]
         html+=`<tr class="cast-sub" style="display:none;border-bottom:1px solid #e0e0e0;border-left:3px solid ${accentColor}">`
         // 名前セル：アクセントカラーの背景
         html+=`<td style="position:sticky;left:0;z-index:1;background:${baseBg};padding:.2rem .3rem .2rem 1rem;font-size:.65rem;font-weight:700;white-space:nowrap;border-right:1px solid var(--border);color:${accentColor}">${c.castName}</td>`
         // 数値セル（baseBg背景）
         const Cc=(v,color='',bold=false)=>`<td style="padding:.1rem .06rem"><div style="background:${baseBg};border-radius:4px;padding:.18rem .12rem;text-align:center;font-size:.63rem;min-width:0;${color?'color:'+color:''}${bold?';font-weight:700':''}">${v}</div></td>`
         html+=Cc(Ns(c.gross||c.cash+c.cardBase))
-        html+=Cc(c.disc>0?'-'+Ns(c.disc):'—',c.disc>0?'#c62828':'#bbb')
+        html+=Cc(c.disc>0?'-'+Ns(c.disc):'—',c.disc>0?'var(--rtx)':'#bbb')
         html+=Cc(Ns(c.sales||c.cash+c.cardBase))
         html+=Cc(Ns(c.cash))
         html+=Cc(Ns(c.card))
         html+=Cc('—','#ccc')
-        html+=Cc(Ns(c.net),'#c62828',true)
-        html+=Cc(cAdv?Ns(c.advance):'—',cAdv?'#c62828':'#bbb',cAdv)
+        html+=Cc(Ns(c.net),'var(--rtx)',true)
+        html+=Cc(cAdv?Ns(c.advance):'—',cAdv?'var(--rtx)':'#bbb',cAdv)
         html+=Cc('—','#ccc')
-        html+=Cc(cNeg?'▲'+N(c.cashRemain):Ns(c.cashRemain),cNeg?'#c62828':'#1565c0')
+        html+=Cc(cNeg?'▲'+N(c.cashRemain):Ns(c.cashRemain),cNeg?'var(--rtx)':'var(--btx)')
         html+=`<td colspan="8" style="background:${baseBg}"></td>`
         html+='</tr>'
       })
@@ -6815,7 +6815,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
        totCashNeg?'▲'+N(tot.cashRemain):Ns(tot.cashRemain),tot.count>0?Ns(Math.round(tot.gross_work/tot.count)):'—',tot.attendance,tot.free,tot.net_shimei,tot.hon_shimei,tot.count,tot.inquiry||'—']
       .map((v,i)=>{
         const isCount=i>=11
-        const color=i===1?';color:#c62828':i===5?';color:#c62828':i===6?';color:#c62828':i===7&&totAdv?';color:#c62828':i===8?';color:#1565c0':i===9?';color:'+(totCashNeg?'#c62828':'#1565c0'):''
+        const color=i===1?';color:var(--rtx)':i===5?';color:var(--rtx)':i===6?';color:var(--rtx)':i===7&&totAdv?';color:var(--rtx)':i===8?';color:var(--btx)':i===9?';color:'+(totCashNeg?'var(--rtx)':'var(--btx)'):''
         const w=isCount?'24px':'50px'
         return `<td style="text-align:center;padding:.2rem ${isCount?'.04rem':'.06rem'};font-size:.63rem;font-weight:700${color}"><div style="background:var(--surface);border-radius:4px;padding:.18rem .1rem;width:${w};margin:0 auto;box-sizing:border-box">${v}</div></td>`
       }).join('')}
@@ -6853,16 +6853,16 @@ function renderMonthlyCast(area,castStats,fmt2){
     <table style="width:100%;border-collapse:collapse;font-size:.68rem;table-layout:auto">
       <thead><tr style="background:var(--surface2)">
         <th style="padding:.3rem .35rem;text-align:left;font-size:.6rem;position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px;width:60px">キャスト</th>
-        ${th('本数')}${th('フリー')}${th('ネット')}${th('本指')}${th('総売上')}${hasDisc?th('割引','#c62828'):''}${th('純売上')}${th('委託金','#c62828')}${th('保証')}
+        ${th('本数')}${th('フリー')}${th('ネット')}${th('本指')}${th('総売上')}${hasDisc?th('割引','var(--rtx)'):''}${th('純売上')}${th('委託金','var(--rtx)')}${th('保証')}
       </tr></thead>
       <tbody>
         ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
           <td style="padding:.25rem .35rem;position:sticky;left:0;background:#ffffff;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${r.name}</td>
           ${CB2(r.total,true)}${CB2(r.free)}${CB2(r.net_shimei)}${CB2(r.hon_shimei)}
           ${cell('¥'+(r.sales+r.disc).toLocaleString(),true)}
-          ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'#c62828'):''}
+          ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'var(--rtx)'):''}
           ${cell('¥'+r.sales.toLocaleString())}
-          ${cell('¥'+r.net.toLocaleString(),false,'#c62828')}
+          ${cell('¥'+r.net.toLocaleString(),false,'var(--rtx)')}
           ${cell(r.hosho>0?'¥'+r.hosho.toLocaleString():'-',false,'var(--blue)')}
         </tr>`).join('')}
       </tbody>
@@ -6873,9 +6873,9 @@ function renderMonthlyCast(area,castStats,fmt2){
         ${CB2(totNetS)}
         ${CB2(totHon)}
         ${CA2('¥'+(totSales+totDisc).toLocaleString(),true)}
-        ${hasDisc?CA2(totDisc>0?'-¥'+totDisc.toLocaleString():'-',false,'#c62828'):''}
+        ${hasDisc?CA2(totDisc>0?'-¥'+totDisc.toLocaleString():'-',false,'var(--rtx)'):''}
         ${CA2('¥'+totSales.toLocaleString(),true)}
-        ${CA2('¥'+totNet.toLocaleString(),false,'#c62828')}
+        ${CA2('¥'+totNet.toLocaleString(),false,'var(--rtx)')}
         ${CA2(totHosho>0?'¥'+totHosho.toLocaleString():'-')}
       </tr></tfoot>
     </table>
