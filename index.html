@@ -1432,10 +1432,8 @@ function startApp(){
           // ブラウザにサブスクリプションがある → DBと同期確認
           const browserEndpoint = browserSub.toJSON().endpoint;
           const dbEndpoint = dbSub?.subscription?.endpoint;
-          
           if (!dbSub || browserEndpoint !== dbEndpoint) {
             // DBと不一致 → 自動で再登録
-            console.log('[Push] DB不一致 → 自動再登録');
             const subJson = browserSub.toJSON();
             await sb.from("push_subscriptions").delete().eq("cast_id", castId);
             await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
@@ -1445,10 +1443,18 @@ function startApp(){
           btn.style.opacity = '0.6';
           btn.style.cursor = 'default';
         } else if (permission === "granted" && !browserSub && dbSub) {
-          // ブラウザにサブスクリプションがないのにDBにある → DBを削除してボタンをリセット
-          console.log('[Push] ブラウザのサブスクリプション消失 → DB削除');
-          await sb.from("push_subscriptions").delete().eq("cast_id", castId);
-          btn.textContent = '🔔 通知設定';
+          // Safari PWAではgetSubscription()が一時的にnullになることがある
+          // DBレコードは残しておいてボタンは設定済みのまま表示
+          btn.textContent = '✅ 設定済み';
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'default';
+        } else if (dbSub) {
+          // permissionがない状態でもDBにあれば設定済み表示
+          btn.textContent = '✅ 設定済み';
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'default';
         } else {
           btn.textContent = '🔔 通知設定';
         }
