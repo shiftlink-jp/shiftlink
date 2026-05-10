@@ -7002,7 +7002,7 @@ function renderMonthlyCast(area,castStats,fmt2){
         ${hasDisc?CA2(totDisc>0?'-¥'+totDisc.toLocaleString():'-',false,'var(--rtx)'):''}
         ${CA2('¥'+totSales.toLocaleString(),true)}
         ${CA2('¥'+totNet.toLocaleString(),false,'var(--rtx)')}
-        ${CA2(totHosho>0?'¥'+totHosho.toLocaleString():'-')}
+        ${CA2(totHosho>0?'¥'+totHosho.toLocaleString():'-',false,'var(--rtx)')}
       </tr></tfoot>
     </table>
   </div>
