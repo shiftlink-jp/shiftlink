@@ -2200,17 +2200,26 @@ async function saveCastShiftEdit(){
   const start = document.getElementById('cse-start').value
   const end = document.getElementById('cse-end').value
   const note = document.getElementById('cse-note').value
-  const{error} = await sb.from('shifts').update({start_time:start, end_time:end, note}).eq('id', castShiftEditId)
+  // 承認済みシフトを訂正した場合は承認待ちに戻す
+  const{data:curShift}=await sb.from('shifts').select('status,date').eq('id',castShiftEditId).single()
+  const wasApproved=curShift?.status==='approved'
+  const updatePayload={start_time:start, end_time:end, note}
+  if(wasApproved) updatePayload.status='requested'
+  const{error} = await sb.from('shifts').update(updatePayload).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
   try {
+    const notifyTitle=wasApproved?'シフト訂正（要再承認）📝':'シフト訂正📝'
+    const notifyBody=wasApproved
+      ? me.name+'さんが承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
+      : me.name+'さんがシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
     await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:0, title:'シフト訂正📝', body:me.name+'さんがシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'})
+      body:JSON.stringify({cast_id:0, title:notifyTitle, body:notifyBody})
     })
   } catch(e){ console.error('通知エラー',e) }
-  toast('シフトを訂正しました')
+  toast(wasApproved?'訂正しました（再承認待ちに戻しました）':'シフトを訂正しました')
   closeSheet('cast-shift-edit')
   renderInlineShiftList()
 }
@@ -2958,7 +2967,11 @@ async function openReservation(shiftId,castName,date){
   // 顧客番号警告リセット
   const custWarnEl=document.getElementById('rv-cust-warn')
   if(custWarnEl) custWarnEl.style.display='none'
-  document.getElementById('rv-checkin').value=''
+  // 入室時間を現在時刻で自動入力
+  const _now=new Date()
+  const _hh=String(_now.getHours()).padStart(2,'0')
+  const _mm=String(_now.getMinutes()).padStart(2,'0')
+  document.getElementById('rv-checkin').value=_hh+':'+_mm
   document.getElementById('rv-checkout').value=''
   // コース一覧をロード
   const{data:courses}=await sb.from('courses').select('*').order('price')
@@ -5702,6 +5715,11 @@ async function addStoreCourse(){
   toast('コースを追加しました')
   await renderStoreCourseList()
   await loadGlobalData()
+  // 予約入力フォームのコース選択肢も即時更新
+  const rvCourseSel=document.getElementById('rv-course')
+  if(rvCourseSel&&courses.length){
+    rvCourseSel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.name}">${c.name}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
+  }
 }
 
 async function updateStoreOption(id){
