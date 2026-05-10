@@ -2042,7 +2042,7 @@ function renderCastTodayCards(rvs) {
     const doneBtn = btnBase + 'background:#d0c9b8;color:#888;cursor:default;';
 
     const histBtn = r.customer_no
-      ? `<button onclick="castOpenCustHistory(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\\'")}')" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.78rem;font-weight:600;cursor:pointer">📋 来店履歴</button>`
+      ? `<button onclick="castOpenCustHistory(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\\'")}',${r.customer_id||'null'})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.78rem;font-weight:600;cursor:pointer">📋 来店履歴</button>`
       : '';
     const actionBtns = isPast && hasRoomOut ? histBtn : `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
@@ -2086,22 +2086,45 @@ function sortRvsByTime(rvs) {
 }
 
 // ── セラピスト：顧客の来店履歴表示 ──
-async function castOpenCustHistory(customerNo, custName) {
-  // 顧客IDを取得
-  const{data:custs}=await sb.from('customers').select('id,name,customer_no').eq('customer_no',customerNo)
-  if(!custs||!custs.length){toast('顧客情報が見つかりません');return}
-  const custId=custs[0].id
+async function castOpenCustHistory(customerNo, custName, directCustId) {
+  // 先にモーダルを表示（読み込み中）
+  let existing=document.getElementById('cast-hist-modal')
+  if(existing) existing.remove()
+  const modal=document.createElement('div')
+  modal.id='cast-hist-modal'
+  modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center'
+  modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0"><div style="font-weight:700;font-size:1rem">📋 ${custName} の来店履歴</div><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem"><div class="spin">読み込み中...</div></div></div>`
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
+  document.body.appendChild(modal)
+
+  const body=document.getElementById('cast-hist-body')
+
+  // 顧客IDを取得（allCustomersから探す→なければDB検索）
+  let custId = directCustId || null
+  if(!custId){
+    // allCustomersから検索
+    const found = allCustomers.find(c=>Number(c.customer_no)===Number(customerNo))
+    if(found) custId=found.id
+  }
+  if(!custId){
+    // DBから直接検索
+    const{data:custs}=await sb.from('customers').select('id,customer_no')
+    const found=(custs||[]).find(c=>Number(c.customer_no)===Number(customerNo))
+    if(found) custId=found.id
+  }
+  if(!custId){
+    body.innerHTML='<div style="color:var(--text3);padding:1rem 0;text-align:center">顧客情報が見つかりません（No.'+customerNo+'）</div>'
+    return
+  }
 
   // 来店履歴取得
-  const{data:visits}=await sb.from('customer_visits')
+  const{data:visits,error:vErr}=await sb.from('customer_visits')
     .select('visit_date,course,cast_name,total_price,shimei_type,options')
     .eq('customer_id',custId)
     .order('visit_date',{ascending:false})
     .limit(30)
-
-  // モーダル生成
-  let existing=document.getElementById('cast-hist-modal')
-  if(existing) existing.remove()
+  
+  if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+vErr.message+'</div>';return}
 
   const fmt=n=>n!=null?'¥'+Number(n).toLocaleString():'-'
   const visitsHtml=visits&&visits.length
@@ -2119,19 +2142,7 @@ async function castOpenCustHistory(customerNo, custName) {
       }).join('')
     : '<div style="color:var(--text3);padding:1rem 0;text-align:center">来店記録がありません</div>'
 
-  const modal=document.createElement('div')
-  modal.id='cast-hist-modal'
-  modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center'
-  modal.innerHTML=`
-    <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-weight:700;font-size:1rem">📋 ${custName} の来店履歴</div>
-        <button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button>
-      </div>
-      <div style="overflow-y:auto;padding:0 1rem 1rem">${visitsHtml}</div>
-    </div>`
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
-  document.body.appendChild(modal)
+  body.innerHTML=visitsHtml
 }
 
 async function castRoomIn(rvId, custName, time) {
