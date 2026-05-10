@@ -148,11 +148,11 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 
 /* SALARY */
 .sal-hero{background:linear-gradient(135deg,#fffbf4,var(--accent-f));border:1.5px solid var(--accent);border-radius:var(--r);padding:1.1rem;margin-bottom:.75rem}
-.sal-lbl{font-size:.7rem;font-weight:700;color:var(--accent);margin-bottom:.15rem}
+.sal-lbl{font-size:.7rem;font-weight:700;color:var(--text2);margin-bottom:.15rem}
 .sal-amt{font-size:1.9rem;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:.5rem}
 .sal-row{display:flex;justify-content:space-between;font-size:.8rem;padding:.28rem 0;border-bottom:1px solid var(--border)}
 .sal-row:last-child{border-bottom:none}
-.sal-rl{color:var(--text3)}
+.sal-rl{color:var(--text2)}
 .sal-rv{font-weight:600;color:var(--text)}
 .sal-rv.neg{color:var(--rtx)}
 .sal-rv.total{color:var(--text);font-size:.95rem;font-weight:700}
@@ -390,7 +390,7 @@ if("serviceWorker" in navigator){
     <div class="panel" id="p-cast-today">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <div style="font-size:1rem;font-weight:700">🏠 本日の予約</div>
-        <div id="cast-today-clock" style="font-size:.85rem;font-weight:700;color:var(--accent)"></div>
+        <div id="cast-today-clock" style="font-size:.85rem;font-weight:700;color:var(--text)"></div>
       </div>
       <div id="cast-today-area"><div class="spin">読み込み中...</div></div>
     </div>
@@ -585,7 +585,7 @@ if("serviceWorker" in navigator){
             <!-- 自動登録チェックボックス -->
             <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-bottom:.6rem;padding:.5rem .7rem;background:rgba(184,137,58,.08);border:1.5px solid rgba(184,137,58,.3);border-radius:10px">
               <input type="checkbox" id="rv-auto-register" onchange="toggleAutoRegister(this)" style="width:18px;height:18px;accent-color:var(--accent)">
-              <span style="font-size:.85rem;font-weight:600;color:var(--accent)">新規顧客を自動登録する</span>
+              <span style="font-size:.85rem;font-weight:600;color:var(--text)">新規顧客を自動登録する</span>
             </label>
             <!-- 既存顧客：顧客番号入力（自動登録OFFのとき表示） -->
             <div id="rv-existing-area">
@@ -599,7 +599,7 @@ if("serviceWorker" in navigator){
             <!-- 自動登録ON：次の番号を表示＋電話番号入力 -->
             <div id="rv-auto-area" style="display:none">
               <div style="font-size:.82rem;color:var(--text3);padding:.4rem .6rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:.5rem">
-                📋 予約登録後に <strong id="rv-next-no" style="color:var(--accent)">No.---</strong> で自動登録されます
+                📋 予約登録後に <strong id="rv-next-no" style="color:var(--text)">No.---</strong> で自動登録されます
               </div>
               <div class="fi-lbl">電話番号（任意）</div>
               <input class="fi" id="rv-phone" type="tel" placeholder="090-0000-0000" oninput="autoHyphenPhone(this)" maxlength="13">
@@ -749,14 +749,14 @@ if("serviceWorker" in navigator){
       <div style="font-size:.72rem;color:var(--text3);margin-bottom:.5rem">入店日から指定日数は体験バックを適用します（0日＝体験なし）</div>
       <div class="fee-row"><div class="fee-lbl">体験期間</div><input type="number" class="fee-input" id="f-trial-days" min="0" step="1" value="0" placeholder="0"><span class="fee-unit">日間</span></div>
       <div id="trial-back-fields" style="display:none">
-        <div style="font-size:.72rem;color:var(--accent);font-weight:600;margin:.5rem 0 .3rem">📋 体験中コースバック</div>
+        <div style="font-size:.72rem;color:var(--text2);font-weight:600;margin:.5rem 0 .3rem">📋 体験中コースバック</div>
         <div id="fee-trial-course-rows"></div>
         <div class="fee-row" style="display:none"><div class="fee-lbl">50分コース</div><input type="number" class="fee-input" id="f-trial-b50" min="0" step="100"><span class="fee-unit">円</span></div>
         <div class="fee-row" style="display:none"><div class="fee-lbl">80分コース</div><input type="number" class="fee-input" id="f-trial-b80" min="0" step="100"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">100分コース</div><input type="number" class="fee-input" id="f-trial-b100" min="0" step="100"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">130分コース</div><input type="number" class="fee-input" id="f-trial-b130" min="0" step="100"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">延長30分</div><input type="number" class="fee-input" id="f-trial-bext" min="0" step="100"><span class="fee-unit">円</span></div>
-        <div style="font-size:.72rem;color:var(--accent);font-weight:600;margin:.5rem 0 .3rem">⭐ 体験中指名・オプションバック</div>
+        <div style="font-size:.72rem;color:var(--text2);font-weight:600;margin:.5rem 0 .3rem">⭐ 体験中指名・オプションバック</div>
         <div style="font-size:.68rem;color:var(--text3);margin-bottom:.3rem">空欄の場合は通常バックと同額</div>
         <div class="fee-row"><div class="fee-lbl">フリーバック</div><input type="number" class="fee-input" id="f-trial-shimei-free" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">ネット指名バック</div><input type="number" class="fee-input" id="f-trial-shimei-net" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
@@ -866,7 +866,7 @@ if("serviceWorker" in navigator){
       <div class="fee-sec-title">🔑 店舗PINの確認・変更</div>
       <div style="background:var(--surface2);border-radius:var(--rs);padding:.75rem;margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:.75rem;color:var(--text3)">現在の店舗PIN</div>
-        <div id="current-owner-pin-display" style="font-size:1.5rem;font-weight:700;letter-spacing:.25em;color:var(--accent);font-family:monospace"></div>
+        <div id="current-owner-pin-display" style="font-size:1.5rem;font-weight:700;letter-spacing:.25em;color:var(--text);font-family:monospace"></div>
       </div>
       <div class="fg"><label>新しい店舗PIN（1〜8桁の数字）</label>
         <input type="number" class="fi2" id="new-owner-pin" maxlength="8" inputmode="numeric" placeholder="新しいPINを入力">
@@ -1772,7 +1772,7 @@ function renderCal(){
     const numHtml=isToday
       ?`<div style="width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
       :`<span style="font-size:1.2rem;font-weight:800;line-height:1.1">${d}</span>`
-    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml}${statusText?`<span style="font-size:.55rem;line-height:1.1;${isToday?'color:var(--accent)':''}">${statusText}</span>`:''}</div>`
+    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml}${statusText?`<span style="font-size:.55rem;line-height:1.1;${isToday?'color:var(--text)':''}">${statusText}</span>`:''}</div>`
     html+=`<td onclick="${onclick}" style="width:${cellSize};height:${cellSize};text-align:center;vertical-align:middle;border-radius:5px;font-weight:${fontWeight};color:${color};background:${bg};border:${border||'1.5px solid transparent'};opacity:${opacity||1};cursor:${cursor};position:relative;padding:0">${inner}</td>`
     col++
   }
@@ -2058,7 +2058,7 @@ function renderCastTodayCards(rvs) {
         <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${r.customer_name || '（名前なし）'}${badge}</div>
         <div style="font-size:.9rem;font-weight:700;color:var(--text);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
-      <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--accent);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
+      <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--text);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
       ${actionBtns}
     </div>`;
   });
@@ -2251,7 +2251,7 @@ function salDayToggle(detailId){
   if(!el)return
   const open=el.style.display==='none'
   el.style.display=open?'block':'none'
-  if(icon) icon.style.cssText=open?'font-size:.8rem;color:var(--accent);transform:rotate(90deg);transition:transform .2s':'font-size:.8rem;color:var(--text3);transition:transform .2s'
+  if(icon) icon.style.cssText=open?'font-size:.8rem;color:var(--text3);transform:rotate(90deg);transition:transform .2s':'font-size:.8rem;color:var(--text3);transition:transform .2s'
 }
 async function loadMySalary(){
   const[y,m]=salMonth.split('-').map(Number)
@@ -2417,7 +2417,7 @@ async function loadMySalary(){
               </div>
               <div style="text-align:right;min-width:4.2rem">
                 <div style="font-size:.6rem;color:var(--rtx)">バック</div>
-                <div style="font-size:.78rem;font-weight:600;color:var(--accent)">${row.back?fmt(row.back):'-'}</div>
+                <div style="font-size:.78rem;font-weight:600;color:var(--rtx)">${row.back?fmt(row.back):'-'}</div>
               </div>
               <div style="text-align:right;min-width:4rem">
                 <div style="font-size:.6rem;color:var(--btx)">利益</div>
@@ -2442,7 +2442,7 @@ async function loadMySalary(){
                 </div>
                 <div style="text-align:right;min-width:4.2rem">
                   <div style="font-size:.6rem;color:var(--rtx)">バック</div>
-                  <div style="font-size:.82rem;font-weight:600;color:var(--accent)">${fmt(est.total)}</div>
+                  <div style="font-size:.82rem;font-weight:600;color:var(--rtx)">${fmt(est.total)}</div>
                 </div>
                 <div style="text-align:right;min-width:4rem">
                   <div style="font-size:.6rem;color:var(--btx)">店舗利益</div>
@@ -2526,7 +2526,7 @@ async function loadMySalary(){
         <td style="padding:.4rem .3rem;font-size:.7rem;color:var(--text3);white-space:nowrap">${r.cat}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;color:var(--text);white-space:nowrap">${r.name}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:500;text-align:center">${r.sale?fmt(r.sale):'-'}</td>
-        <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:700;text-align:center;color:var(--accent)">${r.back?fmt(r.back):'-'}</td>
+        <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:700;text-align:center;color:var(--rtx)">${r.back?fmt(r.back):'-'}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:500;text-align:center;color:var(--text3)">${(r.sale&&r.back!=null)?fmt(r.sale-r.back):'-'}</td>
         <td style="padding:.4rem .3rem;text-align:center"><span style="background:var(--surface2);border-radius:6px;padding:.1rem .3rem;font-size:.62rem;color:var(--text2);border:1px solid var(--border)">${r.pay||''}</span></td>
       </tr>`).join('')
@@ -2548,7 +2548,7 @@ async function loadMySalary(){
             </div>
             <div style="text-align:right;min-width:4.2rem">
               <div style="font-size:.6rem;color:var(--rtx)">バック</div>
-              <div style="font-size:.78rem;font-weight:600;color:var(--accent)">${r.back?fmt(r.back):'-'}</div>
+              <div style="font-size:.78rem;font-weight:600;color:var(--rtx)">${r.back?fmt(r.back):'-'}</div>
             </div>
             <div style="text-align:right;min-width:4rem">
               <div style="font-size:.6rem;color:var(--btx)">利益</div>
@@ -2566,7 +2566,7 @@ async function loadMySalary(){
             </div>
             <div style="text-align:right;min-width:4.2rem">
               <div style="font-size:.6rem;color:var(--rtx)">バック</div>
-              <div style="font-size:.82rem;font-weight:600;color:var(--accent)">${fmt(sessionNet)}</div>
+              <div style="font-size:.82rem;font-weight:600;color:var(--rtx)">${fmt(sessionNet)}</div>
             </div>
             <div style="text-align:right;min-width:4rem">
               <div style="font-size:.6rem;color:var(--btx)">店舗利益</div>
@@ -2604,7 +2604,7 @@ async function loadMySalary(){
         const profitLabels=['店舗利益','純利益','粗利益','利益'];
         const isBack=backLabels.some(l=>label.includes(l));
         const isProfit=profitLabels.some(l=>label.includes(l));
-        const valColor=isBack?'color:var(--rtx)':isProfit?'color:var(--btx)':accent?'color:var(--accent)':'';
+        const valColor=isBack?'color:var(--rtx)':isProfit?'color:var(--btx)':accent?'color:var(--text)':'';
         const lblColor=isBack?'color:var(--rtx)':isProfit?'color:var(--btx)':'color:var(--text3)';
         return `<div style="background:var(--surface2);border-radius:10px;padding:.55rem .4rem;text-align:center"><div style="font-size:.58rem;${lblColor};margin-bottom:.1rem">${label}</div><div style="font-size:.82rem;font-weight:700;${valColor}">${val}</div></div>`
       }
@@ -2640,7 +2640,7 @@ async function loadMySalary(){
       <div onclick="salDayToggle('${detailId}')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
         <div style="display:flex;align-items:center;gap:.5rem">
           <span style="font-size:.88rem;font-weight:700">${dateLabel}</span>
-          <span style="font-size:.78rem;color:var(--accent);font-weight:600">${fmt(w.net||w.back)}</span>
+          <span style="font-size:.78rem;color:var(--rtx);font-weight:600">${fmt(w.net||w.back)}</span>
         </div>
         <span id="${detailId}-icon" style="font-size:.9rem;color:var(--text3);transition:transform .2s">›</span>
       </div>
@@ -3712,7 +3712,7 @@ async function loadOwnerCal(){
     const numHtml2=isToday2
       ?`<div style="width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
       :`<span style="font-size:1.2rem;font-weight:800;line-height:1.1">${d}</span>`
-    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml2}${statusLabel?`<span style="font-size:.55rem;line-height:1.1;${isToday2?'color:var(--accent)':''}">${statusLabel}</span>`:''} ${rvLabel}</div>`
+    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml2}${statusLabel?`<span style="font-size:.55rem;line-height:1.1;${isToday2?'color:var(--text)':''}">${statusLabel}</span>`:''} ${rvLabel}</div>`
     cal+=`<td onclick="ownerSelectDay('${ds}')" style="height:${cellSize2};border-radius:5px;color:${color2};background:${bg2};border:${border2||'1.5px solid transparent'};cursor:pointer;padding:0;position:relative">${inner2}</td>`
     col2++
   }
@@ -3770,7 +3770,7 @@ async function loadOwnerCal(){
           <button class="btn btn-gray btn-xs" onclick="openShiftEdit(${sid},'${sname}','${date}','${sstart}','${send}','${snote}')">訂正</button>
         </div>
         <div style="font-size:.67rem;color:var(--text3);margin-bottom:.25rem">ルームを選んで確定ボタンを押してください：</div>
-        <div id="room-selected-${sid}" style="font-size:.72rem;font-weight:600;color:var(--accent);margin-bottom:.3rem;min-height:1em"></div>
+        <div id="room-selected-${sid}" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:.3rem;min-height:1em"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.28rem;margin-bottom:.28rem">
           <button id="rb-${sid}-A" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp(${sid},'堀田Aルーム')">堀田Aルーム</button>
           <button id="rb-${sid}-B" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp(${sid},'堀田Bルーム')">堀田Bルーム</button>
@@ -3822,7 +3822,7 @@ async function ownerSelectDay(ds){
       html+='<button class="btn btn-gray btn-xs" onclick="openShiftEdit('+sid+',\''+sname+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\''+snote+'\')">訂正</button>'
       html+='</div>'
       html+='<div style="font-size:.67rem;color:var(--text3);margin-bottom:.25rem">ルームを選んで確定ボタンを押してください：</div>'
-      html+='<div id="room-selected-'+sid+'" style="font-size:.72rem;font-weight:600;color:var(--accent);margin-bottom:.3rem;min-height:1em"></div>'
+      html+='<div id="room-selected-'+sid+'" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:.3rem;min-height:1em"></div>'
       html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:.28rem;margin-bottom:.28rem">'
       html+='<button id="rb-'+sid+'-A" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp('+sid+',\'堀田Aルーム\')">堀田Aルーム</button>'
       html+='<button id="rb-'+sid+'-B" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp('+sid+',\'堀田Bルーム\')">堀田Bルーム</button>'
@@ -4931,7 +4931,7 @@ function calcTotal2(){
       return `<div style="${G}">
         <span style="color:var(--text3);font-size:.75rem">${label}${isCard?'<span style="font-size:.6rem;color:var(--btx);margin-left:.2rem">C</span>':''}</span>
         <span style="text-align:right;font-size:.75rem">${fmt(billedPrice)}</span>
-        <span style="text-align:right;font-size:.72rem;color:var(--accent)">${fmt(back)}</span>
+        <span style="text-align:right;font-size:.72rem;color:var(--rtx)">${fmt(back)}</span>
         <span style="text-align:right;font-size:.72rem;color:var(--text3)">${shop>0?fmt(shop):'-'}</span>
       </div>`
     }
@@ -4970,7 +4970,7 @@ function calcTotal2(){
     brows+=`<div style="display:grid;grid-template-columns:1fr 68px 62px 62px;padding:.25rem 0;margin-top:.15rem;font-weight:700;font-size:.78rem;border-top:1.5px solid var(--border)">
       <span>小計</span>
       <span style="text-align:right">${fmt(blockSales)}</span>
-      <span style="text-align:right;color:var(--accent)">${fmt(blockBack)}</span>
+      <span style="text-align:right;color:var(--rtx)">${fmt(blockBack)}</span>
       <span style="text-align:right">${fmt(sessionShop)}</span>
     </div>`
     breakdown.innerHTML=brows
@@ -6019,7 +6019,7 @@ async function openRvDetail(rvId, shiftId, castName){
         memoHtml += `<div style="font-size:.75rem;font-weight:700;color:var(--text2);margin:.4rem 0 .2rem">💬 接客メモ</div>`
         memoHtml += memos.map(m=>`<div style="background:var(--surface2);border-radius:8px;padding:.4rem .7rem;font-size:.8rem;margin-bottom:.25rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
-            <span style="font-size:.65rem;color:var(--accent);font-weight:600">${me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）')}</span>
+            <span style="font-size:.65rem;color:var(--text2);font-weight:600">${me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）')}</span>
             <span style="font-size:.62rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</span>
           </div>
           ${m.cast_memo}
@@ -7101,7 +7101,7 @@ init()
       <button id="mse-tab-route" onclick="mseSwitchTab('route')" style="flex:1;padding:.42rem;font-size:.78rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3)">📣 集客</button>
     </div>
     <div id="mse-body-expense">
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">📢 宣伝広告費</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">📢 宣伝広告費</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">アロマパンダ</div><input type="text" inputmode="numeric" id="mse-ad-panda" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">エステラブ</div><input type="text" inputmode="numeric" id="mse-ad-estelove" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
@@ -7111,27 +7111,27 @@ init()
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">エステ魂</div><input type="text" inputmode="numeric" id="mse-ad-estekon" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">消費税</div><input type="text" inputmode="numeric" id="mse-ad-tax" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">🏠 家賃</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">🏠 家賃</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">エスレジデンス</div><input type="text" inputmode="numeric" id="mse-rent-es" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">アンナマリー</div><input type="text" inputmode="numeric" id="mse-rent-anna" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">ハニリリカ</div><input type="text" inputmode="numeric" id="mse-rent-hani" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">パークフラッツ</div><input type="text" inputmode="numeric" id="mse-rent-park" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">💡 水道光熱費</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">💡 水道光熱費</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">エスレジデンス</div><input type="text" inputmode="numeric" id="mse-util-es" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">アンナマリー</div><input type="text" inputmode="numeric" id="mse-util-anna" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">ハニリリカ</div><input type="text" inputmode="numeric" id="mse-util-hani" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">パークフラッツ</div><input type="text" inputmode="numeric" id="mse-util-park" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">📋 その他固定費</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">📋 その他固定費</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">人件費</div><input type="text" inputmode="numeric" id="mse-fixed-personnel" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">通信費</div><input type="text" inputmode="numeric" id="mse-fixed-comm" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">カード決済手数料</div><input type="text" inputmode="numeric" id="mse-fixed-card" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">📦 変動費</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">📦 変動費</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">燃料費</div><input type="text" inputmode="numeric" id="mse-var-fuel" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">消耗品</div><input type="text" inputmode="numeric" id="mse-var-consumables" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
@@ -7139,19 +7139,19 @@ init()
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">会議費</div><input type="text" inputmode="numeric" id="mse-var-meeting" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">その他</div><input type="text" inputmode="numeric" id="mse-var-other" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">➕ 経費を追加</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">➕ 経費を追加</div>
       <div id="mse-custom-expense-area" style="margin-bottom:.5rem"></div>
       <button class="btn btn-gray" style="width:100%;margin-bottom:.75rem;font-size:.82rem" onclick="addCustomExpense()">＋ 経費項目を追加</button>
     </div>
     <div id="mse-body-goal" style="display:none">
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">🎯 当月目標</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">🎯 当月目標</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">売上目標</div><input type="text" inputmode="numeric" id="mse-goal-sales" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">本数目標</div><input type="number" id="mse-goal-count" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">求人目標</div><input type="number" id="mse-goal-recruit" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">求人実績</div><input type="number" id="mse-actual-recruit" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">📅 翌月目標</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">📅 翌月目標</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">売上目標</div><input type="text" inputmode="numeric" id="mse-next-goal-sales" class="fi" style="font-size:.8rem;padding:.33rem .5rem" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">本数目標</div><input type="number" id="mse-next-goal-count" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
@@ -7159,7 +7159,7 @@ init()
       </div>
     </div>
     <div id="mse-body-route" style="display:none">
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">📣 集客経路（人数）</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">📣 集客経路（人数）</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">エステ魂</div><input type="number" id="mse-route-ekon" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">パンダ</div><input type="number" id="mse-route-panda" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
@@ -7171,12 +7171,12 @@ init()
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">SNS</div><input type="number" id="mse-route-sns" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">その他</div><input type="number" id="mse-route-other" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">👥 集客内訳</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">👥 集客内訳</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">新規</div><input type="number" id="mse-new-cust" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">再来</div><input type="number" id="mse-repeat-cust" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
       </div>
-      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.4rem">👆 指名内訳</div>
+      <div style="font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:.4rem">👆 指名内訳</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-bottom:.7rem">
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">フリー</div><input type="number" id="mse-shimei-free" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
         <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:.1rem">ネット指名</div><input type="number" id="mse-shimei-net" class="fi" style="font-size:.8rem;padding:.33rem .5rem"></div>
