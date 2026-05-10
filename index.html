@@ -76,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .cal-cell{border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid transparent;font-size:.68rem;font-weight:500;color:var(--text2);position:relative}
 .cal-cell.empty{opacity:0;cursor:default}.cal-cell.past{opacity:.3;cursor:default}
 .cal-cell.today{border-color:var(--accent);color:var(--accent);font-weight:700}
-.cal-cell.requested{background:var(--bbg);border-color:var(--bbd);color:var(--btx)}
+.cal-cell.requested{background:#f0f0f0;border-color:#c0c0c0;color:var(--text2)}
 .cal-cell.approved{background:var(--gbg);border-color:var(--gbd);color:var(--gtx)}
 .cal-cell.rejected{background:var(--rbg);border-color:var(--rbd);color:var(--rtx);opacity:.6}
 .cal-cell.selected{background:var(--accent-f);border-color:var(--accent);color:var(--accent);font-weight:700}
@@ -113,10 +113,10 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .btn:active{opacity:.8}
 .btn-gold{background:var(--accent);color:#fff;font-weight:600}
 .btn-ghost{background:var(--accent-f);color:var(--accent);border:1.5px solid var(--accent)}
-.btn-green{background:var(--gbg);color:var(--gtx);border:1.5px solid var(--gbd)}
+.btn-green{background:#fff4ed;color:#e07000;border:1.5px solid rgba(255,140,0,.4)}
 .btn-red{background:var(--rbg);color:var(--rtx);border:1.5px solid var(--rbd)}
 .btn-purple{background:var(--pbg);color:var(--ptx);border:1.5px solid var(--pbd)}
-.btn-blue{background:var(--bbg);color:var(--btx);border:1.5px solid var(--bbd)}
+.btn-blue{background:#f0f0f0;color:var(--text2);border:1.5px solid #c8c8c8}
 .btn-gray{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border)}
 .btn-full{width:100%}
 .btn-sm2{padding:.42rem .75rem;font-size:.75rem}
@@ -135,9 +135,9 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .tags{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.25rem}
 .tag{font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid}
 .tg{background:var(--accent-f);color:var(--accent);border-color:var(--accent)}
-.tb{background:var(--gbg);color:var(--gtx);border-color:var(--gbd)}
+.tb{background:#fff4ed;color:#e07000;border-color:rgba(255,140,0,.3)}
 .tr2{background:var(--rbg);color:var(--rtx);border-color:var(--rbd)}
-.tn{background:var(--bbg);color:var(--btx);border-color:var(--bbd)}
+.tn{background:#f0f0f0;color:var(--text2);border-color:#c8c8c8}
 .tp{background:var(--pbg);color:var(--ptx);border-color:var(--pbd)}
 
 /* KPI */
@@ -171,9 +171,9 @@ tr:last-child td{border-bottom:none}
 /* ROOM */
 .room-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.75rem}
 .room-card{background:var(--surface);border-radius:var(--r);padding:.85rem;border:1.5px solid var(--border);min-height:80px;box-shadow:var(--sh)}
-.room-card.on{background:var(--gbg);border-color:var(--gbd)}
+.room-card.on{background:#fff4ed;border-color:rgba(255,140,0,.5)}
 .room-lbl{font-size:.62rem;font-weight:700;color:var(--text3);margin-bottom:.3rem}
-.room-cast{font-size:.95rem;font-weight:700;color:var(--gtx)}
+.room-cast{font-size:.95rem;font-weight:700;color:var(--text)}
 .room-time{font-size:.65rem;color:var(--text3);margin-top:.1rem}
 .room-empty{font-size:.8rem;color:var(--text3)}
 
@@ -649,7 +649,7 @@ if("serviceWorker" in navigator){
 <div id="gantt-modal-overlay" style="display:none">
   <!-- JSで動的スタイル設定 -->
   <div id="gantt-modal-inner" style="display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden">
-    <div id="gantt-modal-hdr" style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:linear-gradient(135deg,#c05a8a,#e07aaa);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15)">
+    <div id="gantt-modal-hdr" style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:linear-gradient(135deg,#2c2c2e,#3a3a3c);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15)">
       <div style="display:flex;align-items:center;gap:.35rem">
         <button onclick="ganttModalMove(-1)" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1rem;cursor:pointer">‹</button>
         <div style="font-size:.75rem;font-weight:700;color:#fff" id="gantt-modal-date-lbl"></div>
@@ -985,12 +985,12 @@ let OWNER_PIN = '2580' // DBから上書きされる（後方互換でlocalStora
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 const ROOMS = ['堀田Aルーム','堀田Bルーム','堀田Cルーム','金山ルーム']
 const ROOM_COLORS = {
-  '堀田Aルーム': {bg:'#fff0f6',tx:'#be185d',bd:'#fbcfe8',card:'#fce7f3'},
-  '堀田Bルーム': {bg:'#eff6ff',tx:'#1d4ed8',bd:'#bfdbfe',card:'#dbeafe'},
-  '堀田Cルーム': {bg:'#f0fdf4',tx:'#15803d',bd:'#bbf7d0',card:'#dcfce7'},
-  '金山ルーム':  {bg:'#fefce8',tx:'#854d0e',bd:'#fef08a',card:'#fef9c3'},
+  '堀田Aルーム': {bg:'#f8f8f8',tx:'#1c1c1e',bd:'#d0d0d0',card:'#f2f2f2'},
+  '堀田Bルーム': {bg:'#f2f2f2',tx:'#1c1c1e',bd:'#c4c4c4',card:'#ebebeb'},
+  '堀田Cルーム': {bg:'#eeeeee',tx:'#1c1c1e',bd:'#bbbbbb',card:'#e6e6e6'},
+  '金山ルーム':  {bg:'#fff4ed',tx:'#1c1c1e',bd:'rgba(255,140,0,.3)',card:'#fff0e4'},
 }
-function getRoomColor(room){return ROOM_COLORS[room]||{bg:'var(--pbg)',tx:'var(--ptx)',bd:'var(--pbd)',card:'var(--pbg)'}}
+function getRoomColor(room){return ROOM_COLORS[room]||{bg:'#f5f5f5',tx:'#3a3a3c',bd:'#d0d0d0',card:'#f5f5f5'}}
 const DEFAULT_FEE = {back_50:6000,back_80:8000,back_100:9000,back_130:11000,back_ext30:3000,shimei_free:0,shimei_net:1000,shimei_hon:1000,op_gokueki:1000,op_isho:2000,op_isho2:3000,shop_shimei_free:0,shop_shimei_net:1000,shop_shimei_hon:2000,shop_op_gokueki:2000,shop_op_isho:3000,shop_op_isho2:3000,misc_0:0,misc_1:1000,misc_3:2000,misc_enabled:true,trial_days:0,trial_b50:null,trial_b80:null,trial_b100:null,trial_b130:null,trial_bext:null,trial_shimei_free:null,trial_shimei_net:null,trial_shimei_hon:null,trial_op_gokueki:null,trial_op_isho:null,trial_op_isho2:null}
 
 // 営業時間プルダウン用（11:00〜翌2:00）
@@ -1913,7 +1913,7 @@ async function renderInlineShiftList(){
     if (!list.length) return '<div style="font-size:.8rem;color:var(--text3);padding:.5rem 0 .25rem;text-align:center">なし</div>'
     return list.map(s=>{
       const rc=getRoomColor(s.room)
-      const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
+      const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:var(--text);border-color:${rc.bd}">${s.room}</span>`:''
       const rvCount=rvByShift[s.id]||0
       const isToday=s.date===td
       const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">${isToday?'予約':'事前予約'}${rvCount}件</span>`:''
@@ -2058,8 +2058,8 @@ function renderCastTodayCards(rvs) {
       cardStyle += 'background:#fffbf2;border-color:#ff8c00;';
       badge = '<span style="font-size:.7rem;background:#ff8c00;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600;animation:pulse 1.5s infinite">● 接客中</span>';
     } else if (isComing) {
-      cardStyle += 'background:#f4f8ff;border-color:#7aaee0;';
-      badge = '<span style="font-size:.7rem;background:#7aaee0;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600">まもなく</span>';
+      cardStyle += 'background:#f5f5f5;border-color:#c0c0c0;';
+      badge = '<span style="font-size:.7rem;background:#555;color:white;border-radius:20px;padding:.15rem .6rem;margin-left:.5rem;font-weight:600">まもなく</span>';
     } else {
       cardStyle += 'background:white;border-color:#e8dcc8;';
     }
@@ -3827,8 +3827,8 @@ async function loadOwnerCal(){
       const ss2=rm2[r]
       const rc2=getRoomColor(r)
       if(ss2&&ss2.length){
-        const names2=ss2.map(s=>`<div style="font-size:${ss2.length>1?'.78rem':'.85rem'};font-weight:700;color:${rc2.tx}">${s.casts?.name||'?'}<span style="font-size:.58rem;font-weight:400;margin-left:.25rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
-        rh2+=`<div class="room-card" style="background:${rc2.card};border-color:${rc2.bd}"><div class="room-lbl" style="color:${rc2.tx}">${r}</div>${names2}</div>`
+        const names2=ss2.map(s=>`<div style="font-size:${ss2.length>1?'.78rem':'.85rem'};font-weight:700;color:var(--text)">${s.casts?.name||'?'}<span style="font-size:.58rem;font-weight:400;margin-left:.25rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
+        rh2+=`<div class="room-card" style="background:${rc2.card};border-color:${rc2.bd}"><div class="room-lbl" style="color:var(--text)">${r}</div>${names2}</div>`
       } else {
         rh2+=`<div class="room-card"><div class="room-lbl">${r}</div><div class="room-empty">空き</div></div>`
       }
@@ -3999,9 +3999,9 @@ function refreshOwnerRoomGrid(){
         const nameStr = s.casts?.name || '?'
         const timeStr = (s.start_time?.slice(0,5)||'') + '〜' + (s.end_time?.slice(0,5)||'')
         const tempMark = s._temp ? '<span style="font-size:.55rem;color:'+rc.tx+';opacity:.7"> (仮)</span>' : ''
-        return `<div style="font-size:${ss.length>1?'.78rem':'.85rem'};font-weight:700;color:${rc.tx}">${nameStr}${tempMark}<span style="font-size:.58rem;font-weight:400;margin-left:.25rem">${timeStr}</span></div>`
+        return `<div style="font-size:${ss.length>1?'.78rem':'.85rem'};font-weight:700;color:var(--text)">${nameStr}${tempMark}<span style="font-size:.58rem;font-weight:400;margin-left:.25rem">${timeStr}</span></div>`
       }).join('')
-      rh += `<div class="room-card" style="background:${rc.card};border-color:${rc.bd}"><div class="room-lbl" style="color:${rc.tx}">${r}</div>${names}</div>`
+      rh += `<div class="room-card" style="background:${rc.card};border-color:${rc.bd}"><div class="room-lbl" style="color:var(--text)">${r}</div>${names}</div>`
     } else {
       rh += `<div class="room-card"><div class="room-lbl">${r}</div><div class="room-empty">空き</div></div>`
     }
@@ -4163,10 +4163,10 @@ async function loadToday(){
     const ss=rm[r]
     const rc=getRoomColor(r)
     if(ss&&ss.length){
-      const names=ss.map(s=>`<div style="font-size:${ss.length>1?'.8rem':'.9rem'};font-weight:700;color:${rc.tx}">${s.casts?.name||'?'}<span style="font-size:.6rem;font-weight:400;margin-left:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
+      const names=ss.map(s=>`<div style="font-size:${ss.length>1?'.8rem':'.9rem'};font-weight:700;color:var(--text)">${s.casts?.name||'?'}<span style="font-size:.6rem;font-weight:400;margin-left:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
       rh+=`<div class="room-card" style="background:${rc.card};border-color:${rc.bd};cursor:pointer" onclick="openGanttModal('${r.replace(/'/g,"\'")}')">
-        <div class="room-lbl" style="color:${rc.tx}">${r}</div>${names}
-        <div style="font-size:.55rem;color:${rc.tx};opacity:.6;margin-top:.3rem">タップでガント表示</div>
+        <div class="room-lbl" style="color:var(--text)">${r}</div>${names}
+        <div style="font-size:.55rem;color:var(--text);opacity:.6;margin-top:.3rem">タップでガント表示</div>
       </div>`
     } else {
       rh+=`<div class="room-card" style="cursor:pointer" onclick="openGanttModal('${r.replace(/'/g,"\'")}')">
@@ -4204,7 +4204,7 @@ async function loadToday(){
   shifts.forEach(s=>{
     const workDone=!!worksBycast[s.cast_id]
     const rc2=getRoomColor(s.room)
-    const rt=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc2.bg};color:${rc2.tx};border-color:${rc2.bd}">${s.room}</span>`:`<span class="tag tr2">ルーム未指定</span>`
+    const rt=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc2.bg};color:var(--text);border-color:${rc2.bd}">${s.room}</span>`:`<span class="tag tr2">ルーム未指定</span>`
     const shiftRvs=rvByShift2[s.id]||[]
     const rvBadge=shiftRvs.length>0?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">事前予約${shiftRvs.length}件</span>`:''
     // インターバル計算（intervalHtmlは後段のintervalDisplayに統合）
