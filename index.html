@@ -1786,13 +1786,13 @@ function renderCal(){
     if(!isPast){
       if(s){
         if(s.status==='requested'){bg='var(--bbg)';border='1.5px solid var(--bbd)';color='var(--btx)'}
-        else if(s.status==='approved'){bg='var(--gbg)';border='1.5px solid var(--gbd)';color='var(--gtx)'}
+        else if(s.status==='approved'){bg='';border='1.5px solid var(--accent)';color=''}
         else{bg='var(--rbg)';border='1.5px solid var(--rbd)';color='var(--rtx)';fontWeight='400'}
       }
       if(ds===selectedDate){bg='var(--accent-f)';border='1.5px solid var(--accent)';color='var(--accent)';fontWeight='700'}
       else if(ds===td){border='1.5px solid transparent';color='#fff';fontWeight='800';isToday=true}
     }
-    if(!color&&!s){color=dow===0?'var(--rtx)':dow===6?'var(--btx)':'var(--text2)'}
+    if(!color&&!s){color=dow===0?'var(--rtx)':'var(--text2)'}
     const opacity=isPast?'0.3':''
     const cursor='pointer'
     const onclick='selectDay(\''+ds+'\')'
@@ -3797,8 +3797,8 @@ async function loadOwnerCal(){
     let bg2='',border2='',color2='',isToday2=false
     if(ds===td){border2='1.5px solid transparent';color2='#fff';isToday2=true}
     else if(hasPending){bg2='var(--bbg)';border2='1.5px solid var(--bbd)';color2='var(--btx)'}
-    else if(hasApproved){bg2='var(--gbg)';border2='1.5px solid var(--gbd)';color2='var(--gtx)'}
-    if(!color2){color2=dow2===0?'var(--rtx)':dow2===6?'var(--btx)':'var(--text2)'}
+    else if(hasApproved){bg2='';border2='1.5px solid var(--accent)';color2=''}
+    if(!color2){color2=dow2===0?'var(--rtx)':'var(--text2)'}
     const totalShifts=(pendingDates[ds]||0)+(approvedDates[ds]||0)
     const rvCount=reservationByDate[ds]||0
     const statusLabel=totalShifts>0?('出勤'+totalShifts):''
