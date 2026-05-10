@@ -263,6 +263,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -6781,7 +6782,7 @@ function renderMonthlyFromCache(){
   else if(monthlyTabMode==='daily') renderMonthlyDaily(area,dailyRows,tot)
   else if(monthlyTabMode==='cast') renderMonthlyCast(area,castStats,fmt2)
   else if(monthlyTabMode==='expense') renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses)
-  else if(monthlyTabMode==='chart') renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total_util,total_fixed,total_vari)
+  else if(monthlyTabMode==='chart') renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total_util,total_fixed,total_vari,dailyRows)
 }
 
 function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
@@ -7027,6 +7028,93 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
   area.innerHTML=html
 }
 
+
+function drawDailyBarChart(canvasId,labels,sales,nets,profits){
+  const canvas=document.getElementById(canvasId); if(!canvas)return
+  const W=canvas.parentElement.offsetWidth||300
+  const barCount=labels.length, groupW=Math.max(Math.floor((W-40)/Math.max(barCount,1)),4)
+  const bW=Math.max(Math.floor(groupW/4),2), gap=1
+  const H=220; canvas.width=W; canvas.height=H
+  const ctx=canvas.getContext('2d')
+  const allVals=[...sales,...nets,...profits].filter(v=>v>0)
+  const maxV=allVals.length?Math.max(...allVals):1
+  const pY=30, bH=H-pY-20
+  // Y軸グリッド
+  [0,.25,.5,.75,1].forEach(f=>{
+    const y=pY+bH*(1-f)
+    ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1
+    ctx.beginPath(); ctx.moveTo(38,y); ctx.lineTo(W,y); ctx.stroke()
+    const v=Math.round(maxV*f)
+    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='right'
+    ctx.fillText(v>=10000?'¥'+(v/10000).toFixed(0)+'万':'¥'+v,36,y+3)
+  })
+  labels.forEach((lbl,i)=>{
+    const x=40+i*groupW
+    const draw=(val,offset,color)=>{
+      if(!val)return
+      const h=Math.round(bH*val/maxV)
+      ctx.fillStyle=color; ctx.fillRect(x+offset,pY+bH-h,bW,h)
+    }
+    draw(sales[i],0,'rgba(255,140,0,.6)')
+    draw(nets[i],bW+gap,'rgba(220,53,69,.55)')
+    draw(profits[i],(bW+gap)*2,'rgba(30,120,200,.55)')
+    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='center'
+    ctx.fillText(lbl,x+groupW/2-bW/2,H-4)
+  })
+  // 凡例
+  const leg=[['売上','rgba(255,140,0,.7)'],['委託金','rgba(220,53,69,.7)'],['粗利益','rgba(30,120,200,.7)']]
+  leg.forEach(([l,c],i)=>{
+    ctx.fillStyle=c; ctx.fillRect(42+i*60,6,10,8)
+    ctx.fillStyle='#555'; ctx.font='9px sans-serif'; ctx.textAlign='left'
+    ctx.fillText(l,54+i*60,14)
+  })
+}
+
+function drawDailyLineChart(canvasId,labels,counts){
+  const canvas=document.getElementById(canvasId); if(!canvas)return
+  const W=canvas.parentElement.offsetWidth||300
+  const H=160; canvas.width=W; canvas.height=H
+  const ctx=canvas.getContext('2d')
+  const maxV=Math.max(...counts,1)
+  const pL=36,pR=10,pT=20,pB=22
+  const cW=W-pL-pR, cH=H-pT-pB
+  const n=labels.length; if(!n)return
+  // グリッド
+  [0,.5,1].forEach(f=>{
+    const y=pT+cH*(1-f)
+    ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke()
+    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='right'
+    ctx.fillText(Math.round(maxV*f),pL-2,y+3)
+  })
+  // 折れ線
+  const pts=counts.map((v,i)=>({x:pL+i*(cW/(n-1||1)),y:pT+cH*(1-v/maxV)}))
+  // 塗りつぶし
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pT+cH)
+  pts.forEach(p=>ctx.lineTo(p.x,p.y))
+  ctx.lineTo(pts[pts.length-1].x,pT+cH); ctx.closePath()
+  ctx.fillStyle='rgba(255,140,0,.12)'; ctx.fill()
+  // 線
+  ctx.beginPath(); ctx.strokeStyle='rgba(255,140,0,.85)'; ctx.lineWidth=2
+  pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.stroke()
+  // 点
+  pts.forEach((p,i)=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2)
+    ctx.fillStyle='rgba(255,140,0,.9)'; ctx.fill()
+    if(counts[i]>0){
+      ctx.fillStyle='#555'; ctx.font='8px sans-serif'; ctx.textAlign='center'
+      ctx.fillText(counts[i],p.x,p.y-6)
+    }
+  })
+  // X軸ラベル（間引き）
+  const step=Math.max(1,Math.floor(n/10))
+  labels.forEach((l,i)=>{
+    if(i%step!==0&&i!==n-1)return
+    ctx.fillStyle='#999'; ctx.font='8px sans-serif'; ctx.textAlign='center'
+    ctx.fillText(l,pts[i].x,H-6)
+  })
+}
+
 function drawPieChart(canvasId,data,colors){
   const canvas=document.getElementById(canvasId); if(!canvas) return
   const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height
@@ -7046,7 +7134,7 @@ function drawPieChart(canvasId,data,colors){
 }
 function monthlyLegend(data,colors){return data.map((d,i)=>`<div style="display:flex;align-items:center;gap:.3rem;font-size:.72rem"><div style="width:10px;height:10px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></div><span>${d.label}：${d.value}</span></div>`).join('')}
 
-function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total_util,total_fixed,total_vari){
+function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total_util,total_fixed,total_vari,dailyRows){
   const routeColors=['#ff6384','#36a2eb','#ffce56','#4bc0c0','#9966ff','#ff9f40','#c9cbcf','#4caf50','#ff5722']
   const shimeiColors=['#36a2eb','#ffce56','#ff6384'],visitColors=['#4caf50','#ff9f40']
   const routeItems=[['エステ魂','esute_kon'],['パンダ','panda'],['エステラブ','esute_love'],['ランキング','ranking'],['ジャパン','japan'],['ゼロツー','zerotwo'],['HP','hp'],['SNS','sns'],['その他','other']]
@@ -7057,8 +7145,34 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const repV=sd.repeat_customers!=null?sd.repeat_customers:tot.repeatCount
   const visitData=[{label:'新規',value:newV},{label:'再来',value:repV}].filter(d=>d.value>0)
   const pie=(id,data,colors,label)=>`<div class="card" style="margin-bottom:.55rem"><div style="font-weight:700;font-size:.85rem;margin-bottom:.4rem">${label}</div>${data.length?`<div style="display:flex;justify-content:center;margin-bottom:.4rem"><canvas id="${id}" width="180" height="180"></canvas></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:.2rem">${monthlyLegend(data,colors)}</div>`:'<div style="color:var(--text3);font-size:.8rem">データなし</div>'}</div>`
-  area.innerHTML=pie('chart-route',routeData,routeColors,'📣 集客経路')+pie('chart-shimei',shimeiData,shimeiColors,'👆 指名内訳')+pie('chart-visit',visitData,visitColors,'👥 来店分類')
+  // 日別データ（noDataを除く）
+  const vr=(dailyRows||[]).filter(r=>!r.noData)
+  const labels=vr.map(r=>r.day+'日')
+  const salesData=vr.map(r=>r.gross_work||0)
+  const netData=vr.map(r=>r.net||0)
+  const profitData=vr.map(r=>r.profit||0)
+  const countData=vr.map(r=>r.count||0)
+
+  const dailyChartHtml=vr.length?`
+    <div class="card" style="margin-bottom:.55rem">
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:.6rem">📊 日別売上</div>
+      <canvas id="chart-daily-bar"></canvas>
+    </div>
+    <div class="card" style="margin-bottom:.55rem">
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:.6rem">📈 日別本数</div>
+      <canvas id="chart-daily-line"></canvas>
+    </div>`:'';
+
+  area.innerHTML=dailyChartHtml+pie('chart-route',routeData,routeColors,'📣 集客経路')+pie('chart-shimei',shimeiData,shimeiColors,'👆 指名内訳')+pie('chart-visit',visitData,visitColors,'👥 来店分類')
+  
   requestAnimationFrame(()=>{
+    // 日別棒グラフ
+    if(vr.length){
+      // 日別棒グラフ（独自Canvas描画）
+      drawDailyBarChart('chart-daily-bar',labels,salesData,netData,profitData)
+      // 日別本数折れ線グラフ
+      drawDailyLineChart('chart-daily-line',labels,countData)
+    }
     if(routeData.length) drawPieChart('chart-route',routeData,routeColors)
     if(shimeiData.length) drawPieChart('chart-shimei',shimeiData,shimeiColors)
     if(visitData.length) drawPieChart('chart-visit',visitData,visitColors)
