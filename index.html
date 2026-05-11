@@ -228,7 +228,7 @@ tr:last-child td{border-bottom:none}
 .session-label{font-size:.7rem;color:var(--text3);font-weight:600;margin-bottom:.25rem}
 </style>
 <script>
-const SW_VER = 'v9';
+const SW_VER = 'v10';
 if("serviceWorker" in navigator){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -2073,9 +2073,7 @@ function renderCastTodayCards(rvs) {
     const histBtn = r.customer_no
       ? `<button onclick="castOpenCustHistory(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\\'")}',${r.customer_id||'null'})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.78rem;font-weight:600;cursor:pointer">📋 来店履歴</button>`
       : '';
-    // 支払いボタン用にpayment JSONをdata属性で安全に渡す
-    const payDataId = 'pay-data-' + r.id;
-    const payBtn = `<button onclick="castOpenPayment('${payDataId}')" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid #7aaee0;border-radius:10px;background:#f4f8ff;color:#1d4ed8;font-size:.78rem;font-weight:600;cursor:pointer">💳 支払い確認</button>`;
+    const payBtn = `<button onclick="castOpenPayment(${r.id})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid #7aaee0;border-radius:10px;background:#f4f8ff;color:#1d4ed8;font-size:.78rem;font-weight:600;cursor:pointer">💳 支払い確認</button>`;
     const actionBtns = isPast && hasRoomOut ? histBtn + payBtn : `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
         ${hasRoomIn
@@ -2089,16 +2087,12 @@ function renderCastTodayCards(rvs) {
       </div>
       ${payBtn}
       ${histBtn}`;
-    // payment JSONをscriptタグで安全に保存
-    const payJson = r.payment || '{}';
-
     html += `<div style="${cardStyle}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
         <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${r.customer_name || '（名前なし）'}${badge}</div>
         <div style="font-size:.9rem;font-weight:700;color:var(--text);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
       <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--text);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
-      <script type="application/json" id="${payDataId}">${payJson}<\/script>
       ${actionBtns}
     </div>`;
   });
@@ -2121,56 +2115,90 @@ function sortRvsByTime(rvs) {
   });
 }
 
-// ── セラピスト：支払い方法確認モーダル ──
-function castOpenPayment(payDataId) {
-  let pj = {};
-  try {
-    const el = document.getElementById(payDataId);
-    if (el) pj = JSON.parse(el.textContent || '{}');
-  } catch(e) {}
-
-  const payIcon = m => m === 'カード' ? '💳 カード' : '💴 現金';
-  const rowStyle = 'display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--border);';
-  const lblStyle = 'font-size:.82rem;color:var(--text3);';
-  const valStyle = m => `font-size:.85rem;font-weight:700;color:${m==='カード'?'#1d4ed8':'var(--text)'}`;
-
-  const rows = [
-    { label: 'コース', key: 'course' },
-    { label: '指名料', key: 'shimei' },
-    { label: 'オプション', key: 'option' },
-    { label: '延長', key: 'ext' },
-  ];
-
-  const tableHtml = rows.map(row => {
-    const val = pj[row.key];
-    if (!val) return '';
-    return `<div style="${rowStyle}"><span style="${lblStyle}">${row.label}</span><span style="${valStyle(val)}">${payIcon(val)}</span></div>`;
-  }).filter(Boolean).join('') || `<div style="text-align:center;padding:1rem;color:var(--text3);font-size:.85rem">支払い情報なし</div>`;
-
-  // optPay（オプション個別）があれば追加表示
-  const optPay = pj.optPay || {};
-  const optKeys = Object.keys(optPay);
-  const optRows = optKeys.map(name => {
-    const val = optPay[name];
-    return `<div style="${rowStyle}"><span style="${lblStyle}">　└ ${name}</span><span style="${valStyle(val)}">${payIcon(val)}</span></div>`;
-  }).join('');
-
+// ── セラピスト：支払い確認モーダル ──
+async function castOpenPayment(rvId) {
   let existing = document.getElementById('cast-pay-modal');
   if (existing) existing.remove();
-
   const modal = document.createElement('div');
   modal.id = 'cast-pay-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
-  modal.innerHTML = `
-    <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.25rem 1.25rem 2rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <div style="font-weight:700;font-size:1rem">💳 支払い方法</div>
-        <button onclick="document.getElementById('cast-pay-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button>
-      </div>
-      ${tableHtml}
-      ${optRows}
-    </div>`;
+  modal.innerHTML = `<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.25rem 1.25rem 2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-weight:700;font-size:1rem">💳 支払い確認</div>
+      <button onclick="document.getElementById('cast-pay-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <div class="spin">読み込み中...</div>
+  </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+
+  const {data:r} = await sb.from('reservations').select('*').eq('id', rvId).single();
+  if (!r) { modal.remove(); toast('予約データが見つかりません'); return; }
+  const {data:courseList} = await sb.from('courses').select('*');
+  const {data:optList} = await sb.from('options').select('*');
+  const {data:discListAll} = await sb.from('cast_discounts').select('*').eq('cast_id', 0);
+
+  let pj = {};
+  try { pj = JSON.parse(r.payment || '{}'); } catch(e) {}
+
+  const ss = storeSettings || {};
+  const courseObj = (courseList||[]).find(c => c.name === r.course);
+  const coursePrice = courseObj?.price || 0;
+  const shimeiPrice = r.shimei_type==='フリー' ? (ss.shimei_free||0)
+    : r.shimei_type==='ネット指名' ? (ss.shimei_net||1000)
+    : r.shimei_type==='本指名' ? (ss.shimei_hon||2000) : 0;
+  const optNames2 = r.options ? r.options.split(',').filter(Boolean) : [];
+  const optTotal = optNames2.reduce((s,n) => { const o=(optList||[]).find(x=>x.name===n); return s+(o?.price||0); }, 0);
+  const discs = r.discount ? r.discount.split(',').filter(Boolean) : [];
+  const discTotal = discs.reduce((s,n) => { const d=(discListAll||[]).find(x=>x.name===n); return s+(d?.amount||0); }, 0);
+  const extCount = r.extension_count || 0;
+  const extCourseObj = (courseList||[]).find(c => c.name&&c.name.includes('延長'));
+  const extUnitPrice = extCourseObj?.price || 6000;
+  const extTotal = extCount * extUnitPrice;
+  const totalPrice = coursePrice + shimeiPrice + optTotal + extTotal - discTotal;
+  const payCourse = pj.course||'現金', payShimei = pj.shimei||'現金', payOpt = pj.option||'現金', payExt = pj.ext||'現金';
+  const cardAmt = (payCourse==='カード'?coursePrice:0)+(payShimei==='カード'?shimeiPrice:0)+(payOpt==='カード'?optTotal:0)+(payExt==='カード'?extTotal:0);
+  const cashAmt = totalPrice - cardAmt;
+  const fmt2 = n => '¥' + Number(n).toLocaleString();
+
+  const inner = modal.querySelector('div');
+  inner.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-weight:700;font-size:1rem">💳 支払い確認</div>
+      <button onclick="document.getElementById('cast-pay-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button>
+    </div>
+    <div style="font-size:.82rem;color:var(--text3);margin-bottom:.6rem">${r.customer_name||''}　${r.shimei_type||''}　${r.course||''}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-bottom:.75rem">
+      <div style="background:var(--surface2);border-radius:10px;padding:.6rem .4rem;text-align:center">
+        <div style="font-size:.6rem;color:var(--text3);margin-bottom:.2rem">合計</div>
+        <div style="font-size:.92rem;font-weight:800">${fmt2(totalPrice)}</div>
+      </div>
+      <div style="background:#fff8e1;border-radius:10px;padding:.6rem .4rem;text-align:center">
+        <div style="font-size:.6rem;color:var(--text3);margin-bottom:.2rem">💴 現金</div>
+        <div style="font-size:.92rem;font-weight:800;color:#b8860b">${fmt2(cashAmt)}</div>
+      </div>
+      <div style="background:#e8f4fd;border-radius:10px;padding:.6rem .4rem;text-align:center">
+        <div style="font-size:.6rem;color:var(--text3);margin-bottom:.2rem">💳 カード</div>
+        <div style="font-size:.92rem;font-weight:800;color:var(--btx)">${fmt2(cardAmt)}</div>
+      </div>
+    </div>
+    ${cardAmt>0?`<div style="background:#e8f4fd;border-radius:8px;padding:.45rem .7rem;margin-bottom:.6rem">
+      <div style="font-size:.62rem;color:var(--btx);font-weight:700;margin-bottom:.25rem">💳 カード内訳</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;text-align:center">
+        <div><div style="font-size:.6rem;color:#555">カード金額</div><div style="font-size:.82rem;font-weight:700;color:var(--btx)">${fmt2(cardAmt)}</div></div>
+        <div><div style="font-size:.6rem;color:#555">お客請求(+10%)</div><div style="font-size:.82rem;font-weight:700;color:var(--btx)">${fmt2(Math.round(cardAmt*1.1))}</div></div>
+        <div><div style="font-size:.6rem;color:#555">手数料(6%+80円)</div><div style="font-size:.82rem;font-weight:700;color:var(--rtx)">-${fmt2(Math.floor(cardAmt*0.06)+80)}</div></div>
+      </div>
+    </div>`:''}
+    <div style="border-top:1px solid var(--border);padding-top:.5rem">
+      ${coursePrice?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">コース（${r.course||'-'}）</span><span style="color:${payCourse==='カード'?'var(--btx)':'var(--text)'}">${fmt2(coursePrice)}　${payCourse==='カード'?'💳':'💴'}</span></div>`:''}
+      ${shimeiPrice?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">指名料（${r.shimei_type||'-'}）</span><span style="color:${payShimei==='カード'?'var(--btx)':'var(--text)'}">${fmt2(shimeiPrice)}　${payShimei==='カード'?'💳':'💴'}</span></div>`:''}
+      ${optTotal?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">OP（${optNames2.join('・')}）</span><span style="color:${payOpt==='カード'?'var(--btx)':'var(--text)'}">${fmt2(optTotal)}　${payOpt==='カード'?'💳':'💴'}</span></div>`:''}
+      ${extTotal?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">延長×${extCount}回</span><span style="color:${payExt==='カード'?'var(--btx)':'var(--text)'}">${fmt2(extTotal)}　${payExt==='カード'?'💳':'💴'}</span></div>`:''}
+      ${discTotal?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">割引</span><span style="color:var(--rtx)">-${fmt2(discTotal)}</span></div>`:''}
+    </div>`;
+}
+
   document.body.appendChild(modal);
 }
 
@@ -7451,7 +7479,7 @@ async function subscribePush(castId) {
   if (permission !== "granted") { alert("通知許可されず"); return; }
 
   try {
-    const reg = await navigator.serviceWorker.register("/sw.js?v=9");
+    const reg = await navigator.serviceWorker.register("/sw.js?v=10");
     alert("SW登録成功: " + reg.scope);
     const oldSub = await reg.pushManager.getSubscription();
     if (oldSub) await oldSub.unsubscribe();
