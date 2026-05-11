@@ -3160,15 +3160,15 @@ async function openReservation(shiftId,castName,date){
   const{data:opts}=await sb.from('options').select('*').order('name')
   const optsList=document.getElementById('rv-options-list')
   if(opts&&opts.length){
-    optsList.innerHTML=opts.map(o=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem 0">
-      <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;flex:1;font-size:.88rem">
-        <input type="checkbox" class="rv-opt-chk" value="${o.name}" style="width:18px;height:18px;accent-color:var(--accent)" onchange="updateOptPay(this)">
-        <span>${o.name}（¥${(o.price||0).toLocaleString()}）</span>
-      </label>
-      <select class="rv-opt-pay pay-sel" data-opt="${o.name}" style="font-size:.75rem;width:64px;padding:.3rem .3rem;opacity:.4;pointer-events:none" disabled>
-        <option value="現金">現金</option><option value="カード">カード</option>
-      </select>
-    </div>`).join('')
+      optsList.innerHTML=opts.map(o=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .2rem;border-bottom:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
+          <input type="checkbox" class="rv-opt-chk" value="${o.name}" style="width:18px;height:18px;accent-color:var(--accent)" onchange="updateOptPay(this)">
+          <div><div style="font-size:.88rem;font-weight:600">${o.name}</div><div style="font-size:.75rem;color:var(--text3)">¥${(o.price||0).toLocaleString()}</div></div>
+        </label>
+        <select class="rv-opt-pay pay-sel" data-opt="${o.name}" style="font-size:.82rem;padding:.3rem .5rem;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text3);opacity:.4;pointer-events:none;font-weight:600;min-width:68px" disabled>
+          <option value="現金">💴 現金</option><option value="カード">💳 カード</option>
+        </select>
+      </div>`).join('')
   } else {
     optsList.innerHTML='<div style="font-size:.83rem;color:var(--text3)">オプションなし</div>'
   }
