@@ -1479,11 +1479,6 @@ async function hdrPushBtnClick(){
 async function registerCastPush(){
   const castId = me.id;
   const btn = document.getElementById('hdr-push-btn');
-  const isPWA = window.navigator.standalone === true;
-  if (!isPWA) {
-    alert('通知を有効にするには\nホーム画面に追加してから\nアプリとして開いてください。');
-    return;
-  }
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
@@ -1522,7 +1517,6 @@ async function checkOwnerPushBtn(){
   btn.style.opacity = '1';
   btn.style.cursor = 'pointer';
   try {
-    if (Notification.permission !== 'granted') return;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
