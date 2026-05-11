@@ -228,7 +228,7 @@ tr:last-child td{border-bottom:none}
 .session-label{font-size:.7rem;color:var(--text3);font-weight:600;margin-bottom:.25rem}
 </style>
 <script>
-const SW_VER = 'v10';
+const SW_VER = 'v11';
 if("serviceWorker" in navigator){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -312,7 +312,7 @@ if("serviceWorker" in navigator){
         <button onclick="clearCastSelection()" style="background:none;border:none;font-size:.75rem;color:var(--text3);cursor:pointer;padding:.2rem .4rem">変更</button>
       </div>
       <label class="lbl">PIN（最大8桁）</label>
-      <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key='Enter')doCastLogin()">
+      <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doCastLogin()">
       <button class="btn-login" style="background:var(--accent)" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
     </div>
     <div class="lerr" id="cast-err"></div>
@@ -7479,7 +7479,7 @@ async function subscribePush(castId) {
   if (permission !== "granted") { alert("通知許可されず"); return; }
 
   try {
-    const reg = await navigator.serviceWorker.register("/sw.js?v=10");
+    const reg = await navigator.serviceWorker.register("/sw.js?v=11");
     alert("SW登録成功: " + reg.scope);
     const oldSub = await reg.pushManager.getSubscription();
     if (oldSub) await oldSub.unsubscribe();
