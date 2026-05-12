@@ -384,8 +384,8 @@ if("serviceWorker" in navigator){
       <div id="cast-memo-area" style="display:none"></div>
       <!-- 過去メモ閲覧 -->
       <div style="border-top:1px solid var(--border);margin-top:.75rem;padding-top:.75rem">
-        <div style="font-size:.85rem;font-weight:700;margin-bottom:.5rem">📚 過去のメモを見る</div>
-        <button class="btn btn-ghost btn-full" onclick="openMyCastMemoLog()">過去の接客メモ一覧</button>
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.5rem">📚 過去の接客メモ</div>
+        <div id="my-memo-log-area"><div class="spin">読み込み中...</div></div>
       </div>
     </div>
 
@@ -6658,6 +6658,40 @@ async function loadCastMemoList(){
   // 顧客一覧を読み込んでおく（検索用）
   const {data} = await sb.from('customers').select('id,name,customer_no').order('customer_no')
   castMemoAllCustomers = data||[]
+  // 過去メモ一覧を表示
+  loadMyMemoLog()
+}
+
+async function loadMyMemoLog(){
+  const area = document.getElementById('my-memo-log-area')
+  if(!area) return
+  area.innerHTML = '<div class="spin">読み込み中...</div>'
+  const {data:memos} = await sb.from('customer_visits')
+    .select('id,cast_memo,cast_name,visit_date,customer_id')
+    .eq('cast_name', me.name)
+    .not('cast_memo','is',null)
+    .neq('cast_memo','')
+    .order('visit_date',{ascending:false})
+  if(!memos||!memos.length){
+    area.innerHTML='<div class="empty">過去の接客メモはありません</div>'
+    return
+  }
+  // customer_idから顧客名を引く
+  const custMap = {}
+  castMemoAllCustomers.forEach(c=>{ custMap[c.id]=c })
+  area.innerHTML = memos.map(m=>{
+    const c = custMap[m.customer_id]
+    const custLabel = c ? `No.${c.customer_no}　${c.name}` : '顧客不明'
+    const [,mm,dd] = (m.visit_date||'').split('-')
+    const dateLabel = m.visit_date ? `${parseInt(mm)}月${parseInt(dd)}日` : ''
+    return `<div style="padding:.55rem 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
+        <div style="font-size:.85rem;font-weight:600">${custLabel}</div>
+        <div style="font-size:.72rem;color:var(--text3)">${dateLabel}</div>
+      </div>
+      <div style="font-size:.8rem;color:var(--text2);line-height:1.5;white-space:pre-wrap">${m.cast_memo}</div>
+    </div>`
+  }).join('')
 }
 
 function filterMemos(){
