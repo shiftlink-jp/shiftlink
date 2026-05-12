@@ -2034,7 +2034,7 @@ function renderCastTodayCards(rvs) {
     const checkoutMin = r.checkout_time ? timeStrToMin2(r.checkout_time.slice(0,5)) : null;
     const isNow = checkinMin !== null && checkoutMin !== null && nowMin >= checkinMin && nowMin < checkoutMin;
     const isComing = checkinMin !== null && nowMin < checkinMin && checkinMin - nowMin <= 30;
-    const isPast = checkoutMin !== null && nowMin >= checkoutMin;
+    const isPast = !!r.room_out_at;
 
     // オプション整形
     const rvOpts = r.options ? r.options.split(',').filter(Boolean) : [];
