@@ -1427,36 +1427,49 @@ function startApp(){
       const castId = me.id;
       const btn = document.getElementById('hdr-push-btn');
       if (!btn) return;
+      // localStorageに登録済みフラグがあれば即座に設定済み表示（iOSのpermissionリセット対策）
+      if (localStorage.getItem('push_registered_' + castId)) {
+        btn.textContent = '✅ 設定済み';
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'default';
+        btn.style.display = '';
+        // バックグラウンドでDBとブラウザサブスクを同期確認・再登録
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const browserSub = await reg.pushManager.getSubscription();
+          if (browserSub) {
+            const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id,subscription").eq("cast_id", castId).maybeSingle();
+            if (!dbSub || browserSub.toJSON().endpoint !== dbSub?.subscription?.endpoint) {
+              const subJson = browserSub.toJSON();
+              await sb.from("push_subscriptions").delete().eq("cast_id", castId);
+              await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
+            }
+          }
+        } catch(e) { console.warn("[Push] 同期エラー:", e); }
+        return;
+      }
       try {
         const permission = Notification.permission;
         const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id,subscription").eq("cast_id", castId).maybeSingle();
-        // ブラウザ側のサブスクリプションも確認
         const reg = await navigator.serviceWorker.ready;
         const browserSub = await reg.pushManager.getSubscription();
-        
+
         if (permission === "granted" && browserSub) {
-          // ブラウザにサブスクリプションがある → DBと同期確認
           const browserEndpoint = browserSub.toJSON().endpoint;
           const dbEndpoint = dbSub?.subscription?.endpoint;
           if (!dbSub || browserEndpoint !== dbEndpoint) {
-            // DBと不一致 → 自動で再登録
             const subJson = browserSub.toJSON();
             await sb.from("push_subscriptions").delete().eq("cast_id", castId);
             await sb.from("push_subscriptions").insert({ cast_id: castId, subscription: subJson });
           }
+          localStorage.setItem('push_registered_' + castId, '1');
           btn.textContent = '✅ 設定済み';
           btn.disabled = true;
           btn.style.opacity = '0.6';
           btn.style.cursor = 'default';
-        } else if (permission === "granted" && !browserSub && dbSub) {
-          // Safari PWAではgetSubscription()が一時的にnullになることがある
-          // DBレコードは残しておいてボタンは設定済みのまま表示
-          btn.textContent = '✅ 設定済み';
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'default';
-        } else if (dbSub) {
-          // permissionがない状態でもDBにあれば設定済み表示
+        } else if ((permission === "granted" && !browserSub && dbSub) || dbSub) {
+          localStorage.setItem('push_registered_' + castId, '1');
           btn.textContent = '✅ 設定済み';
           btn.disabled = true;
           btn.style.opacity = '0.6';
@@ -1505,6 +1518,7 @@ async function registerCastPush(){
     if (error) {
       alert("登録失敗: " + JSON.stringify(error));
     } else {
+      localStorage.setItem('push_registered_' + castId, '1');
       alert("通知登録完了！予約・シフトの通知が届きます。");
       if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
     }
