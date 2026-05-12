@@ -6215,7 +6215,14 @@ async function openRvDetail(rvId, shiftId, castName){
   const extTotal=extCount*extUnitPrice
   const totalPrice = coursePrice+shimeiPrice+optTotal+extTotal-discTotal
   const payCourse=pj.course||'現金', payShimei=pj.shimei||'現金', payOpt=pj.option||'現金', payExt=pj.ext||'現金'
-  const cardAmt=(payCourse==='カード'?coursePrice:0)+(payShimei==='カード'?shimeiPrice:0)+(payOpt==='カード'?optTotal:0)+(payExt==='カード'?extTotal:0)
+  const optPayMap=pj.optPay||{}
+  let optCardAmt=0
+  if(Object.keys(optPayMap).length>0){
+    opts.forEach(n=>{const o=(optList||[]).find(x=>x.name===n);if((optPayMap[n]||payOpt)==='カード') optCardAmt+=(o?.price||0)})
+  } else {
+    optCardAmt=payOpt==='カード'?optTotal:0
+  }
+  const cardAmt=(payCourse==='カード'?coursePrice:0)+(payShimei==='カード'?shimeiPrice:0)+optCardAmt+(payExt==='カード'?extTotal:0)
   const cashAmt=totalPrice-cardAmt
 
   // ② 接客メモ取得（顧客番号がある場合）
@@ -6309,7 +6316,7 @@ async function openRvDetail(rvId, shiftId, castName){
         <div class="fee-row"><div class="fee-lbl">入室〜退室</div><div>${r.checkin_time?.slice(0,5)||'未入力'} 〜 ${r.checkout_time?.slice(0,5)||'未入力'}</div></div>
         <div class="fee-row"><div class="fee-lbl">指名区分</div><div>${r.shimei_type||'-'} <span style="font-size:.72rem;color:${payShimei==='カード'?'var(--btx)':'var(--text3)'}">(${payShimei})</span></div></div>
         <div class="fee-row"><div class="fee-lbl">コース</div><div>${r.course||'-'} <span style="font-size:.72rem;color:${payCourse==='カード'?'var(--btx)':'var(--text3)'}">(${payCourse})</span></div></div>
-        ${opts.length?`<div class="fee-row"><div class="fee-lbl">オプション</div><div>${opts.join('・')} <span style="font-size:.72rem;color:${payOpt==='カード'?'var(--btx)':'var(--text3)'}">(${payOpt})</span></div></div>`:''}
+        ${opts.map(n=>{const pm=optPayMap[n]||payOpt;return`<div class="fee-row"><div class="fee-lbl">OP</div><div>${n} <span style="font-size:.72rem;color:${pm==='カード'?'var(--btx)':'var(--text3)'}">(${pm})</span></div></div>`}).join('')}
         ${extCount>0?`<div class="fee-row"><div class="fee-lbl">延長</div><div>${extCount}回（${fmt(extTotal)}） <span style="font-size:.72rem;color:${payExt==='カード'?'var(--btx)':'var(--text3)'}">(${payExt})</span></div></div>`:''}
         ${discs.length?`<div class="fee-row"><div class="fee-lbl">割引</div><div style="color:var(--rtx)">-${fmt(discTotal)}（${discs.join('・')}）</div></div>`:''}
         ${r.note?`<div class="fee-row"><div class="fee-lbl">備考</div><div>${r.note}</div></div>`:''}
