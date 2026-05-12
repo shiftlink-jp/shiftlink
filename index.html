@@ -279,6 +279,7 @@ if("serviceWorker" in navigator){
       <button class="btn-login" style="background:var(--accent)" onclick="showLogin('owner')">店舗ログイン</button>
       <button class="btn-login" style="background:var(--accent)" onclick="showLogin('cast')">セラピストログイン</button>
     </div>
+    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
     </div>
   </div>
 </div>
@@ -293,6 +294,7 @@ if("serviceWorker" in navigator){
     <input class="linput" type="password" id="owner-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doOwnerLogin()">
     <button class="btn-login" style="background:var(--accent)" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
     <div class="lerr" id="owner-err"></div>
+    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
   </div>
 </div>
 
@@ -316,6 +318,7 @@ if("serviceWorker" in navigator){
       <label class="lbl">PIN（最大8桁）</label>
       <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doCastLogin()">
       <button class="btn-login" style="background:var(--accent)" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
+      <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
     </div>
     <div class="lerr" id="cast-err"></div>
   </div>
