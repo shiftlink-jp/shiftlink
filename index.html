@@ -2745,7 +2745,7 @@ async function loadMySalary(){
           else if(o.name.includes('衣装')&&o.name.includes('②')) opSale=storeSettings.shop_op_isho2||3000
           else if(o.name.includes('衣装')) opSale=storeSettings.shop_op_isho||3000
         }
-        sRows.push({cat:'オプション',name:o.name,sale:opSale,back:o.back||0,pay:payLbl(s.pay_option)})
+        sRows.push({cat:'オプション',name:o.name,sale:opSale,back:o.back||0,pay:payLbl(o.pay||s.pay_option)})
       })
       ;(s.extensions||[]).forEach((e,ei)=>{const extCourse=courses.find(c=>c.name&&c.name.includes('延長'));sRows.push({cat:'延長',name:exts.length>1?`${ei+1}回目（30分）`:'30分',sale:extCourse?.price||storeSettings.shop_ext30||3000,back:e.back||0,pay:payLbl(e.pay)})})
       ;(s.discounts||[]).forEach(d=>{sRows.push({cat:'割引',name:d.name,sale:-(d.amount||0),back:0,pay:''})})
@@ -5321,7 +5321,8 @@ async function saveWork(){
     const sessionSales=sessionSalesBase+sesCardSurcharge
     const sessionBack=cback+sback+optBack+extBackTotal-discBack
     const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
-    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption})
+    const sesCash=sessionSalesBase-sesCardBase
+    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption})
     totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
   })
   const hoshoSave=parseInt(document.getElementById('w-hosho')?.value)||0
@@ -6832,7 +6833,14 @@ async function renderMonthlyContent(){
     const payExt=pj.ext||'現金'
     const total=cp+sp+op+extTotal-dp
     const payCourse=pj.course||'現金',payShimei=pj.shimei||'現金',payOpt=pj.option||'現金'
-    const cardBase=(payCourse==='カード'?cp:0)+(payShimei==='カード'?sp:0)+(payOpt==='カード'?op:0)+(payExt==='カード'?extTotal:0)
+    const optPayMap=pj.optPay||{}
+    let optCardBase=0
+    if(Object.keys(optPayMap).length>0){
+      opts2.forEach(n=>{const o=(optList||[]).find(x=>x.name===n);if((optPayMap[n]||payOpt)==='カード') optCardBase+=(o?.price||0)})
+    } else {
+      optCardBase=payOpt==='カード'?op:0
+    }
+    const cardBase=(payCourse==='カード'?cp:0)+(payShimei==='カード'?sp:0)+optCardBase+(payExt==='カード'?extTotal:0)
     const card=cardBase>0?Math.round(cardBase*1.1):0
     return {total,card,cardBase,cash:total-cardBase,shimei:r.shimei_type||'フリー',isNew:!!(r.is_new===true||r.is_new==='true')}
   }
