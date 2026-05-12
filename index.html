@@ -3168,9 +3168,10 @@ async function saveCastMemo(){
 }
 
 // ── 予約管理 ──
-let _rvCastName=''
+let _rvCastName='',_rvDate=''
 async function openReservation(shiftId,castName,date){
   _rvCastName=castName||''
+  _rvDate=date||''
   document.getElementById('rv-shift-id').value=shiftId
   document.getElementById('reservation-title').textContent=`${castName} ${date} 予約登録`
   document.getElementById('rv-cust-id').value=''
@@ -3529,7 +3530,7 @@ async function saveReservation(){
   }
   if(custId){
     const{error:visitErr}=await sb.from('customer_visits').insert({
-      customer_id:custId,cast_name:_rvCastName||'予約',shimei_type:shimei,course,options:opts.join(','),visit_date:bizDay(),reservation_id:newRvId
+      customer_id:custId,cast_name:_rvCastName||'予約',shimei_type:shimei,course,options:opts.join(','),visit_date:_rvDate||bizDay(),reservation_id:newRvId
     })
     if(visitErr) console.error('来店記録エラー:',visitErr.message)
   }
