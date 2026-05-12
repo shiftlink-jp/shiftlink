@@ -4806,8 +4806,8 @@ async function openWorkSheet(shiftId,castName,date,castId){
         // 指名区分
         const shimeiType=rv.shimei_type||'フリー'
         // 支払い方法を解析
-        let payCourse='現金',payShimei='現金',payOption='現金'
-        try{const pj=JSON.parse(rv.payment||'{}');payCourse=pj.course||'現金';payShimei=pj.shimei||'現金';payOption=pj.option||'現金'}catch(e){}
+        let payCourse='現金',payShimei='現金',payOption='現金',rvOptPays={}
+        try{const pj=JSON.parse(rv.payment||'{}');payCourse=pj.course||'現金';payShimei=pj.shimei||'現金';payOption=pj.option||'現金';rvOptPays=pj.optPay||{}}catch(e){}
         // 延長情報を取得してセッションに渡す
         let rvPj={}
         try{rvPj=JSON.parse(rv.payment||'{}')}catch(e){}
@@ -4830,6 +4830,7 @@ async function openWorkSheet(shiftId,castName,date,castId){
           pay_course:payCourse,
           pay_shimei:payShimei,
           pay_option:payOption,
+          opt_pays:rvOptPays,
           ext_count:rvExtCount,
           ext_pays:extPays
         })
@@ -4852,9 +4853,20 @@ function addSession(data=null){
   const shimeiTypes=['フリー','ネット指名','本指名']
   const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
   const fixedOpts=[{id:'gokueki',name:'極液'},{id:'isho1',name:'衣装チェンジ①'},{id:'isho2',name:'衣装チェンジ②'}]
+  // opt_paysマップを構築（opt_pays優先、なければoptionsのpayフィールド、最後にpay_option）
+  const optPaysData=data?.opt_pays||{}
+  if(data?.options) data.options.forEach(o=>{if(o.pay&&!optPaysData[o.name]) optPaysData[o.name]=o.pay})
   const opItems=fixedOpts.map(o=>{
     const checked=data?.options?.some(x=>x.name===o.name)?'checked':''
-    return `<label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;padding:.2rem 0"><input type="checkbox" class="op-check" data-name="${o.name}" ${checked} onchange="calcTotal2()" style="width:18px;height:18px;accent-color:var(--accent)"> ${o.name}</label>`
+    const optPay=optPaysData[o.name]||data?.pay_option||'現金'
+    const disStyle=checked?'opacity:1;pointer-events:auto':'opacity:.4;pointer-events:none'
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
+      <label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;flex:1"><input type="checkbox" class="op-check" data-name="${o.name}" ${checked} onchange="toggleOptPayW(this);calcTotal2()" style="width:18px;height:18px;accent-color:var(--accent)"> ${o.name}</label>
+      <select class="s-opt-pay" data-opt="${o.name}" onchange="calcTotal2()" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px;${disStyle}" ${checked?'':'disabled'}>
+        <option value="現金" ${optPay==='現金'?'selected':''}>現金</option>
+        <option value="カード" ${optPay==='カード'?'selected':''}>カード</option>
+      </select>
+    </div>`
   }).join('')
   const discItems=sheetDiscs.length?sheetDiscs.map(d=>{
     const checked=data?.discounts?.some(x=>x.id===d.id)?'checked':''
@@ -4890,11 +4902,10 @@ function addSession(data=null){
       <div><div class="session-label">指名</div><select class="fi2 s-shimei" onchange="calcTotal2()">${shimeiOpts}</select></div>
     </div>
     <div style="margin-bottom:.4rem">
-      <div class="session-label">支払い方法（コース / 指名 / オプション${extCount>0?' / 延長':''}）</div>
-      <div style="display:grid;grid-template-columns:repeat(${3+extCount},1fr);gap:.3rem;align-items:end">
-        <div><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">コース</div><select class="fi2 s-pay-course" style="padding:.35rem .4rem;font-size:.8rem"><option value="現金" ${(data?.pay_course||'現金')==='現金'?'selected':''}>現金</option><option value="カード" ${data?.pay_course==='カード'?'selected':''}>カード</option></select></div>
-        <div><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">指名</div><select class="fi2 s-pay-shimei" style="padding:.35rem .4rem;font-size:.8rem"><option value="現金" ${(data?.pay_shimei||'現金')==='現金'?'selected':''}>現金</option><option value="カード" ${data?.pay_shimei==='カード'?'selected':''}>カード</option></select></div>
-        <div><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">オプション</div><select class="fi2 s-pay-option" style="padding:.35rem .4rem;font-size:.8rem"><option value="現金" ${(data?.pay_option||'現金')==='現金'?'selected':''}>現金</option><option value="カード" ${data?.pay_option==='カード'?'selected':''}>カード</option></select></div>
+      <div class="session-label">支払い方法（コース / 指名${extCount>0?' / 延長':''}）</div>
+      <div style="display:grid;grid-template-columns:repeat(${2+extCount},1fr);gap:.3rem;align-items:end">
+        <div><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">コース</div><select class="fi2 s-pay-course" style="padding:.35rem .4rem;font-size:.8rem" onchange="calcTotal2()"><option value="現金" ${(data?.pay_course||'現金')==='現金'?'selected':''}>現金</option><option value="カード" ${data?.pay_course==='カード'?'selected':''}>カード</option></select></div>
+        <div><div style="font-size:.62rem;color:var(--text3);margin-bottom:.2rem">指名</div><select class="fi2 s-pay-shimei" style="padding:.35rem .4rem;font-size:.8rem" onchange="calcTotal2()"><option value="現金" ${(data?.pay_shimei||'現金')==='現金'?'selected':''}>現金</option><option value="カード" ${data?.pay_shimei==='カード'?'selected':''}>カード</option></select></div>
         ${extPayCols}
       </div>
     </div>
@@ -4903,6 +4914,12 @@ function addSession(data=null){
     <div><div class="session-label">割引</div>${discItems}${discWarnHtml}</div>`
   document.getElementById('session-list').appendChild(div)
   calcTotal2()
+}
+function toggleOptPayW(chk){
+  const sel=chk.closest('div').querySelector('.s-opt-pay')
+  if(!sel) return
+  if(chk.checked){sel.disabled=false;sel.style.opacity='1';sel.style.pointerEvents='auto'}
+  else{sel.disabled=true;sel.style.opacity='.4';sel.style.pointerEvents='none';sel.value='現金'}
 }
 function removeSession(btn){
   btn.closest('.session-block').remove()
@@ -5116,11 +5133,13 @@ function calcTotal2(){
     // カード金額（10%上乗せ前の元額）を支払い方法から算出
     const payCourse2=block.querySelector('.s-pay-course')?.value||'現金'
     const payShimei2=block.querySelector('.s-pay-shimei')?.value||'現金'
-    const payOpt2=block.querySelector('.s-pay-option')?.value||'現金'
     let cardBase=0
     if(payCourse2==='カード') cardBase+=coursePrice-blockDiscShop  // 店落ち割引はカード元額から引く
     if(payShimei2==='カード') cardBase+=shimeiPrice
-    if(payOpt2==='カード') cardBase+=optSale
+    block.querySelectorAll('.op-check:checked').forEach(cb=>{
+      const sel=cb.closest('div').querySelector('.s-opt-pay')
+      if(sel?.value==='カード') cardBase+=getOptPrice(cb.dataset.name)
+    })
     // 延長のカード
     let extCardBase=0
     block.querySelectorAll('.ext-check:checked').forEach((cb,ei)=>{
@@ -5167,7 +5186,10 @@ function calcTotal2(){
     </div>`
     if(c) brows+=row(c.name,coursePrice,cback,payCourse2==='カード')
     if(shimeiPrice) brows+=row(stype,shimeiPrice,sback,payShimei2==='カード')
-    optRows.forEach(o=>{ brows+=row(o.name,o.price,o.back,payOpt2==='カード') })
+    optRows.forEach(o=>{
+      const optSel=block.querySelector(`.s-opt-pay[data-opt="${o.name}"]`)
+      brows+=row(o.name,o.price,o.back,optSel?.value==='カード')
+    })
     if(extSale){
       let extIsCard=false
       block.querySelectorAll('.ext-check:checked').forEach((cb,ei)=>{
@@ -5248,7 +5270,9 @@ async function saveWork(){
     let optBack=0
     block.querySelectorAll('.op-check:checked').forEach(cb=>{
       const ob=getOptBack2(cb.dataset.name)
-      options.push({name:cb.dataset.name,back:ob})
+      const paySel=cb.closest('div').querySelector('.s-opt-pay')
+      const pay=paySel?.value||'現金'
+      options.push({name:cb.dataset.name,back:ob,pay})
       optBack+=ob
     })
     const discounts=[]
@@ -5261,7 +5285,6 @@ async function saveWork(){
     })
     const payCourse=block.querySelector('.s-pay-course')?.value||'現金'
     const payShimei=block.querySelector('.s-pay-shimei')?.value||'現金'
-    const payOption=block.querySelector('.s-pay-option')?.value||'現金'
     const shimeiPrice=getShimeiPrice(stype)
     let optSaleTotal=0
     options.forEach(o=>{ optSaleTotal+=getOptPrice(o.name) })
@@ -5287,13 +5310,14 @@ async function saveWork(){
     let sesCardBase=0
     if(payCourse==='カード') sesCardBase+=(c.price||0)-discounts.filter(d=>d.disc_type==='shop').reduce((s,d)=>s+d.amount,0)
     if(payShimei==='カード') sesCardBase+=shimeiPrice
-    if(payOption==='カード') sesCardBase+=optSaleTotal
+    options.forEach(o=>{if(o.pay==='カード') sesCardBase+=getOptPrice(o.name)})
     extensions.forEach((e,i)=>{if(e.pay==='カード') sesCardBase+=e.price})
     const sesCardSurcharge=sesCardBase>0?Math.ceil(sesCardBase*0.1):0
     const sesCardFee=sesCardBase>0?Math.floor(sesCardBase*0.06)+80:0
     const sessionSalesBase=(c.price||0)+shimeiPrice+optSaleTotal+extSaleTotal-discShop-discBack
     const sessionSales=sessionSalesBase+sesCardSurcharge
     const sessionBack=cback+sback+optBack+extBackTotal-discBack
+    const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
     sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption})
     totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
   })
