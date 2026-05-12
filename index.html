@@ -384,8 +384,8 @@ if("serviceWorker" in navigator){
       <div id="cast-memo-area" style="display:none"></div>
       <!-- 過去メモ閲覧 -->
       <div style="border-top:1px solid var(--border);margin-top:.75rem;padding-top:.75rem">
-        <div style="font-size:.85rem;font-weight:700;margin-bottom:.5rem">📚 過去の接客メモ</div>
-        <div id="my-memo-log-area"><div class="spin">読み込み中...</div></div>
+        <button class="btn btn-ghost btn-full" onclick="toggleMyMemoLog()" id="my-memo-log-btn">📚 過去の接客メモを見る</button>
+        <div id="my-memo-log-area" style="display:none;margin-top:.75rem"></div>
       </div>
     </div>
 
@@ -1676,7 +1676,7 @@ function refreshCurrentTab(){
   else if(name==='salary')        loadMySalary()
   else if(name==='owner-shift')   loadOwnerCal()
   else if(name==='today')         loadToday()
-  else if(name==='cast-memo'){    loadCastMemoPage();loadCastMemoList()}
+  else if(name==='cast-memo'){    loadCastMemoPage();loadCastMemoList();myMemoLogLoaded=false;const _a=document.getElementById('my-memo-log-area');const _b=document.getElementById('my-memo-log-btn');if(_a){_a.style.display='none';_a.innerHTML='';}if(_b)_b.textContent='📚 過去の接客メモを見る';}
   else if(name==='cast-today')    loadCastToday()
   else if(name==='owner-customer')loadCustomers()
   else if(name==='owner-salary')  loadOwnerSalary()
@@ -6660,6 +6660,21 @@ async function loadCastMemoList(){
   castMemoAllCustomers = data||[]
   // 過去メモ一覧を表示
   loadMyMemoLog()
+}
+
+let myMemoLogLoaded = false
+function toggleMyMemoLog(){
+  const area = document.getElementById('my-memo-log-area')
+  const btn = document.getElementById('my-memo-log-btn')
+  if(!area) return
+  if(area.style.display === 'none'){
+    area.style.display = 'block'
+    btn.textContent = '📚 過去の接客メモを閉じる'
+    if(!myMemoLogLoaded){ loadMyMemoLog(); myMemoLogLoaded = true }
+  } else {
+    area.style.display = 'none'
+    btn.textContent = '📚 過去の接客メモを見る'
+  }
 }
 
 async function loadMyMemoLog(){
