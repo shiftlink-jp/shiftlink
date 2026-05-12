@@ -6936,6 +6936,7 @@ async function renderMonthlyContent(){
     newCount:vr.reduce((s,r)=>s+(r.newCount||0),0),repeatCount:vr.reduce((s,r)=>s+(r.repeatCount||0),0),
     advance:vr.reduce((s,r)=>s+(r.advance||0),0),cashRemain:vr.reduce((s,r)=>s+(r.cashRemain||0),0),
     inquiry:vr.reduce((s,r)=>s+(r.inquiry||0),0),
+    workDays:vr.filter(r=>!r.noData&&r.attendance>0).length,
   }
   tot.avg_unit=tot.count>0?Math.round(tot.gross_work/tot.count):0
 
@@ -6988,7 +6989,7 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
     ${kpiCard('カード手数料',tot.cardFee>0?'-¥'+tot.cardFee.toLocaleString():'¥0','var(--text3)')}
-    ${kpiCard('平均出勤',tot.attendance>0?(tot.attendance/vr.filter(r=>!r.noData&&r.attendance>0).length).toFixed(1)+'名':'0名')}
+    ${kpiCard('平均出勤',tot.workDays>0?(tot.attendance/tot.workDays).toFixed(1)+'名':'0名')}
     ${kpiCard('施術件数',tot.count+'本')}
     ${kpiCard('平均客単価',fmt2(tot.avg_unit))}
   </div>`
