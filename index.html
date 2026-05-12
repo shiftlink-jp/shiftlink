@@ -2245,8 +2245,10 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+vErr.message+'</div>';return}
 
   const fmt=n=>n!=null?'¥'+Number(n).toLocaleString():'-'
-  const visitsHtml=visits&&visits.length
-    ? visits.map(v=>{
+  const todayStr=new Date().toLocaleDateString('sv-SE')
+  const pastVisits=(visits||[]).filter(v=>v.visit_date!==todayStr)
+  const visitsHtml=pastVisits.length
+    ? pastVisits.map(v=>{
         // 自分のシフト以外はキャスト名を「他セラピスト」に
         const castLabel = (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
         const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
