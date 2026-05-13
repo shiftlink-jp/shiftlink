@@ -7061,7 +7061,7 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
     ${kpiCard('カード手数料',tot.cardFee>0?'-¥'+tot.cardFee.toLocaleString():'¥0','var(--text3)')}
-    ${kpiCard('平均出勤',tot.workDays>0?(tot.attendance/tot.workDays).toFixed(1)+'名':'0名')}
+    ${kpiCard('平均出勤',tot.workDays>0?Math.round(tot.attendance/tot.workDays)+'名':'0名')}
     ${kpiCard('施術件数',tot.count+'本')}
     ${kpiCard('平均客単価',fmt2(tot.avg_unit))}
   </div>`
