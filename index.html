@@ -501,7 +501,7 @@ if("serviceWorker" in navigator){
         <button class="cal-nav-btn" onclick="monthlyMove(1)">›</button>
       </div>
       <div style="display:flex;background:var(--surface2);border-radius:var(--r);padding:3px;margin-bottom:.6rem;gap:2px;overflow:hidden">
-        <button id="monthly-tab-summary" onclick="monthlyTabSwitch('summary')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:var(--surface);color:var(--text2);box-shadow:var(--sh);white-space:nowrap">📊月まとめ</button>
+        <button id="monthly-tab-summary" onclick="monthlyTabSwitch('summary')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:var(--surface);color:var(--text);box-shadow:var(--sh);white-space:nowrap">📊月まとめ</button>
         <button id="monthly-tab-daily" onclick="monthlyTabSwitch('daily')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">📅日別</button>
         <button id="monthly-tab-cast" onclick="monthlyTabSwitch('cast')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">👤キャスト</button>
         <button id="monthly-tab-expense" onclick="monthlyTabSwitch('expense')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">💸経費</button>
@@ -6853,7 +6853,7 @@ function monthlyMove(d){ monthlyMonth=addMonth(monthlyMonth,d); monthlyCachedDat
 
 function monthlyTabSwitch(mode){
   monthlyTabMode=mode
-  const on='flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:var(--surface);color:var(--accent);box-shadow:var(--sh);white-space:nowrap'
+  const on='flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:var(--surface);color:var(--text);box-shadow:var(--sh);white-space:nowrap'
   const off='flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap'
   ;['summary','daily','cast','expense','chart'].forEach(t=>{
     const btn=document.getElementById('monthly-tab-'+t)
