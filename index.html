@@ -872,6 +872,27 @@ if("serviceWorker" in navigator){
         <button class="btn btn-gold btn-sm2" onclick="addStoreOption()" style="white-space:nowrap">＋追加</button>
       </div>
     </div>
+    <!-- 営業時間設定 -->
+    <div class="fee-sec">
+      <div class="fee-sec-title">🕐 営業時間</div>
+      <div class="fee-row">
+        <div class="fee-lbl">開始</div>
+        <select class="fee-input" id="st-open-time" style="width:90px"></select>
+        <span class="fee-unit">〜</span>
+        <select class="fee-input" id="st-close-time" style="width:90px"></select>
+        <span class="fee-unit">終了</span>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="saveBusinessHours()" style="margin-top:.5rem">営業時間を保存</button>
+    </div>
+    <!-- ルーム設定 -->
+    <div class="fee-sec">
+      <div class="fee-sec-title">🚪 ルーム</div>
+      <div id="store-room-list"></div>
+      <div style="display:flex;gap:.4rem;margin-top:.5rem;align-items:center">
+        <input type="text" class="fi2" id="st-new-room" placeholder="ルーム名（例：Aルーム）" style="flex:1">
+        <button class="btn btn-gold btn-sm2" onclick="addStoreRoom()" style="white-space:nowrap;flex-shrink:0">＋追加</button>
+      </div>
+    </div>
     <!-- PIN管理 -->
     <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-top:.75rem">
       <div class="fee-sec-title">🔑 店舗PINの確認・変更</div>
@@ -1029,10 +1050,21 @@ function addMonth(y,d){const[yr,m]=y.split('-').map(Number);const nd=new Date(yr
 function nextYM(y){return addMonth(y,1)}
 function jpDate(s){const[y,m,d]=s.split('-');return parseInt(m)+'月'+parseInt(d)+'日'}
 function today(){const d=new Date();return new Date(d.getTime()+9*60*60*1000).toISOString().slice(0,10)}
-// 営業日判定：0:00〜1:59は前日の営業日扱い（営業時間 11:00〜翌26:00）
+// 営業時間設定を取得（startH: 開始時, endH: 終了時(翌日は24+h)）
+function getBusinessHours(){
+  const ss=storeSettings||{}
+  const openT=ss.open_time||'11:00'
+  const closeT=ss.close_time||'02:00'
+  const startH=parseInt(openT.split(':')[0])
+  let endH=parseInt(closeT.split(':')[0])
+  if(endH<=startH) endH+=24
+  return{startH,endH,totalMin:(endH-startH)*60}
+}
+// 営業日判定：終了時刻前は前日の営業日扱い
 function bizDay(){
   const jst=new Date(new Date().getTime()+9*60*60*1000)
-  if(jst.getUTCHours()<2){jst.setUTCDate(jst.getUTCDate()-1)}
+  const closeH=parseInt((storeSettings?.close_time||'02:00').split(':')[0])
+  if(jst.getUTCHours()<closeH){jst.setUTCDate(jst.getUTCDate()-1)}
   return jst.toISOString().slice(0,10)
 }
 function toast(msg,dur=1800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),dur)}
@@ -3611,7 +3643,7 @@ async function loadGantt(){
   ;(rvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
   if(!shifts||!shifts.length){area.innerHTML='<div class="empty">この日の承認済みシフトはありません</div>';return}
   // 時間→ピクセル変換（11:00〜26:00 = 15時間）
-  const START_H=11,END_H=26,TOTAL_MIN=(END_H-START_H)*60
+  const {startH:START_H,endH:END_H,totalMin:TOTAL_MIN}=getBusinessHours()
   const timeToPos=t=>{
     if(!t) return null
     let[h,m]=t.split(':').map(Number)
@@ -3764,7 +3796,7 @@ async function loadGantt(){
 async function renderGanttInto(area, date, filterShifts=null){
   if(!area) return
   area.innerHTML='<div class="spin">読み込み中...</div>'
-  const START_H=11,END_H=26,TOTAL_MIN=(END_H-START_H)*60
+  const {startH:START_H,endH:END_H,totalMin:TOTAL_MIN}=getBusinessHours()
   const timeToPos=t=>{
     if(!t) return null
     let[h,m]=t.split(':').map(Number)
@@ -4440,12 +4472,65 @@ async function loadToday(){
   area.innerHTML=html
 }
 
+function updateRoomSelector(currentRoom){
+  const sel=document.getElementById('room-sel')
+  if(!sel) return
+  const rooms=(storeSettings.rooms||'').split(',').map(r=>r.trim()).filter(Boolean)
+  sel.innerHTML='<option value="">未指定</option>'+rooms.map(r=>`<option value="${r}">${r}</option>`).join('')
+  if(currentRoom) sel.value=currentRoom
+}
 function openRoom(shiftId,castName,timeStr,currentRoom){
   roomShiftId=shiftId
   document.getElementById('room-title').textContent=castName+' のルーム'
   document.getElementById('room-info').textContent=timeStr
-  document.getElementById('room-sel').value=currentRoom||''
+  updateRoomSelector(currentRoom||'')
   document.getElementById('room-overlay').classList.add('on')
+}
+function renderStoreRoomList(roomsStr){
+  const el=document.getElementById('store-room-list')
+  if(!el) return
+  const rooms=roomsStr?roomsStr.split(',').map(r=>r.trim()).filter(Boolean):[]
+  if(!rooms.length){el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.3rem 0">ルームが登録されていません</div>';return}
+  el.innerHTML=rooms.map((r,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.88rem">${r}</span>
+      <button onclick="deleteStoreRoom(${i})" style="padding:.2rem .7rem;border:none;border-radius:6px;background:var(--red);color:white;font-size:.7rem;cursor:pointer">削除</button>
+    </div>`).join('')
+}
+async function addStoreRoom(){
+  const input=document.getElementById('st-new-room')
+  const name=input?.value.trim()
+  if(!name){toast('ルーム名を入力してください');return}
+  const rooms=(storeSettings.rooms||'').split(',').map(r=>r.trim()).filter(Boolean)
+  if(rooms.includes(name)){toast('同じ名前のルームがあります');return}
+  rooms.push(name)
+  const newRooms=rooms.join(',')
+  const{error}=await sb.from('store_settings').update({rooms:newRooms}).eq('id',1)
+  if(error){toast('保存失敗');return}
+  storeSettings.rooms=newRooms
+  input.value=''
+  renderStoreRoomList(newRooms)
+  toast('ルームを追加しました')
+}
+async function deleteStoreRoom(index){
+  const rooms=(storeSettings.rooms||'').split(',').map(r=>r.trim()).filter(Boolean)
+  rooms.splice(index,1)
+  const newRooms=rooms.join(',')
+  const{error}=await sb.from('store_settings').update({rooms:newRooms}).eq('id',1)
+  if(error){toast('保存失敗');return}
+  storeSettings.rooms=newRooms
+  renderStoreRoomList(newRooms)
+  toast('削除しました')
+}
+async function saveBusinessHours(){
+  const openT=document.getElementById('st-open-time')?.value
+  const closeT=document.getElementById('st-close-time')?.value
+  if(!openT||!closeT){toast('時間を選択してください');return}
+  const{error}=await sb.from('store_settings').update({open_time:openT,close_time:closeT}).eq('id',1)
+  if(error){toast('保存失敗');return}
+  storeSettings.open_time=openT
+  storeSettings.close_time=closeT
+  toast('営業時間を保存しました')
 }
 async function saveRoom(){
   const btn=document.getElementById('btn-save-room')
@@ -4546,7 +4631,7 @@ async function loadGanttModal(){
   const rvByShift={}
   ;(allRvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
 
-  const START_H=11,END_H=26,TOTAL_MIN=(END_H-START_H)*60
+  const {startH:START_H,endH:END_H,totalMin:TOTAL_MIN}=getBusinessHours()
 
   // 回転後の実効サイズ
   // ov自体をrotateしているのでovのwidth/heightが実効サイズそのもの
@@ -5944,6 +6029,13 @@ async function openStoreSettings(){
     const sfEl=document.getElementById('st-shimei-free');if(sfEl) sfEl.value=ss.shimei_free||0
     const snEl=document.getElementById('st-shimei-net');if(snEl) snEl.value=ss.shimei_net||1000
     const shEl=document.getElementById('st-shimei-hon');if(shEl) shEl.value=ss.shimei_hon||2000
+    // 営業時間
+    const otEl=document.getElementById('st-open-time')
+    const ctEl=document.getElementById('st-close-time')
+    if(otEl) otEl.innerHTML=buildTimeOptions(ss.open_time||'11:00')
+    if(ctEl) ctEl.innerHTML=buildTimeOptions(ss.close_time||'02:00')
+    // ルーム
+    renderStoreRoomList(ss.rooms||'')
   }
   document.getElementById('store-overlay').classList.add('on')
   // DBから最新のPINを取得して表示
