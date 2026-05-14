@@ -506,7 +506,6 @@ if("serviceWorker" in navigator){
         <button id="monthly-tab-cast" onclick="monthlyTabSwitch('cast')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">👤キャスト</button>
         <button id="monthly-tab-expense" onclick="monthlyTabSwitch('expense')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">💸経費</button>
         <button id="monthly-tab-chart" onclick="monthlyTabSwitch('chart')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">🥧グラフ</button>
-        <button id="monthly-tab-ranking" onclick="monthlyTabSwitch('ranking')" style="flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap">📈順位</button>
       </div>
       <div id="monthly-area"><div class="spin">読み込み中...</div></div>
     </div>
@@ -6965,98 +6964,12 @@ function monthlyTabSwitch(mode){
   monthlyTabMode=mode
   const on='flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:var(--surface);color:var(--text);box-shadow:var(--sh);white-space:nowrap'
   const off='flex:1;padding:.35rem .1rem;font-size:.6rem;font-weight:600;border:none;border-radius:9px;cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap'
-  ;['summary','daily','cast','expense','chart','ranking'].forEach(t=>{
+  ;['summary','daily','cast','expense','chart'].forEach(t=>{
     const btn=document.getElementById('monthly-tab-'+t)
     if(btn) btn.style.cssText=t===mode?on:off
   })
-  if(mode==='ranking'){ loadRankingArea(); return }
   if(monthlyCachedData) renderMonthlyFromCache()
   else renderMonthlyContent()
-}
-
-let rankingChart=null
-async function loadRankingArea(){
-  const area=document.getElementById('monthly-area')
-  if(!area) return
-  area.innerHTML='<div class="spin">読み込み中...</div>'
-  const since=new Date(Date.now()-90*86400000).toISOString()
-  const {data,error}=await sb.from('esute_rankings').select('rank_position,total_stores,recorded_at').gte('recorded_at',since).not('rank_position','is',null).order('recorded_at',{ascending:true})
-  if(error||!data||!data.length){
-    area.innerHTML='<div style="text-align:center;padding:2rem;color:var(--text3)">データがありません</div>'
-    return
-  }
-  // 日ごとに最新1件
-  const byDate=new Map()
-  for(const r of data){
-    const d=new Date(r.recorded_at).toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric'})
-    byDate.set(d,r)
-  }
-  const entries=[...byDate.entries()].map(([d,r])=>({date:d,pos:r.rank_position,total:r.total_stores}))
-  const positions=entries.map(e=>e.pos)
-  const best=Math.min(...positions)
-  const avg=(positions.reduce((a,b)=>a+b,0)/positions.length).toFixed(1)
-  const latest=entries[entries.length-1]
-
-  area.innerHTML=`
-    <div style="display:flex;gap:.5rem;margin-bottom:.8rem">
-      <div style="flex:1;background:var(--surface2);border-radius:var(--r);padding:.6rem;text-align:center">
-        <div style="font-size:.65rem;color:var(--text3);margin-bottom:.2rem">最新</div>
-        <div style="font-size:1.5rem;font-weight:700;color:var(--primary)">${latest.pos}<span style="font-size:.75rem">位</span></div>
-        <div style="font-size:.6rem;color:var(--text3)">${latest.date}</div>
-      </div>
-      <div style="flex:1;background:var(--surface2);border-radius:var(--r);padding:.6rem;text-align:center">
-        <div style="font-size:.65rem;color:var(--text3);margin-bottom:.2rem">最高</div>
-        <div style="font-size:1.5rem;font-weight:700;color:#c88000">${best}<span style="font-size:.75rem">位</span></div>
-      </div>
-      <div style="flex:1;background:var(--surface2);border-radius:var(--r);padding:.6rem;text-align:center">
-        <div style="font-size:.65rem;color:var(--text3);margin-bottom:.2rem">平均</div>
-        <div style="font-size:1.5rem;font-weight:700;color:var(--text)">${avg}<span style="font-size:.75rem">位</span></div>
-      </div>
-    </div>
-    <div style="position:relative;height:200px;margin-bottom:.8rem"><canvas id="ranking-chart"></canvas></div>
-    <div style="display:flex;gap:.4rem;margin-bottom:.6rem;flex-wrap:wrap" id="ranking-period-btns">
-      <button onclick="rankingPeriod(30)" id="rbtn-30" style="padding:.3rem .7rem;font-size:.72rem;border-radius:6px;border:1px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer;font-weight:600">30日</button>
-      <button onclick="rankingPeriod(60)" id="rbtn-60" style="padding:.3rem .7rem;font-size:.72rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer">60日</button>
-      <button onclick="rankingPeriod(90)" id="rbtn-90" style="padding:.3rem .7rem;font-size:.72rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer">90日</button>
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:.8rem">
-      <thead><tr>
-        <th style="text-align:left;padding:.4rem .5rem;border-bottom:2px solid var(--border);color:var(--text3);font-size:.72rem">日付</th>
-        <th style="text-align:center;padding:.4rem .5rem;border-bottom:2px solid var(--border);color:var(--text3);font-size:.72rem">順位</th>
-        <th style="text-align:right;padding:.4rem .5rem;border-bottom:2px solid var(--border);color:var(--text3);font-size:.72rem">総店舗</th>
-      </tr></thead>
-      <tbody>${[...entries].reverse().map(e=>`<tr>
-        <td style="padding:.4rem .5rem;border-bottom:1px solid var(--border)">${e.date}</td>
-        <td style="text-align:center;padding:.4rem .5rem;border-bottom:1px solid var(--border)"><span style="font-weight:700;color:${e.pos===best?'#c88000':'var(--primary)'}">${e.pos}位${e.pos===best?' 🏆':''}</span></td>
-        <td style="text-align:right;padding:.4rem .5rem;border-bottom:1px solid var(--border);color:var(--text3);font-size:.75rem">${e.total?e.total+'店':'-'}</td>
-      </tr>`).join('')}</tbody>
-    </table>`
-
-  if(rankingChart) rankingChart.destroy()
-  rankingChart=new Chart(document.getElementById('ranking-chart').getContext('2d'),{
-    type:'line',
-    data:{
-      labels:entries.map(e=>e.date),
-      datasets:[{label:'アロマパンダ',data:entries.map(e=>e.pos),borderColor:'#e07030',backgroundColor:'rgba(224,112,48,0.08)',borderWidth:2,pointRadius:entries.length<=14?4:2,fill:true,tension:0.3}]
-    },
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{reverse:true,ticks:{stepSize:1,callback:v=>v+'位'},grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10}}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'位'}}}}
-  })
-}
-
-function rankingPeriod(days){
-  ;['30','60','90'].forEach(d=>{
-    const b=document.getElementById('rbtn-'+d)
-    if(!b) return
-    b.style.cssText=d==days?'padding:.3rem .7rem;font-size:.72rem;border-radius:6px;border:1px solid var(--primary);background:var(--primary);color:#fff;cursor:pointer;font-weight:600':'padding:.3rem .7rem;font-size:.72rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer'
-  })
-  // チャートを期間でフィルタ
-  if(!rankingChart) return
-  const allLabels=rankingChart.data.labels
-  const allData=rankingChart.data.datasets[0].data
-  const cutoff=allLabels.length-days
-  rankingChart.data.labels=allLabels.slice(Math.max(0,cutoff))
-  rankingChart.data.datasets[0].data=allData.slice(Math.max(0,cutoff))
-  rankingChart.update()
 }
 
 async function loadMonthly(){
