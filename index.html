@@ -1663,6 +1663,15 @@ async function initSaasApp(session){
   storeSettings=store?.settings||{}
   // アプリ画面へ
   startApp()
+  // Stripe Checkout完了後のハンドリング
+  const params=new URLSearchParams(location.search)
+  if(params.get('checkout')==='success'){
+    toast('アップグレードが完了しました！')
+    history.replaceState(null,'',location.pathname+'?saas=1')
+  }else if(params.get('checkout')==='cancel'){
+    toast('アップグレードがキャンセルされました')
+    history.replaceState(null,'',location.pathname+'?saas=1')
+  }
 }
 
 async function saasLogout(){
