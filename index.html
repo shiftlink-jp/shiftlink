@@ -231,8 +231,9 @@ tr:last-child td{border-bottom:none}
 .session-breakdown{margin:0!important;padding:.5rem 0!important;background:none!important;border-radius:0!important;border-top:1px solid var(--border)}
 </style>
 <script>
-const SW_VER = 'v11';
-if("serviceWorker" in navigator){
+const SW_VER = 'v12';
+const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp';
+if("serviceWorker" in navigator && !_isSaaS){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
     var needReload = false;
@@ -372,7 +373,7 @@ if("serviceWorker" in navigator){
       <span class="badge" id="hdr-name">-</span>
       <button class="btn-sm" id="hdr-push-btn" style="display:none;font-size:.7rem" onclick="hdrPushBtnClick()">🔔 通知設定</button>
       <button class="btn-sm" id="hdr-logout-btn" style="display:none;font-size:.7rem;background:rgba(255,255,255,.15);color:var(--text3)" onclick="saasLogout()">ログアウト</button>
-      <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+      <button class="btn-sm" id="hdr-pin-logout-btn" onclick="doLogout()">ログアウト</button>
     </div>
   </div>
   <div id="ptr-indicator" style="display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:200;background:var(--surface);border-radius:99px;padding:.3rem .8rem;box-shadow:var(--shl);font-size:.75rem;color:var(--accent);font-weight:600;align-items:center;gap:.4rem">
@@ -1195,15 +1196,19 @@ function showLogin(type){
 }
 
 async function init(){
+  console.log('[init] SAAS_MODE=', SAAS_MODE)
   // ── SaaSモード：Supabase Auth認証 ──
   if(SAAS_MODE){
-    // 既存セッション確認
-    const{data:{session}}=await sb.auth.getSession()
-    if(session){
-      // ログイン済み → store_id取得してアプリ起動
-      await initSaasApp(session)
-      return
-    }
+    console.log('[init] SaaS path entered')
+    try{
+      // 既存セッション確認
+      const{data:{session}}=await sb.auth.getSession()
+      if(session){
+        // ログイン済み → store_id取得してアプリ起動
+        await initSaasApp(session)
+        return
+      }
+    }catch(e){console.error('[SaaS] getSession error:',e)}
     // 未ログイン → SaaSログイン画面表示
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
     document.getElementById('s-saas-login').classList.add('on')
@@ -1627,8 +1632,11 @@ function startApp(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-app').classList.add('on')
   document.getElementById('hdr-name').textContent=me.is_owner?'店舗 👑':me.name
-  // SaaSモードではログアウトボタンを表示
-  if(SAAS_MODE){const lb=document.getElementById('hdr-logout-btn');if(lb)lb.style.display=''}
+  // SaaSモードではSaaSログアウトを表示、PINログアウトを非表示
+  if(SAAS_MODE){
+    const lb=document.getElementById('hdr-logout-btn');if(lb)lb.style.display=''
+    const plb=document.getElementById('hdr-pin-logout-btn');if(plb)plb.style.display='none'
+  }
   // タブ表示切り替え
   document.querySelectorAll('.cast-tab').forEach(b=>b.style.display=me.is_owner?'none':'flex')
   document.querySelectorAll('.owner-tab').forEach(b=>b.style.display=me.is_owner?'flex':'none')
@@ -3743,7 +3751,7 @@ async function saveReservation(){
       memo:'',
       ng_casts:'',
       is_banned:false
-    }).select('id').single()
+    })).select('id').single()
     if(custErr){toast('顧客登録エラー: '+(custErr.message||custErr.code||JSON.stringify(custErr)));return}
     allCustomers.push({id:insertedCust?.id||null,customer_no:nextNo,name:custName2})
     toast('No.'+nextNo+' で顧客登録しました！')
@@ -3754,7 +3762,7 @@ async function saveReservation(){
     course,options:opts.join(','),discount,payment,note:memo,
     checkin_time:checkin||null,checkout_time:checkout||null,
     customer_no:custNoInt
-  }).select('id').single()
+  })).select('id').single()
   if(error){toast('エラー: '+error.message);return}
   const newRvId=newRvData?.id||null
   // 顧客の来店記録にも追加
@@ -3777,7 +3785,7 @@ async function saveReservation(){
         const custName2=finalName.endsWith('様')?finalName:finalName+'様'
         const{data:newCust,error:newCustErr}=await sb.from('customers').insert(withStoreId({
           customer_no:custNoInt,name:custName2,phone:'',memo:'',ng_casts:'',is_banned:false
-        }).select('id').single()
+        })).select('id').single()
         if(!newCustErr&&newCust?.id){
           custId=newCust.id
           allCustomers.push({id:newCust.id,customer_no:custNoInt,name:custName2})
@@ -3788,7 +3796,7 @@ async function saveReservation(){
   if(custId){
     const{error:visitErr}=await sb.from('customer_visits').insert(withStoreId({
       customer_id:custId,cast_name:_rvCastName||'予約',shimei_type:shimei,course,options:opts.join(','),visit_date:_rvDate||bizDay(),reservation_id:newRvId
-    })
+    }))
     if(visitErr) console.error('来店記録エラー:',visitErr.message)
   }
   // Push通知送信（担当セラピストへ）
@@ -6312,7 +6320,7 @@ async function addStoreCourse(){
   const price=parseInt(document.getElementById('st-new-course-price')?.value)||0
   if(!name){toast('コース名を入力してください');return}
   const duration=parseInt(document.getElementById('st-new-course-duration')?.value)||null
-  const{error}=await sb.from('courses').insert(withStoreId({name,price,...(duration?{duration}:{})})
+  const{error}=await sb.from('courses').insert(withStoreId({name,price,...(duration?{duration}:{})}))
   if(error){toast('エラー: '+error.message);return}
   document.getElementById('st-new-course-name').value=''
   document.getElementById('st-new-course-price').value=''
