@@ -310,6 +310,29 @@ if("serviceWorker" in navigator && !_isSaaS){
   </div>
 </div>
 
+<!-- ===== SaaS UPGRADE ===== -->
+<div class="screen" id="s-saas-upgrade" style="align-items:center;justify-content:center;min-height:100vh;background:#f8f8f8">
+  <div style="max-width:420px;width:90%;background:#fff;border-radius:16px;padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:.5rem">⏰</div>
+    <h2 style="margin:0 0 .5rem;font-size:1.2rem;color:#333">トライアル期間が終了しました</h2>
+    <p style="color:#888;font-size:.85rem;margin:0 0 1.5rem;line-height:1.6" id="saas-trial-msg">引き続きShiftLinkをご利用いただくには、プランをアップグレードしてください。</p>
+    <div style="background:#fdf6ec;border-radius:12px;padding:1.2rem;margin-bottom:1.5rem;text-align:left">
+      <div style="font-weight:700;font-size:1rem;color:#333;margin-bottom:.5rem">📋 スタンダードプラン</div>
+      <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">¥5,980<span style="font-size:.75rem;font-weight:400;color:#888">/月（税込）</span></div>
+      <ul style="margin:.8rem 0 0;padding-left:1.2rem;font-size:.8rem;color:#555;line-height:1.8">
+        <li>セラピスト無制限</li>
+        <li>予約・売上管理すべて利用可能</li>
+        <li>プッシュ通知</li>
+        <li>優先サポート</li>
+      </ul>
+    </div>
+    <button class="btn-login" style="background:var(--accent);width:100%" onclick="startStripeCheckout()" id="btn-stripe-checkout">アップグレードする</button>
+    <div style="margin-top:1rem">
+      <button onclick="saasLogout()" style="background:none;border:none;color:#888;font-size:.8rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログアウト</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LOGIN TOP ===== -->
 <div class="screen login-wrap on" id="s-top">
   <div class="login-box">
@@ -1066,6 +1089,9 @@ let currentStoreId = null // ログイン後にセットされる
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
+// SaaS用変数
+let _saasStore=null, _saasSession=null
+
 // SaaS用ヘルパー: INSERT時にstore_idを自動注入
 function withStoreId(payload){
   if(!SAAS_MODE || !currentStoreId) return payload
@@ -1599,6 +1625,24 @@ async function initSaasApp(session){
   currentStoreId=member.store_id
   // store情報を取得
   const{data:store}=await sb.from('stores').select('*').eq('id',currentStoreId).single()
+  // サブスクリプション状態チェック
+  if(store){
+    const status=store.subscription_status
+    const trialEnd=store.trial_ends_at?new Date(store.trial_ends_at):null
+    const now=new Date()
+    // active or trialing中で期限内 → OK
+    if(status==='active'){}
+    else if(status==='trialing'&&trialEnd&&trialEnd>now){}
+    else{
+      // 期限切れ or canceled → アップグレード画面
+      _saasStore=store
+      _saasSession=session
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+      document.getElementById('s-saas-upgrade').classList.add('on')
+      if(status==='trialing') document.getElementById('saas-trial-msg').textContent='トライアル期間が'+trialEnd.toLocaleDateString('ja-JP')+'に終了しました。引き続きご利用いただくにはアップグレードしてください。'
+      return
+    }
+  }
   // 役割に応じてme変数を設定
   if(member.role==='owner'||member.role==='manager'){
     me={id:0,name:store?.name||'店舗',is_owner:true}
@@ -1626,6 +1670,27 @@ async function saasLogout(){
   currentStoreId=null
   sessionStorage.removeItem('shiftlink_me')
   location.reload()
+}
+
+async function startStripeCheckout(){
+  const btn=document.getElementById('btn-stripe-checkout')
+  btn.disabled=true; btn.textContent='処理中...'
+  try{
+    const{data:{session}}=await sb.auth.getSession()
+    if(!session) throw new Error('ログインセッションが切れました')
+    const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-checkout',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({store_id:currentStoreId})
+    })
+    const json=await res.json()
+    if(json.url) window.location.href=json.url
+    else throw new Error(json.error||'チェックアウトURLの取得に失敗しました')
+  }catch(e){
+    toast(e.message)
+  }finally{
+    btn.disabled=false; btn.textContent='アップグレードする'
+  }
 }
 
 function startApp(){
