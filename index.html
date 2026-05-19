@@ -1216,6 +1216,8 @@ async function checkOwnerPasskeyBtn(){
 
 function showLogin(type){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  // 管理サブタブを非表示
+  const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   if(type==='top') document.getElementById('s-top').classList.add('on')
   else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); setTimeout(doOwnerLoginSmart, 500) }
   else if(type==='cast') document.getElementById('s-cast-login').classList.add('on')
@@ -1915,6 +1917,8 @@ function doLogout(){
   document.getElementById('cast-pin').value=''
   document.getElementById('owner-err').textContent=''
   document.getElementById('cast-err').textContent=''
+  // 管理サブタブを非表示
+  const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-top').classList.add('on')
 }
@@ -2179,8 +2183,10 @@ function cancelSelectedDay(){
   renderCal()
 }
 
+let _submitShiftLock=false
 async function submitShift(){
   if(!selectedDate) return
+  if(_submitShiftLock) return; _submitShiftLock=true
   const start=document.getElementById('f-start').value
   const end=document.getElementById('f-end').value
   const note=document.getElementById('f-note')?.value||''
@@ -2200,6 +2206,7 @@ async function submitShift(){
     const r=await sb.from('shifts').insert(withStoreId(payload));err=r.error
   }
   if(err){
+    _submitShiftLock=false
     if(err.code==='23505') toast('この日はすでにシフトが申請されています')
     else toast('保存エラー: '+(err.message||JSON.stringify(err)))
     return
@@ -2214,6 +2221,7 @@ async function submitShift(){
   toast('申請しました！')
   closeSheet('shift-req')
   selectedDate=null; loadCal()
+  _submitShiftLock=false
 }
 
 function renderShiftStatus(){}
