@@ -264,10 +264,14 @@ tr:last-child td{border-bottom:none}
 @media (min-width:768px){
   .screen.pc-wide{max-width:95vw}
   .screen.pc-wide .tbar{max-width:95vw}
+  /* キャスト一覧を2列グリッドに */
+  #cast-area{display:grid;grid-template-columns:1fr 1fr;gap:0 1.5rem}
+  .cast-row{border-bottom:1px solid var(--border)}
 }
 @media (min-width:1024px){
   .screen.pc-wide{max-width:1100px}
   .screen.pc-wide .tbar{max-width:1100px}
+  #cast-area{grid-template-columns:1fr 1fr 1fr}
 }
 </style>
 <script>
@@ -2006,6 +2010,8 @@ function tabMgmt(){
   document.querySelectorAll('.tbar-btn').forEach(b=>b.classList.remove('on'))
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
   document.querySelector('.owner-tab:nth-child(5)')?.classList.add('on')
+  // PC: 管理タブはワイド不要
+  const app=document.getElementById('s-app'); if(app) app.classList.remove('pc-wide')
   // サブメニューシートを表示
   let sheet = document.getElementById('mgmt-subsheet')
   if(!sheet){
