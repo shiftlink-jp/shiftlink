@@ -3206,7 +3206,7 @@ async function loadMySalary(){
     const wCardBase=(w.sessions||[]).reduce((s,ss)=>s+(ss.card_base||0),0)
     const wCardSales=wCardBase>0?Math.round(wCardBase*1.1):0
     const wCashSales=(w.sales||0)-wCardSales
-    const wProfit=(w.sales||0)-(w.net||w.back||0)-(w.misc||0)
+    const wProfit=(w.sales||0)-(w.net||w.back||0)
     const cell2=(label,val,accent=false)=>{
         const backLabels=['バック','委託金'];
         const profitLabels=['店舗利益','純利益','粗利益','利益'];
@@ -7353,7 +7353,7 @@ async function renderMonthlyContent(){
       dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;if(am.shimei==='フリー')rvFree++;else if(am.shimei==='ネット指名')rvNet++;else if(am.shimei==='本指名')rvHon++;if(am.isNew)newCount++;else repeatCount++})
     }
     const cardFee=cardBase>0?Math.floor(cardBase*0.06)+80:0
-    const profit=gross_work-net-misc
+    const profit=gross_work-net
     // キャストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
     const castRows=dayWorks.map(w=>{
       const dk=dateStr+'|'+w.cast_id
