@@ -1755,6 +1755,18 @@ function startApp(){
   }
 }
 
+// (D) send-push共通ヘルパー（レスポンスチェック付き）
+async function sendPushNotification(castId, title, body) {
+  try {
+    const res = await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
+      body:JSON.stringify({cast_id:castId, title, body})
+    });
+    if (!res.ok) console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>''));
+  } catch(e) { console.error('[Push] 通知送信エラー:', e); }
+}
+
 async function hdrPushBtnClick(){
   if (me && me.is_owner) {
     await registerOwnerPush();
@@ -1767,27 +1779,49 @@ async function registerCastPush(){
   const castId = me.id;
   const btn = document.getElementById('hdr-push-btn');
   try {
+    // (E) ブラウザ対応チェック
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('このブラウザはPush通知に対応していません。\nホーム画面に追加してPWAとして開いてください。'); return;
+    }
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       alert('通知が許可されませんでした。\niPhone設定 → 通知 → アプリ名 から許可してください。');
       return;
     }
     const reg = await navigator.serviceWorker.ready;
-    // 既存サブスクリプションを再利用（unsubscribeしない）
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E")
-      });
-    }
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) await oldSub.unsubscribe();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E")
+    });
     const subJson = sub.toJSON();
-    await sb.from("push_subscriptions").delete().eq("cast_id", castId);
+    // (C) このendpointが他のcast_idで登録済みなら削除（端末の使い回し対策）
+    const { data: allEndpointSubs } = await sb.from('push_subscriptions').select('id,cast_id,subscription');
+    const endpointDups = (allEndpointSubs||[]).filter(r=>{
+      try {
+        const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+        return s.endpoint === subJson.endpoint;
+      } catch { return false; }
+    });
+    if (endpointDups.length > 0) {
+      await sb.from('push_subscriptions').delete().in('id', endpointDups.map(r=>r.id));
+    }
+    // (A) 同一cast_idの同一endpoint origin（古い登録）だけ削除（他端末は残す）
+    const { data: castSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
+    const staleIds = (castSubs||[]).filter(r=>{
+      try {
+        const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+        return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+      } catch { return false; }
+    }).map(r=>r.id);
+    if (staleIds.length > 0) {
+      await sb.from('push_subscriptions').delete().in('id', staleIds);
+    }
     const { error } = await sb.from("push_subscriptions").insert(withStoreId({ cast_id: castId, subscription: subJson }));
     if (error) {
       alert("登録失敗: " + JSON.stringify(error));
     } else {
-      localStorage.setItem('push_registered_' + castId, '1');
       alert("通知登録完了！予約・シフトの通知が届きます。");
       if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
     }
@@ -1871,7 +1905,28 @@ async function registerOwnerPush(){
     if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
   } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
 }
-function doLogout(){
+async function doLogout(){
+  // (B) ログアウト時にこの端末のpush登録をDBから削除（他端末には影響しない）
+  try {
+    if (me && 'serviceWorker' in navigator && 'PushManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        const subJson = sub.toJSON();
+        const castId = me.id || 0;
+        const { data: rows } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
+        const matchIds = (rows||[]).filter(r=>{
+          try {
+            const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+            return s.endpoint === subJson.endpoint;
+          } catch { return false; }
+        }).map(r=>r.id);
+        if (matchIds.length > 0) {
+          await sb.from('push_subscriptions').delete().in('id', matchIds);
+        }
+      }
+    }
+  } catch(e) { console.warn('[Push] logout cleanup error:', e); }
   me=null; myShifts=[]
   sessionStorage.removeItem('shiftlink_me')
   sessionStorage.removeItem('shiftlink_tab')
@@ -2174,12 +2229,7 @@ async function submitShift(){
     return
   }
   // オーナーへPush通知
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:0, title:'シフトが提出されました📅', body:me.name+'さんが'+selectedDate+'のシフトを申請しました。'})
-    });
-  } catch(e) { console.error('通知エラー',e); }
+  await sendPushNotification(0, 'シフトが提出されました📅', me.name+'さんが'+selectedDate+'のシフトを申請しました。');
   toast('申請しました！')
   closeSheet('shift-req')
   selectedDate=null; loadCal()
@@ -2580,13 +2630,7 @@ async function castRoomIn(rvId, custName, time) {
   // DBに入室時刻を保存
   await sb.from('reservations').update({ room_in_at: new Date().toISOString() }).eq('id', rvId);
   // オーナーに通知
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE' },
-      body: JSON.stringify({ cast_id: 0, title: 'お客様入室🚪', body: me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）' })
-    });
-  } catch(e) { console.error('通知エラー', e); }
+  await sendPushNotification(0, 'お客様入室🚪', me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）');
   toast('入室通知を送りました');
   loadCastToday();
 }
@@ -2595,13 +2639,7 @@ async function castRoomOut(rvId, custName, time) {
   if (!confirm(custName + 'さんが退室しますか？')) return;
   // DBに退室時刻を保存
   await sb.from('reservations').update({ room_out_at: new Date().toISOString() }).eq('id', rvId);
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE' },
-      body: JSON.stringify({ cast_id: 0, title: 'お客様退室🚶', body: me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）' })
-    });
-  } catch(e) { console.error('通知エラー', e); }
+  await sendPushNotification(0, 'お客様退室🚶', me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）');
   toast('退室通知を送りました');
   loadCastToday();
 }
@@ -2652,13 +2690,7 @@ async function castAddOption(rvId, custName) {
     await sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) }).eq('id', rvId);
 
     // オーナーに通知
-    try {
-      await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE' },
-        body: JSON.stringify({ cast_id: 0, title: '追加OP🟣', body: me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、') })
-      });
-    } catch(e) {}
+    await sendPushNotification(0, '追加OP🟣', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
     sheet.remove();
     toast('追加OP通知を送りました');
     loadCastToday();
@@ -2709,13 +2741,7 @@ async function castExtend(rvId, custName) {
     await sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) }).eq('id', rvId);
 
     // オーナーに通知
-    try {
-      await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE' },
-        body: JSON.stringify({ cast_id: 0, title: '延長⏱', body: me.name + ' / ' + custName + 'さんが' + extMin + '分延長（〜' + newTime.slice(0,5) + '）' })
-      });
-    } catch(e) {}
+    await sendPushNotification(0, '延長⏱', me.name + ' / ' + custName + 'さんが' + extMin + '分延長（〜' + newTime.slice(0,5) + '）');
     sheet.remove();
     toast('延長通知を送りました');
     loadCastToday();
@@ -2746,17 +2772,11 @@ async function saveCastShiftEdit(){
   const{error} = await sb.from('shifts').update(updatePayload).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
-  try {
-    const notifyTitle=wasApproved?'シフト訂正（要再承認）📝':'シフト訂正📝'
-    const notifyBody=wasApproved
-      ? me.name+'さんが承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
-      : me.name+'さんがシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:0, title:notifyTitle, body:notifyBody})
-    })
-  } catch(e){ console.error('通知エラー',e) }
+  const notifyTitle=wasApproved?'シフト訂正（要再承認）📝':'シフト訂正📝'
+  const notifyBody=wasApproved
+    ? me.name+'さんが承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
+    : me.name+'さんがシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
+  await sendPushNotification(0, notifyTitle, notifyBody);
   toast(wasApproved?'訂正しました（再承認待ちに戻しました）':'シフトを訂正しました')
   closeSheet('cast-shift-edit')
   renderInlineShiftList()
@@ -2767,13 +2787,7 @@ async function deleteCastShift(){
   const{error} = await sb.from('shifts').delete().eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:0, title:'シフト取消❌', body:me.name+'さんがシフトを取消しました'})
-    })
-  } catch(e){ console.error('通知エラー',e) }
+  await sendPushNotification(0, 'シフト取消❌', me.name+'さんがシフトを取消しました');
   toast('シフトを取消しました')
   closeSheet('cast-shift-edit')
   loadCal()
@@ -3465,12 +3479,7 @@ async function saveCastMemo(){
   },{onConflict:'customer_id,cast_name,visit_date'})
   if(error){toast('エラー: '+error.message);return}
   // オーナーへPush通知
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:0, title:'接客メモが保存されました📝', body:me.name+'さんが接客メモを入力しました。'})
-    });
-  } catch(e) { console.error('通知エラー',e); }
+  await sendPushNotification(0, '接客メモが保存されました📝', me.name+'さんが接客メモを入力しました。');
   toast('メモを保存しました')
   closeSheet('cast-memo')
   if(currentCustomerId===castMemoCustomerId)openCustomerDetail(castMemoCustomerId)
@@ -3848,11 +3857,7 @@ async function saveReservation(){
     const {data:shiftData} = await sb.from('shifts').select('cast_id').eq('id',shiftId).single();
     if(shiftData?.cast_id){
       const timeStr = checkin ? `（${checkin}〜）` : '';
-      await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-        body:JSON.stringify({cast_id:shiftData.cast_id, title:'予約が入りました📋', body:`${finalName}様 ${course}${timeStr}`})
-      });
+      await sendPushNotification(shiftData.cast_id, '予約が入りました📋', `${finalName}様 ${course}${timeStr}`);
     }
   } catch(e) { console.error('通知エラー',e); }
   toast('予約を登録しました')
@@ -4503,11 +4508,7 @@ async function approveShift(id){
   // Push通知送信
   try {
     const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:shift.cast_id, title:'シフトが承認されました✅', body:'オーナーがあなたのシフトを承認しました。'})
-    });
+    await sendPushNotification(shift.cast_id, 'シフトが承認されました✅', 'オーナーがあなたのシフトを承認しました。');
   } catch(e) { console.error('通知エラー',e); }
   loadOwnerCal()
 }
@@ -4518,11 +4519,7 @@ async function rejectShift(id){
   // Push通知送信
   try {
     const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:shift.cast_id, title:'シフトが却下されました❌', body:'オーナーがあなたのシフトを却下しました。'})
-    });
+    await sendPushNotification(shift.cast_id, 'シフトが却下されました❌', 'オーナーがあなたのシフトを却下しました。');
   } catch(e) { console.error('通知エラー',e); }
   loadOwnerCal()
 }
@@ -5720,12 +5717,7 @@ async function saveWork(){
     return
   }
   // キャストへPush通知
-  try {
-    await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
-      body:JSON.stringify({cast_id:sheetCastId, title:'委託金が入力されました💴', body:sheetDate+'の委託金が確定しました。'})
-    });
-  } catch(e) { console.error('通知エラー',e); }
+  await sendPushNotification(sheetCastId, '委託金が入力されました💴', sheetDate+'の委託金が確定しました。');
   toast('保存しました！');closeSheet('work')
 }
 
@@ -8001,32 +7993,7 @@ function urlBase64ToUint8Array(b64) {
   return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
 }
 
-async function subscribePush(castId) {
-  alert("subscribePush呼ばれた! castId=" + castId);
-  if (!("PushManager" in window)) { alert("PushManager未対応"); return; }
-  if (!castId) { alert("castIdがnull"); return; }
-
-  const permission = "granted";
-  if (permission !== "granted") { alert("通知許可されず"); return; }
-
-  try {
-    navigator.serviceWorker.register("/sw.js?" + SW_VER);
-    alert("SW登録成功: " + reg.scope);
-    const oldSub = await reg.pushManager.getSubscription();
-    if (oldSub) await oldSub.unsubscribe();
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array("BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E")
-    });
-    const subJson = sub.toJSON();
-    alert("subscription取得: " + subJson.endpoint);
-    await sb.from("push_subscriptions").delete().eq("cast_id", castId);
-    const { error: insErr } = await sb.from("push_subscriptions").insert(withStoreId({ cast_id: castId, subscription: subJson }));
-    if (insErr) { alert("insert失敗: " + JSON.stringify(insErr)); } else { alert("Push登録成功！"); }
-  } catch(e) {
-    alert("Pushエラー: " + e.name + " / " + e.message);
-  }
-}</script>
+</script>
 </body>
 </html>
 
