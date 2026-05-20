@@ -887,9 +887,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         <div class="fee-row"><div class="fee-lbl">フリーバック</div><input type="number" class="fee-input" id="f-trial-shimei-free" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">ネット指名バック</div><input type="number" class="fee-input" id="f-trial-shimei-net" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
         <div class="fee-row"><div class="fee-lbl">本指名バック</div><input type="number" class="fee-input" id="f-trial-shimei-hon" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
-        <div class="fee-row"><div class="fee-lbl">極液バック</div><input type="number" class="fee-input" id="f-trial-op1" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
-        <div class="fee-row"><div class="fee-lbl">衣装チェンジ①バック</div><input type="number" class="fee-input" id="f-trial-op2" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
-        <div class="fee-row"><div class="fee-lbl">衣装チェンジ②バック</div><input type="number" class="fee-input" id="f-trial-op3" min="0" step="100" placeholder="通常と同じ"><span class="fee-unit">円</span></div>
+        <div id="fee-trial-option-rows"></div>
       </div>
     </div>
     <button class="btn btn-gold btn-full" onclick="saveFee()" id="btn-save-fee" style="margin-bottom:.75rem">保存する</button>
@@ -5260,11 +5258,11 @@ function addSession(data=null){
   const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${c.name}</option>`).join('')
   const shimeiTypes=['フリー','ネット指名','本指名']
   const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
-  const fixedOpts=[{id:'gokueki',name:'極液'},{id:'isho1',name:'衣装チェンジ①'},{id:'isho2',name:'衣装チェンジ②'}]
+  // オプション一覧はDBから取得済みのoptsを使用
   // opt_paysマップを構築（opt_pays優先、なければoptionsのpayフィールド、最後にpay_option）
   const optPaysData=data?.opt_pays||{}
   if(data?.options) data.options.forEach(o=>{if(o.pay&&!optPaysData[o.name]) optPaysData[o.name]=o.pay})
-  const opItems=fixedOpts.map(o=>{
+  const opItems=opts.map(o=>{
     const checked=data?.options?.some(x=>x.name===o.name)?'checked':''
     const optPay=optPaysData[o.name]||data?.pay_option||'現金'
     const disStyle=checked?'opacity:1;pointer-events:auto':'opacity:.4;pointer-events:none'
@@ -5471,6 +5469,19 @@ function getCourseBack(courseId){
 }
 function getOptBack2(name){
   const trial=isTrialPeriod()
+  const o=opts.find(x=>x.name===name)
+  // extra_op_backsから汎用取得（新しい店舗はこちら）
+  if(o){
+    const key='op_'+o.id
+    const extraOp=sheetFee.extra_op_backs||{}
+    if(trial){
+      const trialExtra=sheetFee.extra_trial_op_backs||{}
+      const trialKey='trial_op_'+o.id
+      if(trialExtra[trialKey]!=null) return trialExtra[trialKey]
+    }
+    if(extraOp[key]!=null) return extraOp[key]
+  }
+  // レガシーフォールバック（既存店舗の固定カラムデータ互換）
   if(name==='極液'){
     if(trial && sheetFee.trial_op_gokueki!=null) return sheetFee.trial_op_gokueki
     return sheetFee.op_gokueki||DEFAULT_FEE.op_gokueki
@@ -5977,8 +5988,21 @@ async function openFeeSheet(castId,name){
   setTrial('f-trial-b100',f.trial_b100);setTrial('f-trial-b130',f.trial_b130)
   setTrial('f-trial-bext',f.trial_bext)
   setTrial('f-trial-shimei-free',f.trial_shimei_free);setTrial('f-trial-shimei-net',f.trial_shimei_net)
-  setTrial('f-trial-shimei-hon',f.trial_shimei_hon);setTrial('f-trial-op1',f.trial_op_gokueki)
-  setTrial('f-trial-op2',f.trial_op_isho);setTrial('f-trial-op3',f.trial_op_isho2)
+  setTrial('f-trial-shimei-hon',f.trial_shimei_hon)
+  // 体験中オプションバック行を動的生成
+  const trialOpRows=document.getElementById('fee-trial-option-rows')
+  if(trialOpRows){
+    const trialExtra=f.extra_trial_op_backs||{}
+    trialOpRows.innerHTML=opts.map(o=>{
+      const key='trial_op_'+o.id
+      // レガシーフォールバック（既存固定カラム）
+      let val=trialExtra[key]
+      if(val==null && o.name==='極液') val=f.trial_op_gokueki
+      if(val==null && o.name==='衣装チェンジ①') val=f.trial_op_isho
+      if(val==null && o.name==='衣装チェンジ②') val=f.trial_op_isho2
+      return `<div class="fee-row"><div class="fee-lbl">${o.name}バック</div><input type="number" class="fee-input fee-trial-op-back" data-key="${key}" min="0" step="100" value="${val!=null?val:''}" placeholder="通常と同じ"><span class="fee-unit">円</span></div>`
+    }).join('')
+  }
   document.getElementById('fee-overlay').classList.add('on')
 }
 
@@ -6041,6 +6065,11 @@ async function saveFee(){
   document.querySelectorAll('.fee-trial-course-back').forEach(el=>{ extraCourseBacks[el.dataset.key]=parseInt(el.value)||0 })
   const extraOpBacks = {}
   document.querySelectorAll('.fee-op-back').forEach(el=>{ extraOpBacks[el.dataset.key]=parseInt(el.value)||0 })
+  const extraTrialOpBacks = {}
+  document.querySelectorAll('.fee-trial-op-back').forEach(el=>{
+    const v=el.value===''?null:parseInt(el.value,10)
+    extraTrialOpBacks[el.dataset.key]=isNaN(v)?null:v
+  })
   // 後方互換用に固定カラムも更新
   const c50=courses.find(c=>c.name.includes('50分')); const c80=courses.find(c=>c.name.includes('80分'))
   const c100=courses.find(c=>c.name.includes('100分')); const c130=courses.find(c=>c.name.includes('130分'))
@@ -6065,8 +6094,11 @@ async function saveFee(){
     trial_b50:gvNull('f-trial-b50'),trial_b80:gvNull('f-trial-b80'),
     trial_b100:gvNull('f-trial-b100'),trial_b130:gvNull('f-trial-b130'),trial_bext:gvNull('f-trial-bext'),
     trial_shimei_free:gvNull('f-trial-shimei-free'),trial_shimei_net:gvNull('f-trial-shimei-net'),
-    trial_shimei_hon:gvNull('f-trial-shimei-hon'),trial_op_gokueki:gvNull('f-trial-op1'),
-    trial_op_isho:gvNull('f-trial-op2'),trial_op_isho2:gvNull('f-trial-op3')
+    trial_shimei_hon:gvNull('f-trial-shimei-hon'),
+    extra_trial_op_backs:extraTrialOpBacks,
+    trial_op_gokueki:op1?extraTrialOpBacks['trial_op_'+op1.id]:null,
+    trial_op_isho:op2?extraTrialOpBacks['trial_op_'+op2.id]:null,
+    trial_op_isho2:op3?extraTrialOpBacks['trial_op_'+op3.id]:null
   }
   console.log('[saveFee] castIdNum=',castIdNum,'op_isho=',dataToSave.op_isho,'dataToSave=',JSON.stringify(dataToSave))
   // まず既存レコード確認
