@@ -1734,49 +1734,11 @@ function startApp(){
       const castId = me.id;
       const btn = document.getElementById('hdr-push-btn');
       if (!btn) return;
-      // localStorageに登録済みフラグがあれば即座に設定済み表示（iOSのpermissionリセット対策）
-      if (localStorage.getItem('push_registered_' + castId)) {
-        btn.textContent = '✅ 設定済み';
-        btn.disabled = true;
-        btn.style.opacity = '0.6';
-        btn.style.cursor = 'default';
-        btn.style.display = '';
-        // バックグラウンドでDBとブラウザサブスクを同期確認・再登録
-        try {
-          const reg = await navigator.serviceWorker.ready;
-          const browserSub = await reg.pushManager.getSubscription();
-          if (browserSub) {
-            const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id,subscription").eq("cast_id", castId).maybeSingle();
-            if (!dbSub || browserSub.toJSON().endpoint !== dbSub?.subscription?.endpoint) {
-              const subJson = browserSub.toJSON();
-              await sb.from("push_subscriptions").delete().eq("cast_id", castId);
-              await sb.from("push_subscriptions").insert(withStoreId({ cast_id: castId, subscription: subJson }));
-            }
-          }
-        } catch(e) { console.warn("[Push] 同期エラー:", e); }
-        return;
-      }
+      // DBにこのcast_idのサブスクリプションがあるか確認して表示を切り替えるだけ
+      // 自動登録はしない（明示的にボタンを押した場合のみ登録）
       try {
-        const permission = Notification.permission;
-        const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id,subscription").eq("cast_id", castId).maybeSingle();
-        const reg = await navigator.serviceWorker.ready;
-        const browserSub = await reg.pushManager.getSubscription();
-
-        if (permission === "granted" && browserSub) {
-          const browserEndpoint = browserSub.toJSON().endpoint;
-          const dbEndpoint = dbSub?.subscription?.endpoint;
-          if (!dbSub || browserEndpoint !== dbEndpoint) {
-            const subJson = browserSub.toJSON();
-            await sb.from("push_subscriptions").delete().eq("cast_id", castId);
-            await sb.from("push_subscriptions").insert(withStoreId({ cast_id: castId, subscription: subJson }));
-          }
-          localStorage.setItem('push_registered_' + castId, '1');
-          btn.textContent = '✅ 設定済み';
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'default';
-        } else if ((permission === "granted" && !browserSub && dbSub) || dbSub) {
-          localStorage.setItem('push_registered_' + castId, '1');
+        const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", castId).maybeSingle();
+        if (dbSub) {
           btn.textContent = '✅ 設定済み';
           btn.disabled = true;
           btn.style.opacity = '0.6';
