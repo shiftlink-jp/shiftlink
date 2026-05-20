@@ -1905,28 +1905,7 @@ async function registerOwnerPush(){
     if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
   } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
 }
-async function doLogout(){
-  // (B) ログアウト時にこの端末のpush登録をDBから削除（他端末には影響しない）
-  try {
-    if (me && 'serviceWorker' in navigator && 'PushManager' in window) {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        const subJson = sub.toJSON();
-        const castId = me.id || 0;
-        const { data: rows } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
-        const matchIds = (rows||[]).filter(r=>{
-          try {
-            const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
-            return s.endpoint === subJson.endpoint;
-          } catch { return false; }
-        }).map(r=>r.id);
-        if (matchIds.length > 0) {
-          await sb.from('push_subscriptions').delete().in('id', matchIds);
-        }
-      }
-    }
-  } catch(e) { console.warn('[Push] logout cleanup error:', e); }
+function doLogout(){
   me=null; myShifts=[]
   sessionStorage.removeItem('shiftlink_me')
   sessionStorage.removeItem('shiftlink_tab')
