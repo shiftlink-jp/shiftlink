@@ -701,7 +701,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         <div style="display:flex;flex-direction:column;gap:.75rem;padding-bottom:1rem">
           <input type="hidden" id="cm-customer-id">
           <div><div class="fi-lbl">施術日</div><input class="fi" id="cm-date" type="date"></div>
-          <div><div class="fi-lbl">メモ（施術の好み・会話内容など）</div><textarea class="fi" id="cm-memo" rows="5" placeholder="例：オイル強めが好み、アニメ好き、次回は極液希望など"></textarea></div>
+          <div><div class="fi-lbl">メモ（施術の好み・会話内容など）</div><textarea class="fi" id="cm-memo" rows="5" placeholder="例：オイル強めが好み、アニメ好き、次回はオプション希望など"></textarea></div>
           <button class="btn btn-gold" onclick="saveCastMemo()">保存する</button>
         </div>
       </div>
@@ -6516,49 +6516,7 @@ async function changeOwnerPinFromSheet(){
   }
 }
 
-async function saveStoreSettings(){
-  const btn=document.getElementById('btn-save-store')
-  btn.disabled=true;btn.textContent='保存中...'
-  const gv=id=>{const el=document.getElementById(id);if(!el)return 0;const v=parseInt(el.value,10);return isNaN(v)?0:v}
-  try{
-    const{data:cs,error:csErr}=await sb.from('courses').select('*').order('price')
-    if(csErr){toast('コース取得エラー:'+csErr.message,5000);btn.disabled=false;btn.textContent='保存する';return}
-    if(cs){
-      for(const u of [{name:'50分',id:'st-c50'},{name:'80分',id:'st-c80'},{name:'100分',id:'st-c100'},{name:'130分',id:'st-c130'},{name:'延長',id:'st-ext'}]){
-        const c=cs.find(x=>x.name.includes(u.name))
-        if(c){const r=await sb.from('courses').update({price:gv(u.id)}).eq('id',c.id);if(r.error){toast('コースエラー('+u.name+'):'+r.error.message,5000);btn.disabled=false;btn.textContent='保存する';return}}
-      }
-    }
-    const{data:ops,error:opsErr}=await sb.from('options').select('*').order('id')
-    if(opsErr){toast('オプション取得エラー:'+opsErr.message,5000);btn.disabled=false;btn.textContent='保存する';return}
-    if(ops){
-      const opG=ops.find(o=>o.name==='極液')
-      const opI1=ops.find(o=>o.name==='衣装チェンジ①')
-      const opI2=ops.find(o=>o.name==='衣装チェンジ②')
-      if(opG){const r=await sb.from('options').update({price:gv('st-op1')}).eq('id',opG.id);if(r.error){toast('エラー(極液):'+r.error.message,5000);btn.disabled=false;btn.textContent='保存する';return}}
-      if(opI1){const r=await sb.from('options').update({price:gv('st-op2')}).eq('id',opI1.id);if(r.error){toast('エラー(衣装①):'+r.error.message,5000);btn.disabled=false;btn.textContent='保存する';return}}
-      if(opI2){const r=await sb.from('options').update({price:gv('st-op3')}).eq('id',opI2.id);if(r.error){toast('エラー(衣装②):'+r.error.message,5000);btn.disabled=false;btn.textContent='保存する';return}}
-    }
-    const shimeiData={shimei_free:gv('st-shimei-free'),shimei_net:gv('st-shimei-net'),shimei_hon:gv('st-shimei-hon')}
-    const{error:ssErr}=await sb.from('store_settings').upsert({id:1,...shimeiData},{onConflict:'id'})
-    if(ssErr){const{data:ssx}=await sb.from('store_settings').select('id').maybeSingle();if(ssx)await sb.from('store_settings').update(shimeiData).eq('id',ssx.id);else await sb.from('store_settings').insert(withStoreId(shimeiData))}
-    const{data:newOps}=await sb.from('options').select('*').order('id')
-    opts=newOps||[]
-    if(newOps){
-      const no1=newOps.find(o=>o.name==='極液')
-      const no2=newOps.find(o=>o.name==='衣装チェンジ①')
-      const no3=newOps.find(o=>o.name==='衣装チェンジ②')
-      if(no1) document.getElementById('st-op1').value=no1.price
-      if(no2) document.getElementById('st-op2').value=no2.price
-      if(no3) document.getElementById('st-op3').value=no3.price
-    }
-    btn.disabled=false;btn.textContent='保存する'
-    toast('料金を保存しました！');closeSheet('store')
-  }catch(e){
-    toast('例外エラー:'+e.message,5000)
-    btn.disabled=false;btn.textContent='保存する'
-  }
-}
+// saveStoreSettings() は廃止 — コース/オプション/指名料金はそれぞれ個別CRUD関数で管理
 
 async function loadStoreDiscList(){
   const area=document.getElementById('store-disc-list')
