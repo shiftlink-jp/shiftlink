@@ -6,7 +6,7 @@
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#b8893a",
+  "theme_color": "#ff8c00",
   "icons": [
     {
       "src": "https://qgcgkrcrfzonmmygcdju.supabase.co/storage/v1/object/public/icons/icon-192.png",
