@@ -229,6 +229,40 @@ tr:last-child td{border-bottom:none}
 .session-label{font-size:.7rem;color:var(--text3);font-weight:600;margin-bottom:.25rem}
 .session-inner{padding:0;height:0;overflow:hidden}
 .session-breakdown{margin:0!important;padding:.5rem 0!important;background:none!important;border-radius:0!important;border-top:1px solid var(--border)}
+
+/* ── PC対応（768px以上） ── */
+@media (min-width:768px){
+  /* アプリ全体を中央寄せ・最大幅制限 */
+  .screen{max-width:600px;margin:0 auto;position:relative}
+  .app-hdr{max-width:600px;margin:0 auto;left:0;right:0}
+  .tbar{max-width:600px;left:50%;transform:translateX(-50%)}
+  .overlay,.sheet-overlay{align-items:center;justify-content:center}
+  .sheet{max-width:520px;border-radius:20px;margin-bottom:1rem}
+  /* カレンダーセルの高さをvwではなく固定値に */
+  .cal-grid{grid-auto-rows:72px}
+  .cal-cell{font-size:.78rem}
+  /* ルーム表示を3列に */
+  .room-grid{grid-template-columns:repeat(3,1fr)}
+  /* フォント微調整 */
+  .tbar-btn{font-size:.68rem;padding:.9rem .2rem .75rem}
+  .tbar-icon{font-size:1.6rem}
+  .item{padding:1rem 1.2rem}
+  .it{font-size:.95rem}
+  .is{font-size:.8rem}
+}
+
+/* ── 大画面PC（1024px以上） ── */
+@media (min-width:1024px){
+  .screen{max-width:720px}
+  .app-hdr{max-width:720px}
+  .tbar{max-width:720px}
+  .sheet{max-width:600px}
+  .cal-grid{grid-auto-rows:80px}
+  .room-grid{grid-template-columns:repeat(4,1fr)}
+  .kpi-row{gap:.75rem}
+  .kpi{padding:1rem .75rem}
+  .kpi-v{font-size:1.15rem}
+}
 </style>
 <script>
 const SW_VER = 'v12';
