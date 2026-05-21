@@ -1799,26 +1799,54 @@ function startApp(){
     document.querySelector('.cast-tab').classList.add('on')
     const castTabs=['cast-today','shift','salary','cast-memo']
     tab(savedTab&&castTabs.includes(savedTab)?savedTab:'cast-today');
-    // Push通知ボタン（ヘッダーに表示）
+    // Push通知ボタン（ヘッダーに表示）+ 自動復元
     ;(async function() {
       const castId = me.id;
       const btn = document.getElementById('hdr-push-btn');
       if (!btn) return;
-      // DBにこのcast_idのサブスクリプションがあるか確認して表示を切り替えるだけ
-      // 自動登録はしない（明示的にボタンを押した場合のみ登録）
       try {
-        const { data: dbSub } = await sb.from("push_subscriptions").select("cast_id").eq("cast_id", castId).maybeSingle();
-        if (dbSub) {
-          btn.textContent = '✅ 設定済み';
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'default';
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) { btn.style.display=''; return; }
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        const { data: castSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
+        if (sub) {
+          const subJson = sub.toJSON();
+          const exists = (castSubs||[]).some(r=>{
+            try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === subJson.endpoint; } catch { return false; }
+          });
+          if (exists) {
+            btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          } else {
+            // ブラウザにsubscriptionあるがDBにない → 自動再登録
+            console.log('[CastPush] DB不一致 → 自動再登録');
+            const staleIds = (castSubs||[]).filter(r=>{
+              try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
+            }).map(r=>r.id);
+            if (staleIds.length > 0) await sb.from('push_subscriptions').delete().in('id', staleIds);
+            await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
+            btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          }
+        } else if ((castSubs||[]).length > 0 && Notification.permission === 'granted') {
+          // ブラウザのsubscription消失 → 自動復元
+          console.log('[CastPush] SW更新でsubscription消失 → 自動復元');
+          const newSub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
+          });
+          const newJson = newSub.toJSON();
+          const oldIds = (castSubs||[]).filter(r=>{
+            try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newJson.endpoint).origin; } catch { return false; }
+          }).map(r=>r.id);
+          if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
+          await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: newJson }));
+          btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          console.log('[CastPush] 自動復元完了');
         } else {
           btn.textContent = '🔔 通知設定';
         }
       } catch(e) {
         btn.textContent = '🔔 通知設定';
-        console.warn("[Push] DB確認エラー:", e);
+        console.warn('[CastPush] チェックエラー:', e);
       }
       btn.style.display = '';
     })();
@@ -1909,22 +1937,48 @@ async function checkOwnerPushBtn(){
   btn.style.opacity = '1';
   btn.style.cursor = 'pointer';
   try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if (!sub) return;
-    const subJson = sub.toJSON();
-    const { data: allSubs } = await sb.from('push_subscriptions').select('subscription').eq('cast_id', 0);
-    const exists = (allSubs||[]).some(r=>{
-      try {
-        const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
-        return s.endpoint === subJson.endpoint;
-      } catch { return false; }
-    });
-    if (exists) {
-      btn.textContent = '✅ 設定済み';
-      btn.disabled = true;
-      btn.style.opacity = '0.6';
-      btn.style.cursor = 'default';
+    const { data: allSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0);
+    if (sub) {
+      const subJson = sub.toJSON();
+      const exists = (allSubs||[]).some(r=>{
+        try {
+          const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+          return s.endpoint === subJson.endpoint;
+        } catch { return false; }
+      });
+      if (exists) {
+        btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+        return;
+      }
+      // ブラウザにsubscriptionはあるがDBにない → 自動再登録
+      console.log('[OwnerPush] DB不一致 → 自動再登録');
+      const staleIds = (allSubs||[]).filter(r=>{
+        try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
+      }).map(r=>r.id);
+      if (staleIds.length > 0) await sb.from('push_subscriptions').delete().in('id', staleIds);
+      await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: subJson }));
+      btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+      return;
+    }
+    // ブラウザにsubscriptionがない → DBに古い登録があれば自動復元を試みる
+    if ((allSubs||[]).length > 0 && Notification.permission === 'granted') {
+      console.log('[OwnerPush] SW更新でsubscription消失 → 自動復元');
+      const newSub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
+      });
+      const newJson = newSub.toJSON();
+      // 古い登録を全削除して新しいのを入れる
+      const oldIds = (allSubs||[]).filter(r=>{
+        try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newJson.endpoint).origin; } catch { return false; }
+      }).map(r=>r.id);
+      if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
+      await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: newJson }));
+      btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+      console.log('[OwnerPush] 自動復元完了');
     }
   } catch(e) { console.warn('[OwnerPush] チェックエラー:', e); }
 }
