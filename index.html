@@ -1821,14 +1821,8 @@ function startApp(){
           if (exists) {
             btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
           } else {
-            // ブラウザにsubscriptionあるがDBにない → 自動再登録
-            console.log('[CastPush] DB不一致 → 自動再登録');
-            const staleIds = (castSubs||[]).filter(r=>{
-              try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
-            }).map(r=>r.id);
-            if (staleIds.length > 0) await sb.from('push_subscriptions').delete().in('id', staleIds);
-            await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
-            btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+            // ブラウザにsubscriptionはあるがこのcast_idのDB登録ではない → 未登録として表示
+            btn.textContent = '🔔 通知設定';
           }
         } else if ((castSubs||[]).length > 0 && Notification.permission === 'granted') {
           // ブラウザのsubscription消失 → 自動復元
@@ -1957,14 +1951,7 @@ async function checkOwnerPushBtn(){
         btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
         return;
       }
-      // ブラウザにsubscriptionはあるがDBにない → 自動再登録
-      console.log('[OwnerPush] DB不一致 → 自動再登録');
-      const staleIds = (allSubs||[]).filter(r=>{
-        try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
-      }).map(r=>r.id);
-      if (staleIds.length > 0) await sb.from('push_subscriptions').delete().in('id', staleIds);
-      await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: subJson }));
-      btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+      // ブラウザにsubscriptionはあるがオーナーのDB登録ではない → 未登録として表示
       return;
     }
     // ブラウザにsubscriptionがない → DBに古い登録があれば自動復元を試みる
