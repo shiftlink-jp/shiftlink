@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShiftLink｜メンズエステ専用 シフト・予約・売上管理アプリ</title>
+<meta name="description" content="メンズエステ店舗向けの業務管理PWA。シフト・予約・売上・委託金をスマホ1台で完結。14日間無料トライアル実施中。">
+<meta property="og:title" content="ShiftLink｜メンズエステ専用 業務管理アプリ">
+<meta property="og:description" content="委託金計算、もう電卓いらない。シフト・予約・売上を一元管理。14日間無料。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://app.shiftlink.jp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #b8975a;
+    --gold-light: #d4b07a;
+    --dark: #1a1612;
+    --bg: #f9f7f4;
+    --white: #ffffff;
+    --gray: #888888;
+    --border: #e0dbd4;
+    --text: #333333;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Sans JP', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+    background: var(--white);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ========== HEADER ========== */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(26, 22, 18, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+  .logo span { color: var(--white); }
+  nav { display: flex; align-items: center; gap: 24px; }
+  nav a {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--gold); }
+  .btn-trial {
+    background: var(--gold);
+    color: var(--white);
+    border: none;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-trial:hover { background: var(--gold-light); }
+
+  /* ========== HERO ========== */
+  .hero {
+    min-height: 100svh;
+    background: linear-gradient(160deg, #1a1612 0%, #2c2218 60%, #1a1612 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 24px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(184,151,90,0.12) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(184,151,90,0.15);
+    border: 1px solid rgba(184,151,90,0.4);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 8vw, 56px);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .hero h1 em {
+    color: var(--gold);
+    font-style: normal;
+  }
+  .hero-sub {
+    font-size: clamp(14px, 3.5vw, 18px);
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 40px;
+    max-width: 480px;
+  }
+  .hero-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--white);
+    text-decoration: none;
+    padding: 16px 40px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(184,151,90,0.35);
+  }
+  .hero-note {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+  }
+  .hero-scroll {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    animation: bounce 2s infinite;
+  }
+  .hero-scroll .material-icons { font-size: 20px; }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+  }
+
+  /* ========== SECTIONS ========== */
+  section { padding: 80px 24px; }
+  .section-inner { max-width: 900px; margin: 0 auto; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: clamp(22px, 5vw, 34px);
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1.35;
+    margin-bottom: 16px;
+  }
+  .section-desc {
+    font-size: 15px;
+    color: #666;
+    max-width: 520px;
+    line-height: 1.8;
+  }
+
+  /* ========== PAIN ========== */
+  .pain { background: var(--bg); }
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .pain-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+  }
+  .pain-card .icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  .pain-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 6px;
+  }
+  .pain-card p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+  /* ========== FEATURES ========== */
+  .features { background: var(--white); }
+  .feature-list {
+    margin-top: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .feature-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .feature-item.reverse { direction: rtl; }
+  .feature-item.reverse > * { direction: ltr; }
+  .feature-text {}
+  .feature-number {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .feature-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .feature-desc { font-size: 14px; color: #666; line-height: 1.8; }
+  .feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .tag {
+    background: rgba(184,151,90,0.1);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .feature-visual {
+    background: linear-gradient(135deg, #1a1612 0%, #2c2218 100%);
+    border-radius: 16px;
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    border: 1px solid rgba(184,151,90,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(184,151,90,0.1) 0%, transparent 60%);
+  }
+  .feature-visual .material-icons {
+    font-size: 40px;
+    color: var(--gold);
+    opacity: 0.8;
+  }
+  .feature-visual span { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+  @media (max-width: 640px) {
+    .feature-item { grid-template-columns: 1fr; gap: 24px; }
+    .feature-item.reverse { direction: ltr; }
+    .feature-visual { aspect-ratio: 16/7; }
+  }
+
+  /* ========== HOW IT WORKS ========== */
+  .how { background: var(--bg); }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 24px;
+    margin-top: 48px;
+    position: relative;
+  }
+  .step {
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .step-num {
+    width: 44px; height: 44px;
+    background: var(--gold);
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .step h3 { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .step p { font-size: 12px; color: var(--gray); line-height: 1.6; }
+
+  /* ========== PRICING ========== */
+  .pricing { background: var(--white); }
+  .pricing-card {
+    max-width: 480px;
+    margin: 48px auto 0;
+    background: linear-gradient(135deg, #1a1612 0%, #2c2218 100%);
+    border-radius: 20px;
+    padding: 40px 36px;
+    text-align: center;
+    border: 1px solid rgba(184,151,90,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .pricing-card::before {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(184,151,90,0.1) 0%, transparent 70%);
+    top: -100px; right: -100px;
+  }
+  .pricing-badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 0.06em;
+  }
+  .pricing-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 16px;
+  }
+  .pricing-price {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .pricing-price small { font-size: 18px; }
+  .pricing-price-note {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 28px;
+  }
+  .pricing-features {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pricing-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+  }
+  .pricing-features li .material-icons {
+    font-size: 16px;
+    color: var(--gold);
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+  .btn-primary-large {
+    display: block;
+    background: var(--gold);
+    color: var(--white);
+    text-decoration: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn-primary-large:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+  }
+  .pricing-trial-note {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 14px;
+  }
+
+  /* ========== FAQ ========== */
+  .faq { background: var(--bg); }
+  .faq-list {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .faq-item {
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 18px 20px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dark);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-family: inherit;
+  }
+  .faq-q .material-icons {
+    font-size: 18px;
+    color: var(--gold);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .faq-item.open .faq-q .material-icons { transform: rotate(180deg); }
+  .faq-a {
+    display: none;
+    padding: 0 20px 18px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.8;
+  }
+  .faq-item.open .faq-a { display: block; }
+
+  /* ========== CTA BOTTOM ========== */
+  .cta-bottom {
+    background: linear-gradient(135deg, #1a1612 0%, #2c2218 100%);
+    text-align: center;
+    padding: 80px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-bottom::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(184,151,90,0.1) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+  }
+  .cta-bottom h2 {
+    font-size: clamp(22px, 5vw, 34px);
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cta-bottom h2 em { color: var(--gold); font-style: normal; }
+  .cta-bottom p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .cta-bottom .btn-primary { position: relative; font-size: 15px; padding: 16px 44px; }
+
+  /* ========== FOOTER ========== */
+  footer {
+    background: var(--dark);
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .footer-logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .footer-logo span { color: rgba(255,255,255,0.6); }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .footer-links a {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-copy {
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 640px) {
+    section { padding: 60px 20px; }
+    nav a { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">Shift<span>Link</span></a>
+  <nav>
+    <a href="#features">機能</a>
+    <a href="#pricing">料金</a>
+    <a href="#faq">FAQ</a>
+    <a class="btn-trial" href="https://app.shiftlink.jp/?saas=1">無料で試す</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">メンズエステ専用 業務管理アプリ</div>
+  <h1>委託金計算、<br><em>もう電卓いらない。</em></h1>
+  <p class="hero-sub">シフト・予約・売上・委託金をスマホ1台で完結。<br>メンズエステに特化した、はじめから使えるツール。</p>
+  <div class="hero-cta">
+    <a class="btn-primary" href="https://app.shiftlink.jp/?saas=1">
+      <span class="material-icons" style="font-size:18px">play_circle</span>
+      14日間 無料トライアル
+    </a>
+    <p class="hero-note">クレジットカード不要 · いつでも解約可</p>
+  </div>
+  <div class="hero-scroll">
+    <span class="material-icons">expand_more</span>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<section class="pain" id="pain">
+  <div class="section-inner">
+    <p class="section-label">Problem</p>
+    <h2 class="section-title">こんなお悩み、<br>ありませんか？</h2>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="icon">🧮</div>
+        <h3>委託金の計算が大変</h3>
+        <p>毎月、バック率・オプション別に手計算。ミスが怖くて何度も確認…</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon">📋</div>
+        <h3>シフト管理がLINE頼り</h3>
+        <p>LINEグループで調整しているが、変更があるたびに混乱。</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon">📊</div>
+        <h3>売上集計がExcelで面倒</h3>
+        <p>月末にExcelでまとめる作業に毎回数時間。もっと本業に集中したい。</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon">📓</div>
+        <h3>顧客情報が散らばっている</h3>
+        <p>紙のメモ・LINEのトーク・記憶…。NG情報の伝え漏れも心配。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-inner">
+    <p class="section-label">Features</p>
+    <h2 class="section-title">業種特化だから、<br>最初から使える。</h2>
+    <p class="section-desc">メンズエステ店舗の業務に合わせて設計。汎用ツールにはない機能が最初から揃っています。</p>
+
+    <div class="feature-list">
+
+      <div class="feature-item">
+        <div class="feature-text">
+          <div class="feature-number">01</div>
+          <h3 class="feature-title">委託金・バックを<br>自動計算</h3>
+          <p class="feature-desc">コース別・オプション別のバック率を設定するだけ。月末の委託金が自動で算出されます。現金・カード別の集計にも対応。手計算のミスとはもうサヨナラ。</p>
+          <div class="feature-tags">
+            <span class="tag">バック率設定</span>
+            <span class="tag">オプション別計算</span>
+            <span class="tag">現金/カード対応</span>
+          </div>
+        </div>
+        <div class="feature-visual">
+          <span class="material-icons">calculate</span>
+          <span>委託金自動計算</span>
+        </div>
+      </div>
+
+      <div class="feature-item reverse">
+        <div class="feature-text">
+          <div class="feature-number">02</div>
+          <h3 class="feature-title">シフト・予約を<br>一画面で管理</h3>
+          <p class="feature-desc">誰が何時にどのお客様を担当しているか、リアルタイムで把握。予約の追加・変更もスマホから数タップで完結します。</p>
+          <div class="feature-tags">
+            <span class="tag">時系列ボード</span>
+            <span class="tag">リアルタイム更新</span>
+            <span class="tag">ルーム管理</span>
+          </div>
+        </div>
+        <div class="feature-visual">
+          <span class="material-icons">calendar_month</span>
+          <span>シフト・予約ボード</span>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-text">
+          <div class="feature-number">03</div>
+          <h3 class="feature-title">顧客カルテで<br>NG・来店履歴を管理</h3>
+          <p class="feature-desc">顧客ごとにNG情報・メモ・来店履歴を記録。どのセラピストでも安心して接客できます。顧客番号で検索も瞬時に。</p>
+          <div class="feature-tags">
+            <span class="tag">NG管理</span>
+            <span class="tag">来店履歴</span>
+            <span class="tag">顧客メモ</span>
+          </div>
+        </div>
+        <div class="feature-visual">
+          <span class="material-icons">person_pin</span>
+          <span>顧客カルテ</span>
+        </div>
+      </div>
+
+      <div class="feature-item reverse">
+        <div class="feature-text">
+          <div class="feature-number">04</div>
+          <h3 class="feature-title">売上を<br>リアルタイムで把握</h3>
+          <p class="feature-desc">予約完了と同時に売上が集計されます。日次・月次の売上、コース別・セラピスト別など多角的に確認可能。月末に慌てて集計する必要はありません。</p>
+          <div class="feature-tags">
+            <span class="tag">日次・月次集計</span>
+            <span class="tag">コース別分析</span>
+            <span class="tag">キャスト別実績</span>
+          </div>
+        </div>
+        <div class="feature-visual">
+          <span class="material-icons">bar_chart</span>
+          <span>売上ダッシュボード</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-inner">
+    <p class="section-label">How it works</p>
+    <h2 class="section-title">今日から使える。<br>登録5分、即日運用開始。</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>無料登録</h3>
+        <p>メールアドレスとパスワードで即アカウント作成。インストール不要。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>店舗情報を入力</h3>
+        <p>店舗名・コース・バック率を設定。初期設定は最短10分。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>セラピストを登録</h3>
+        <p>セラピストを追加してシフト・予約管理をスタート。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>運用開始</h3>
+        <p>14日間は全機能を無料で利用可能。そのまま続けるか判断できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-inner">
+    <p class="section-label">Pricing</p>
+    <h2 class="section-title" style="text-align:center">シンプルな料金体系</h2>
+    <div class="pricing-card">
+      <div class="pricing-badge">スタンダードプラン</div>
+      <div class="pricing-name">全機能・人数無制限</div>
+      <div class="pricing-price"><small>¥</small>20,000<small>/月</small></div>
+      <div class="pricing-price-note">税込 · 月次自動更新 · いつでも解約可</div>
+      <ul class="pricing-features">
+        <li><span class="material-icons">check_circle</span>セラピスト登録 無制限</li>
+        <li><span class="material-icons">check_circle</span>シフト・予約・売上・委託金 全機能</li>
+        <li><span class="material-icons">check_circle</span>顧客カルテ・NG管理</li>
+        <li><span class="material-icons">check_circle</span>Push通知（予約・シフトリマインド）</li>
+        <li><span class="material-icons">check_circle</span>PC・スマートフォン対応</li>
+        <li><span class="material-icons">check_circle</span>データのバックアップ・保護</li>
+      </ul>
+      <a class="btn-primary-large" href="https://app.shiftlink.jp/?saas=1">14日間 無料トライアルを始める</a>
+      <p class="pricing-trial-note">トライアル中はカード登録不要。終了後に登録するかご判断いただけます。</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="section-inner">
+    <p class="section-label">FAQ</p>
+    <h2 class="section-title">よくある質問</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">トライアル中にクレジットカードの登録は必要ですか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">不要です。14日間のトライアル中はカード登録なしで全機能をご利用いただけます。トライアル終了後に継続するかどうかをご判断ください。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">解約はいつでもできますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">はい、いつでも解約できます。解約後は次回更新日まで引き続きご利用いただけます。日割り返金は原則として行っておりません。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">既存のデータはどうなりますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">解約後もデータは保持されます。再登録いただけばいつでも引き続きご利用いただけます。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">複数のセラピストに使わせることはできますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">できます。スタンダードプランはセラピスト数の制限がありません。シフト確認・予約確認をセラピスト自身がスマホで行えます。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">スマートフォン以外でも使えますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">PCブラウザでもご利用いただけます。管理画面など情報量の多い画面は、PCでの操作が特に便利です。</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">アプリのインストールは必要ですか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">不要です。ブラウザからそのままご利用いただけます。ホーム画面に追加（PWA）すればアプリのように使えます。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BOTTOM -->
+<section class="cta-bottom">
+  <h2>まずは<em>14日間、無料</em>で。</h2>
+  <p>クレジットカード不要。今すぐ始められます。</p>
+  <a class="btn-primary" href="https://app.shiftlink.jp/?saas=1">
+    <span class="material-icons" style="font-size:18px">rocket_launch</span>
+    無料トライアルを始める
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Shift<span>Link</span></div>
+  <div class="footer-links">
+    <a href="./legal.html">利用規約・プライバシーポリシー</a>
+    <a href="./tokutei.html">特定商取引法に基づく表示</a>
+    <a href="https://app.shiftlink.jp/?saas=1">ログイン</a>
+  </div>
+  <p class="footer-copy">© 2026 ShiftLink. All rights reserved.</p>
+</footer>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  // Header scroll effect
+  const header = document.querySelector('header');
+  window.addEventListener('scroll', () => {
+    header.style.background = window.scrollY > 40
+      ? 'rgba(26, 22, 18, 0.98)'
+      : 'rgba(26, 22, 18, 0.95)';
+  }, { passive: true });
+</script>
+</body>
+</html>
