@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#ff8c00">
 <!-- SEO -->
 <meta name="description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・キャスト管理システム。スマホ対応PWAで、いつでもどこでも店舗業務を一元管理できます。">
-<meta name="robots" content="noindex, nofollow">
+
 <!-- OGP (LINE・Slack共有時のプレビュー) -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="ShiftLink | メンズエステ店舗管理システム">
@@ -381,8 +381,9 @@ if("serviceWorker" in navigator && !_isSaaS){
     <p style="color:#888;font-size:.85rem;margin:0 0 1.5rem;line-height:1.6" id="saas-trial-msg">引き続きShiftLinkをご利用いただくには、プランをアップグレードしてください。</p>
     <div style="background:#fdf6ec;border-radius:12px;padding:1.2rem;margin-bottom:1.5rem;text-align:left">
       <div style="font-weight:700;font-size:1rem;color:#333;margin-bottom:.5rem">📋 スタンダードプラン</div>
-      <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">¥5,980<span style="font-size:.75rem;font-weight:400;color:#888">/月（税込）</span></div>
+      <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">¥20,000<span style="font-size:.75rem;font-weight:400;color:#888">/月（税込）</span></div>
       <ul style="margin:.8rem 0 0;padding-left:1.2rem;font-size:.8rem;color:#555;line-height:1.8">
+        <li>14日間の無料トライアル付き</li>
         <li>セラピスト無制限</li>
         <li>予約・売上管理すべて利用可能</li>
         <li>プッシュ通知</li>
@@ -406,7 +407,7 @@ if("serviceWorker" in navigator && !_isSaaS){
       <button class="btn-login" style="background:var(--accent)" onclick="showLogin('owner')">店舗ログイン</button>
       <button class="btn-login" style="background:var(--accent)" onclick="showLogin('cast')">セラピストログイン</button>
     </div>
-    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
+    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意したものとみなします。<br><a href="/tokutei.html" target="_blank" style="color:var(--accent);text-decoration:underline">特定商取引法に基づく表示</a></div>
     </div>
   </div>
 </div>
@@ -421,7 +422,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <input class="linput" type="password" id="owner-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doOwnerLogin()">
     <button class="btn-login" style="background:var(--accent)" onclick="doOwnerLoginSmart()" id="btn-owner">ログイン</button>
     <div class="lerr" id="owner-err"></div>
-    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
+    <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意したものとみなします。<br><a href="/tokutei.html" target="_blank" style="color:var(--accent);text-decoration:underline">特定商取引法に基づく表示</a></div>
   </div>
 </div>
 
@@ -445,7 +446,7 @@ if("serviceWorker" in navigator && !_isSaaS){
       <label class="lbl">PIN（最大8桁）</label>
       <input class="linput" type="password" id="cast-pin" maxlength="8" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doCastLogin()">
       <button class="btn-login" style="background:var(--accent)" onclick="doCastLoginSmart()" id="btn-cast">ログイン</button>
-      <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に<br>同意したものとみなします。</div>
+      <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意したものとみなします。<br><a href="/tokutei.html" target="_blank" style="color:var(--accent);text-decoration:underline">特定商取引法に基づく表示</a></div>
     </div>
     <div class="lerr" id="cast-err"></div>
   </div>
@@ -1129,6 +1130,21 @@ if("serviceWorker" in navigator && !_isSaaS){
 
 <script>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// XSS防止ヘルパー: innerHTML に挿入する文字列は必ずこれを通す
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
+// オーナーセッショントークン生成（PIN検証の証跡用、PINを平文保存しない簡易ハッシュ）
+function makeOwnerTok(pin){
+  if(!pin) return ''
+  const salt='shiftlink-owner-v1'
+  let h=0
+  const s=salt+':'+pin
+  for(let i=0;i<s.length;i++){h=((h<<5)-h+s.charCodeAt(i))|0}
+  return 'tok:'+pin.length+':'+(h>>>0).toString(36)
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SaaSモード判定: URLパラメータ ?saas=1 または app.shiftlink.jp からアクセス時
 const SAAS_MODE = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp'
 
@@ -1139,7 +1155,7 @@ const SUPABASE_URL = SAAS_MODE
 const SUPABASE_KEY = SAAS_MODE
   ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZld3Vvbm5yZ3FueHRvcGtqdWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjc0MDYsImV4cCI6MjA5NDYwMzQwNn0.u3kDWsXElpR1w_WMWm-fYG-M5iPaQ3LQdSt8WlGE41U'
   : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
-let OWNER_PIN = '2580' // DBから上書きされる（後方互換でlocalStorageも参照）
+let OWNER_PIN = '' // DBまたはlocalStorageからロードされるまで認証不可
 // SaaS用グローバル変数
 let currentStoreId = null // ログイン後にセットされる
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1338,7 +1354,7 @@ async function init(){
   courses=cs||[]; opts=op||[]; storeSettings=ss||{}; roomList=rm||[]
   // DBにowner_pinがあればそれを使う、なければlocalStorageにフォールバック
   if(ss&&ss.owner_pin) OWNER_PIN = String(ss.owner_pin)
-  else OWNER_PIN = localStorage.getItem('shiftlink_owner_pin') || '2580'
+  else OWNER_PIN = localStorage.getItem('shiftlink_owner_pin') || ''
   // リロード時：sessionStorageにログイン情報があれば自動復元
   const savedMe=sessionStorage.getItem('shiftlink_me')
   if(savedMe){
@@ -1350,7 +1366,15 @@ async function init(){
           if(c){me={...c,is_owner:false};startApp();return}
           else{sessionStorage.removeItem('shiftlink_me')}
         } else if(parsed.is_owner){
-          me=parsed;startApp();return
+          // オーナー復元時はsessionStorageに保存されたPINトークン（PIN自体のハッシュ）を
+          // 現在のOWNER_PINと再検証する。改ざんされたsessionStorageでの権限取得を防止
+          const tok=sessionStorage.getItem('shiftlink_owner_tok')
+          const expected=makeOwnerTok(OWNER_PIN)
+          if(tok&&expected&&tok===expected){me=parsed;startApp();return}
+          else{
+            sessionStorage.removeItem('shiftlink_me')
+            sessionStorage.removeItem('shiftlink_owner_tok')
+          }
         }
       }
     }catch(e){sessionStorage.removeItem('shiftlink_me')}
@@ -1557,12 +1581,15 @@ async function doOwnerLogin(){
   const err=document.getElementById('owner-err')
   err.textContent=''
   if(pin.length<1||pin.length>8){err.textContent='PINは1〜8桁で入力してください';return}
+  if(!OWNER_PIN){err.textContent='PINが設定されていません。管理者に連絡してください。';return}
   if(pin!==OWNER_PIN){err.textContent='PINが正しくありません';return}
   const btn=document.getElementById('btn-owner')
   btn.disabled=true; btn.textContent='確認中...'
   btn.disabled=false; btn.textContent='ログイン'
   me={id:0,name:'店舗',is_owner:true}
   sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
+  // PIN認証成功の証跡をsessionStorageに保存（復元時の再検証用、PINは平文保存しない）
+  sessionStorage.setItem('shiftlink_owner_tok',makeOwnerTok(OWNER_PIN))
   startApp()
   setTimeout(()=>offerPasskeyRegistration(0,'店舗'), 800)
 }
@@ -1678,7 +1705,23 @@ async function doSaasSignup(){
       p_name:storeName, p_slug:slug, p_email:email
     })
     if(storeErr) throw storeErr
-    // 3. アプリ起動
+    // 3. Stripeトライアルサブスク作成
+    try{
+      const trialRes=await fetch(SUPABASE_URL+'/functions/v1/create-trial-subscription',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+authData.session.access_token},
+        body:JSON.stringify({store_id:storeId})
+      })
+      const trialJson=await trialRes.json()
+      if(!trialRes.ok&&trialJson.status!=='already_exists'){
+        console.error('Trial creation failed:',trialJson)
+        toast('トライアルの開始に問題がありました。ログイン後に再試行されます。')
+      }
+    }catch(e){
+      console.error('Trial subscription creation failed:',e)
+      toast('トライアルの開始に問題がありました。ログイン後に再試行されます。')
+    }
+    // 4. アプリ起動
     await initSaasApp(authData.session)
   }catch(e){
     err.textContent=e.message.includes('duplicate')?'この店舗IDは既に使用されています':e.message
@@ -1710,12 +1753,25 @@ async function initSaasApp(session){
     if(status==='active'){}
     else if(status==='trialing'&&trialEnd&&trialEnd>now){}
     else{
-      // 期限切れ or canceled → アップグレード画面
       _saasStore=store
       _saasSession=session
       document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
       document.getElementById('s-saas-upgrade').classList.add('on')
-      if(status==='trialing') document.getElementById('saas-trial-msg').textContent='トライアル期間が'+trialEnd.toLocaleDateString('ja-JP')+'に終了しました。引き続きご利用いただくにはアップグレードしてください。'
+      const msgEl=document.getElementById('saas-trial-msg')
+      const titleEl=document.querySelector('#s-saas-upgrade h2')
+      if(status==='past_due'){
+        titleEl.textContent='お支払いに問題があります'
+        msgEl.textContent='直近のお支払いが失敗しました。お支払い方法を更新してください。'
+      }else if(status==='canceled'){
+        titleEl.textContent='サブスクリプションが解約されました'
+        msgEl.textContent='引き続きご利用いただくには、再度サブスクリプションをお申し込みください。'
+      }else if(status==='trialing'){
+        titleEl.textContent='トライアル期間が終了しました'
+        msgEl.textContent='トライアル期間が'+trialEnd.toLocaleDateString('ja-JP')+'に終了しました。引き続きご利用いただくにはアップグレードしてください。'
+      }else if(status==='paused'){
+        titleEl.textContent='サブスクリプションが一時停止中です'
+        msgEl.textContent='お支払い方法を登録して、サブスクリプションを再開してください。'
+      }
       return
     }
   }
@@ -1732,10 +1788,11 @@ async function initSaasApp(session){
       me={id:0,name:session.user.email,is_owner:false}
     }
   }
-  // SaaS用データ読み込み
-  const{data:cs}=await sb.from('courses').select('*').order('price')
-  const{data:op}=await sb.from('options').select('*').order('id')
-  courses=cs||[]; opts=op||[]
+  // SaaS用データ読み込み（store_idでフィルタしてマルチテナント分離）
+  const{data:cs}=await sb.from('courses').select('*').eq('store_id',currentStoreId).order('price')
+  const{data:op}=await sb.from('options').select('*').eq('store_id',currentStoreId).order('id')
+  const{data:rm}=await sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order')
+  courses=cs||[]; opts=op||[]; roomList=rm||[]
   storeSettings=store?.settings||{}
   // アプリ画面へ
   startApp()
@@ -1854,9 +1911,10 @@ function startApp(){
 // (D) send-push共通ヘルパー（レスポンスチェック付き）
 async function sendPushNotification(castId, title, body) {
   try {
-    const res = await fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/send-push', {
+    // SaaSモード/非SaaSモードに応じて現在のSupabaseプロジェクトURLとキーを使用
+    const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
       body:JSON.stringify({cast_id:castId, title, body})
     });
     if (!res.ok) console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>''));
@@ -1893,7 +1951,10 @@ async function registerCastPush(){
     });
     const subJson = sub.toJSON();
     // (C) このendpointが他のcast_idで登録済みなら削除（端末の使い回し対策）
-    const { data: allEndpointSubs } = await sb.from('push_subscriptions').select('id,cast_id,subscription');
+    // SaaSモードではstore_idでスコープを限定し、他テナントのendpoint情報を取得しない
+    let endpointQuery = sb.from('push_subscriptions').select('id,cast_id,subscription');
+    if (SAAS_MODE && currentStoreId) endpointQuery = endpointQuery.eq('store_id', currentStoreId);
+    const { data: allEndpointSubs } = await endpointQuery;
     const endpointDups = (allEndpointSubs||[]).filter(r=>{
       try {
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
@@ -2433,7 +2494,7 @@ async function loadCastToday() {
       .eq('status', 'approved');
 
     if (shiftErr || !shifts || shifts.length === 0) {
-      area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の承認済みシフトがありません<br><small>日付:' + today + ' cast_id:' + me.id + (shiftErr?' err:'+shiftErr.message:'') + '</small></div>';
+      area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の承認済みシフトがありません<br><small>日付:' + escapeHtml(today) + ' cast_id:' + escapeHtml(String(me.id)) + (shiftErr?' err:'+escapeHtml(shiftErr.message):'') + '</small></div>';
       return;
     }
 
@@ -2445,7 +2506,7 @@ async function loadCastToday() {
     const rvsSorted = sortRvsByTime(rvs);
 
     if (rvErr || !rvs || rvs.length === 0) {
-      area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません<br><small>shift_ids:' + JSON.stringify(sids) + (rvErr?' err:'+rvErr.message:'') + '</small></div>';
+      area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません<br><small>shift_ids:' + escapeHtml(JSON.stringify(sids)) + (rvErr?' err:'+escapeHtml(rvErr.message):'') + '</small></div>';
       // 定期リフレッシュ
       clearTimeout(castTodayTimer);
       castTodayTimer = setTimeout(loadCastToday, 60000);
@@ -2459,7 +2520,7 @@ async function loadCastToday() {
     castTodayTimer = setTimeout(loadCastToday, 30000);
 
   } catch(e) {
-    area.innerHTML = '<div class="card" style="color:var(--red);padding:1rem">読み込みエラー: ' + e.message + '</div>';
+    area.innerHTML = '<div class="card" style="color:var(--red);padding:1rem">読み込みエラー: ' + escapeHtml(e.message) + '</div>';
   }
 }
 
@@ -2671,7 +2732,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   const modal=document.createElement('div')
   modal.id='cast-hist-modal'
   modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center'
-  modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0"><div style="font-weight:700;font-size:1rem">📋 ${custName} の来店履歴</div><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem"><div class="spin">読み込み中...</div></div></div>`
+  modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0"><div style="font-weight:700;font-size:1rem">📋 ${escapeHtml(custName)} の来店履歴</div><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3)">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem"><div class="spin">読み込み中...</div></div></div>`
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
   document.body.appendChild(modal)
 
@@ -2702,7 +2763,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
     .order('visit_date',{ascending:false})
     .limit(30)
   
-  if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+vErr.message+'</div>';return}
+  if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+escapeHtml(vErr.message)+'</div>';return}
 
   const fmt=n=>n!=null?'¥'+Number(n).toLocaleString():'-'
   const todayStr=new Date().toLocaleDateString('sv-SE')
@@ -3386,7 +3447,7 @@ async function openCustomerDetail(id){
           <option value="true" ${c.is_banned?'selected':''}>出禁</option>
         </select>
       </div>
-      <div><div class="fi-lbl">メモ</div><textarea class="fi" id="edit-cust-memo" rows="3" placeholder="特記事項など">${c.memo||''}</textarea></div>
+      <div><div class="fi-lbl">メモ</div><textarea class="fi" id="edit-cust-memo" rows="3" placeholder="特記事項など">${escapeHtml(c.memo||'')}</textarea></div>
       <button class="btn btn-gold" onclick="saveCustomerEdit(${c.id})">保存する</button>
     </div>
     <div class="sec">来店記録（${(visits||[]).length}回）</div>`
@@ -3408,7 +3469,7 @@ async function openCustomerDetail(id){
   }
   
   html+=`<div class="sec" style="margin-top:.75rem">キャストメモ</div>
-    <button class="btn btn-purple btn-sm2" style="width:100%;margin-bottom:.5rem" onclick="openCastMemoSheet(${c.id},'${c.name}')">＋ メモを追加</button>`
+    <button class="btn btn-purple btn-sm2" style="width:100%;margin-bottom:.5rem" onclick="openCastMemoSheet(${c.id},'${escapeHtml(c.name)}')">＋ メモを追加</button>`
   
   if(memos&&memos.length){
     memos.forEach(m=>{
@@ -3427,7 +3488,7 @@ async function openCustomerDetail(id){
 
   // キャストメモの下に顧客削除ボタン
   html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)">
-    <button class="btn btn-red btn-full" onclick="deleteCustomer(${c.id},'${c.name.replace(/'/g, '')}')">
+    <button class="btn btn-red btn-full" onclick="deleteCustomer(${c.id},'${escapeHtml(c.name)}')">
       🗑 この顧客データを完全に削除する
     </button>
     <div style="font-size:.7rem;color:var(--text3);text-align:center;margin-top:.4rem">来店記録・メモも全て削除されます</div>
@@ -3529,7 +3590,7 @@ function openAddCustomer(){
     // キャスト一覧を使ってチップを生成（非同期取得）
     sb.from('casts').select('id,name').eq('active',true).order('sort_order').then(({data})=>{
       window._allCastsForNg=data||[]
-      chipsWrap.innerHTML=(data||[]).map(c=>'<button type="button" class="ce-ng-chip" data-name="'+c.name+'" onclick="toggleCeNgChip(this)" style="flex-shrink:0;padding:.35rem .9rem;border-radius:99px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap">'+c.name+'</button>').join('')
+      chipsWrap.innerHTML=(data||[]).map(c=>'<button type="button" class="ce-ng-chip" data-name="'+escapeHtml(c.name)+'" onclick="toggleCeNgChip(this)" style="flex-shrink:0;padding:.35rem .9rem;border-radius:99px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap">'+escapeHtml(c.name)+'</button>').join('')
     })
   }
   document.getElementById('customer-edit-overlay').classList.add('on')
@@ -3545,18 +3606,32 @@ async function saveNewCustomer(){
   if(!name){toast('名前を入力してください');return}
   const noVal=document.getElementById('ce-id').value
   let no=noVal?parseInt(noVal):null
-  if(!no){
-    const maxNo=allCustomers.reduce((m,c)=>Math.max(m,c.customer_no||0),0)
-    no=maxNo+1
-  }
+  const isManualNo=!!no
   const phone=document.getElementById('ce-phone').value.trim()
   const memo=document.getElementById('ce-memo').value.trim()
   // NGキャストをチップから取得
   const ngChips=document.querySelectorAll('.ce-ng-chip[data-selected="true"]')
   const ng=Array.from(ngChips).map(x=>x.dataset.name).join(',')
-  const{error}=await sb.from('customers').insert(withStoreId({customer_no:no,name,phone,memo,ng_casts:ng}))
-  if(error){toast('エラー: '+error.message);return}
-  toast('登録しました')
+  // 採番競合対策: DBから最新値を取得して挿入、失敗時は最大5回まで番号をインクリメントしてリトライ
+  let insertErr=null
+  for(let attempt=0;attempt<5;attempt++){
+    if(!no || (!isManualNo && attempt>0)){
+      // DBから最新の最大値を取得（同時登録対策）
+      let q=sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
+      if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+      const{data:last}=await q
+      no=((last||[])[0]?.customer_no||0)+1
+    }
+    const{error}=await sb.from('customers').insert(withStoreId({customer_no:no,name,phone,memo,ng_casts:ng}))
+    if(!error){insertErr=null;break}
+    insertErr=error
+    // UNIQUE制約違反（重複）の場合のみリトライ
+    if(!error.code||(error.code!=='23505'&&!String(error.message||'').includes('duplicate'))) break
+    if(isManualNo){break} // 手動指定の場合はリトライしない
+    no=null // 次のループでDBから取り直し
+  }
+  if(insertErr){toast('エラー: '+insertErr.message);return}
+  toast('登録しました（No.'+no+'）')
   closeSheet('customer-edit-overlay')
   loadCustomers()
 }
@@ -3628,7 +3703,7 @@ async function openReservation(shiftId,castName,date){
   const{data:courses}=await sb.from('courses').select('*').order('price')
   const sel=document.getElementById('rv-course')
   if(courses&&courses.length){
-    sel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.name}">${c.name}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
+    sel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
   }
   // オプション一覧をチェックボックスで表示
   const{data:opts}=await sb.from('options').select('*').order('name')
@@ -3661,7 +3736,7 @@ async function openReservation(shiftId,castName,date){
     discList.dataset.rvDate=date
     discList.dataset.rvCastName=castName
     discList.dataset.rvJoinedAt=rvCastJoinedAt||''
-    discList.innerHTML=storeDiscs.map(d=>`<label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem"><input type="checkbox" class="rv-disc-chk" value="${d.name}" data-name="${d.name}" onchange="rvDiscWarnCheck()" style="width:18px;height:18px;accent-color:var(--accent)"><span>${d.name}（-¥${(d.amount||0).toLocaleString()}）</span></label>`).join('')+'<div class="rv-disc-warn" style="display:none;background:#fff3cd;border:1.5px solid #f0a500;border-radius:7px;padding:.45rem .7rem;margin-top:.35rem;font-size:.75rem;color:#7a5000"></div>'
+    discList.innerHTML=storeDiscs.map(d=>`<label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem"><input type="checkbox" class="rv-disc-chk" value="${escapeHtml(d.name)}" data-name="${escapeHtml(d.name)}" onchange="rvDiscWarnCheck()" style="width:18px;height:18px;accent-color:var(--accent)"><span>${escapeHtml(d.name)}（-¥${(d.amount||0).toLocaleString()}）</span></label>`).join('')+'<div class="rv-disc-warn" style="display:none;background:#fff3cd;border:1.5px solid #f0a500;border-radius:7px;padding:.45rem .7rem;margin-top:.35rem;font-size:.75rem;color:#7a5000"></div>'
   } else {
     discList.innerHTML='<div style="font-size:.83rem;color:var(--text3)">店舗料金設定で割引を登録してください</div>'
   }
@@ -3891,23 +3966,32 @@ async function saveReservation(){
       if(warn) warn.style.display='none'
     }
   }
-  // 自動登録の場合：先に顧客番号を確定
+  // 自動登録の場合：先に顧客番号を確定（採番競合対策付き）
   if(autoRegister){
-    const{data:last}=await sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
-    const nextNo=((last||[])[0]?.customer_no||0)+1
-    custNoInt=nextNo
-    // customersテーブルに新規登録し、idも取得
     const custName2=finalName.endsWith('様')?finalName:finalName+'様'
     const phone2=document.getElementById('rv-phone')?.value.trim()||''
-    const{data:insertedCust,error:custErr}=await sb.from('customers').insert(withStoreId({
-      customer_no:nextNo,
-      name:custName2,
-      phone:phone2,
-      memo:'',
-      ng_casts:'',
-      is_banned:false
-    })).select('id').single()
+    let nextNo=0, insertedCust=null, custErr=null
+    for(let attempt=0;attempt<5;attempt++){
+      // DBから最新の最大値を取得（同時登録対策）
+      let q=sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
+      if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+      const{data:last}=await q
+      nextNo=((last||[])[0]?.customer_no||0)+1+attempt
+      const r=await sb.from('customers').insert(withStoreId({
+        customer_no:nextNo,
+        name:custName2,
+        phone:phone2,
+        memo:'',
+        ng_casts:'',
+        is_banned:false
+      })).select('id').single()
+      if(!r.error){insertedCust=r.data;custErr=null;break}
+      custErr=r.error
+      // UNIQUE制約違反以外はリトライしない
+      if(!r.error.code||(r.error.code!=='23505'&&!String(r.error.message||'').includes('duplicate'))) break
+    }
     if(custErr){toast('顧客登録エラー: '+(custErr.message||custErr.code||JSON.stringify(custErr)));return}
+    custNoInt=nextNo
     allCustomers.push({id:insertedCust?.id||null,customer_no:nextNo,name:custName2})
     toast('No.'+nextNo+' で顧客登録しました！')
   }
@@ -4833,7 +4917,11 @@ function renderStoreRoomList(){
     </div>`).join('')
 }
 async function reloadRoomList(){
-  const{data:rm}=await sb.from('rooms').select('*').is('store_id',null).order('sort_order')
+  // SaaSモードでは current store_id でフィルタ、非SaaSモードでは store_id IS NULL でフィルタ
+  let q=sb.from('rooms').select('*').order('sort_order')
+  if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+  else q=q.is('store_id',null)
+  const{data:rm}=await q
   roomList=rm||[]
 }
 async function addStoreRoom(){
@@ -5871,7 +5959,7 @@ async function openInactiveSheet(){
         <div class="cast-nm">${c.name}</div>
         <div class="cast-btns">
           <button class="btn btn-green btn-xs" onclick="toggleActive(${c.id},false);openInactiveSheet()">復帰</button>
-          <button class="btn btn-red btn-xs" onclick="deleteCast(${c.id},'${c.name}')">完全消去</button>
+          <button class="btn btn-red btn-xs" onclick="deleteCast(${c.id},'${escapeHtml(c.name)}')">退店処理</button>
         </div>
       </div>`).join('')
   }
@@ -5879,20 +5967,15 @@ async function openInactiveSheet(){
 }
 
 async function deleteCast(castId, name){
-  if(!confirm(name+'を完全に消去しますか？\nこの操作は取り消せません。シフト・委託金記録も全て削除されます。')) return
+  if(!confirm(name+'を退店処理しますか？\nキャスト情報は削除されますが、売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。\nこの操作は取り消せません。')) return
   try {
-    // 関連データを順番に削除（外部キー制約を考慮）
-    const r1=await sb.from('works').delete().eq('cast_id',castId)
-    if(r1.error) throw new Error('works削除エラー: '+r1.error.message)
-    const r2=await sb.from('shifts').delete().eq('cast_id',castId)
-    if(r2.error) throw new Error('shifts削除エラー: '+r2.error.message)
-    const r3=await sb.from('cast_discounts').delete().eq('cast_id',castId)
-    if(r3.error) throw new Error('discounts削除エラー: '+r3.error.message)
-    const r4=await sb.from('cast_fees').delete().eq('cast_id',castId)
-    if(r4.error) throw new Error('fees削除エラー: '+r4.error.message)
-    const r5=await sb.from('casts').delete().eq('id',castId)
-    if(r5.error) throw new Error('cast削除エラー: '+r5.error.message)
-    toast(name+'を完全消去しました')
+    // 設定データのみ削除（割引設定はキャスト固有の設定のため削除）
+    // works・shifts・cast_fees・reservations は税務記録として保持する
+    const r1=await sb.from('cast_discounts').delete().eq('cast_id',castId)
+    if(r1.error) throw new Error('discounts削除エラー: '+r1.error.message)
+    const r2=await sb.from('casts').delete().eq('id',castId)
+    if(r2.error) throw new Error('cast削除エラー: '+r2.error.message)
+    toast(name+'を退店処理しました')
     openInactiveSheet()
     init()
   } catch(e) {
@@ -6368,7 +6451,7 @@ function refreshCourseOptSelects(){
   courseSelects.forEach(sel=>{
     if(!sel) return
     const cur = sel.value
-    sel.innerHTML = courses.map(c=>`<option value="${c.name}">${c.name}（¥${c.price?.toLocaleString()}）</option>`).join('')
+    sel.innerHTML = courses.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}（¥${c.price?.toLocaleString()}）</option>`).join('')
     if(cur) sel.value = cur
   })
   // 予約入力のオプション選択を更新
@@ -6489,7 +6572,7 @@ async function addStoreCourse(){
   // 予約入力フォームのコース選択肢も即時更新
   const rvCourseSel=document.getElementById('rv-course')
   if(rvCourseSel&&courses.length){
-    rvCourseSel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.name}">${c.name}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
+    rvCourseSel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
   }
 }
 
@@ -6597,7 +6680,7 @@ async function openShiftReservations(shiftId, castName){
   body.innerHTML = '<div class="spin">読み込み中...</div>'
   const {data:rvs, error} = await sb.from('reservations').select('*').eq('shift_id', shiftId).order('checkin_time')
     if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
-  if(error){body.innerHTML='<div class="empty">取得エラー: '+error.message+'</div>';return}
+  if(error){body.innerHTML='<div class="empty">取得エラー: '+escapeHtml(error.message)+'</div>';return}
   if(!rvs||!rvs.length){body.innerHTML='<div class="empty">予約はまだありません</div>';return}
   // 課金テーブルを取得（受取金額計算用）
   const {data:courseList} = await sb.from('courses').select('*')
@@ -6861,17 +6944,17 @@ async function openRvEdit(rvId){
   try{pj=JSON.parse(r.payment||'{}')}catch(e){}
   const selectedOpts=r.options?r.options.split(',').filter(Boolean):[]
   const selectedDiscs=r.discount?r.discount.split(',').filter(Boolean):[]
-  const courseOpts=(courseList||[]).map(c=>`<option value="${c.name}" ${r.course===c.name?'selected':''}>${c.name}</option>`).join('')
+  const courseOpts=(courseList||[]).map(c=>`<option value="${escapeHtml(c.name)}" ${r.course===c.name?'selected':''}>${escapeHtml(c.name)}</option>`).join('')
   const optItems=(optList||[]).map(o=>`<label style="display:flex;align-items:center;gap:.4rem;font-size:.88rem;padding:.2rem 0">
-    <input type="checkbox" class="rve-opt" value="${o.name}" ${selectedOpts.includes(o.name)?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)"> ${o.name}
+    <input type="checkbox" class="rve-opt" value="${escapeHtml(o.name)}" ${selectedOpts.includes(o.name)?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)"> ${escapeHtml(o.name)}
   </label>`).join('')
   const discItems=(discListAll||[]).map(d=>`<label style="display:flex;align-items:center;gap:.4rem;font-size:.88rem;padding:.2rem 0">
-    <input type="checkbox" class="rve-disc" value="${d.name}" ${selectedDiscs.includes(d.name)?'checked':''} style="width:18px;height:18px;accent-color:var(--red)"> ${d.name}（-${fmt(d.amount)}）
+    <input type="checkbox" class="rve-disc" value="${escapeHtml(d.name)}" ${selectedDiscs.includes(d.name)?'checked':''} style="width:18px;height:18px;accent-color:var(--red)"> ${escapeHtml(d.name)}（-${fmt(d.amount)}）
   </label>`).join('')
   document.getElementById('rv-detail-body').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:.55rem">
-      <div><div class="fi-lbl">お客様名</div><input class="fi" id="rve-name" value="${r.customer_name||''}"></div>
-      <div><div class="fi-lbl">顧客番号</div><input class="fi" id="rve-cust-no" type="number" value="${r.customer_no||''}"></div>
+      <div><div class="fi-lbl">お客様名</div><input class="fi" id="rve-name" value="${escapeHtml(r.customer_name||'')}"></div>
+      <div><div class="fi-lbl">顧客番号</div><input class="fi" id="rve-cust-no" type="number" value="${escapeHtml(String(r.customer_no||''))}"></div>
       <div><div class="fi-lbl">来店区分</div>
         <select class="fi" id="rve-is-new">
           <option value="">-- 選択 --</option>
@@ -6928,7 +7011,7 @@ async function openRvEdit(rvId){
           </select>
         </div>
       </div>
-      <div><div class="fi-lbl">備考</div><input class="fi" id="rve-note" value="${r.note||''}"></div>
+      <div><div class="fi-lbl">備考</div><input class="fi" id="rve-note" value="${escapeHtml(r.note||'')}"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.3rem">
         <button class="btn btn-gold" onclick="saveRvEdit(${r.id})">💾 保存する</button>
         <button class="btn btn-gray" onclick="backToShiftReservations()">← 一覧に戻る</button>

@@ -1,35 +1,68 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@13.6.0?target=deno'
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 
 serve(async (req) => {
+  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2024-06-20' })
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
+
+  const body = await req.text()
+  const sig = req.headers.get('stripe-signature')!
+
+  // 1. シグネチャ検証（失敗時は400）
+  let event: Stripe.Event
   try {
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2023-10-16' })
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
+  } catch (e) {
+    console.error('Webhook signature failed:', e.message)
+    return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 
-    const body = await req.text()
-    const sig = req.headers.get('stripe-signature')!
-    const event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-
-    const updateStore = async (subscriptionId: string, data: Record<string, unknown>) => {
-      // subscription metadataからstore_idを取得
-      const sub = await stripe.subscriptions.retrieve(subscriptionId)
-      const storeId = sub.metadata.store_id
-      if (!storeId) return
-      await supabase.from('stores').update(data).eq('id', storeId)
+  const updateStore = async (subscriptionId: string, data: Record<string, unknown>) => {
+    // subscription metadataからstore_idを取得
+    const sub = await stripe.subscriptions.retrieve(subscriptionId)
+    const storeId = sub.metadata.store_id
+    if (!storeId) {
+      console.warn('No store_id in subscription metadata:', subscriptionId)
+      return
     }
+    // べき等性チェック: subscription_status のみの更新で既に同じ値なら更新不要
+    if (data.subscription_status && Object.keys(data).length === 1) {
+      const { data: current } = await supabase
+        .from('stores')
+        .select('subscription_status')
+        .eq('id', storeId)
+        .single()
+      if (current?.subscription_status === data.subscription_status) {
+        console.log('Skipping duplicate event, status already:', data.subscription_status)
+        return
+      }
+    }
+    const { error } = await supabase.from('stores').update(data).eq('id', storeId)
+    if (error) throw new Error(`DB update failed: ${error.message}`)
+  }
 
+  // 2. イベント処理（エラーでも200を返す）
+  try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         if (session.subscription) {
-          await updateStore(session.subscription as string, {
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+          const data: Record<string, unknown> = {
             stripe_subscription_id: session.subscription,
-            subscription_status: 'active',
-          })
+            subscription_status: sub.status,
+          }
+          if (sub.status === 'trialing' && sub.trial_end) {
+            data.trial_ends_at = new Date(sub.trial_end * 1000).toISOString()
+          }
+          await updateStore(session.subscription as string, data)
         }
         break
       }
@@ -61,20 +94,39 @@ serve(async (req) => {
       }
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
-        await updateStore(sub.id, {
+        const data: Record<string, unknown> = {
           subscription_status: sub.status,
-        })
+        }
+        if (sub.status === 'trialing' && sub.trial_end) {
+          data.trial_ends_at = new Date(sub.trial_end * 1000).toISOString()
+        }
+        await updateStore(sub.id, data)
+        break
+      }
+      case 'customer.subscription.trial_will_end': {
+        // トライアル終了3日前（Stripeが自動送信）
+        // DBのtrial_ends_atを最新値で更新し、将来のメール通知拡張に備える
+        const sub = event.data.object as Stripe.Subscription
+        if (sub.trial_end) {
+          await updateStore(sub.id, {
+            trial_ends_at: new Date(sub.trial_end * 1000).toISOString(),
+          })
+        }
+        console.log('trial_will_end for subscription:', sub.id)
         break
       }
     }
-
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 400,
+    console.error('Webhook processing error:', event.type, e.message)
+    // 500を返してStripeに再送を依頼（DB一時障害などからの自動復旧を可能にする）
+    // 同じイベントが再送されてもupdateStore内のべき等性チェックで二重処理を防止
+    return new Response(JSON.stringify({ error: 'processing_failed', event_type: event.type }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  return new Response(JSON.stringify({ received: true }), {
+    headers: { 'Content-Type': 'application/json' },
+  })
 })

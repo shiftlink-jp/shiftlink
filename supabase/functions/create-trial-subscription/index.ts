@@ -22,7 +22,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // JWTからユーザー取得
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userErr } = await supabase.auth.getUser(token)
@@ -31,16 +30,20 @@ serve(async (req) => {
     const { store_id } = await req.json()
     if (!store_id) throw new Error('store_id is required')
 
-    // store情報取得
     const { data: store, error: storeErr } = await supabase
       .from('stores')
       .select('*')
       .eq('id', store_id)
       .single()
     if (storeErr || !store) throw new Error('店舗が見つかりません')
-
-    // オーナーか確認
     if (store.owner_user_id !== user.id) throw new Error('権限がありません')
+
+    // 既にStripeサブスクがある場合はスキップ
+    if (store.stripe_subscription_id) {
+      return new Response(JSON.stringify({ status: 'already_exists' }), {
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      })
+    }
 
     // Stripe Customer作成 or 既存取得
     let customerId = store.stripe_customer_id
@@ -53,43 +56,49 @@ serve(async (req) => {
       await supabase.from('stores').update({ stripe_customer_id: customerId }).eq('id', store_id)
     }
 
-    // Checkout Session作成
-    const priceId = Deno.env.get('STRIPE_PRICE_ID')! // Stripeダッシュボードで作成した価格ID
-    const appUrl = Deno.env.get('APP_URL') || 'https://app.shiftlink.jp'
+    const priceId = Deno.env.get('STRIPE_PRICE_ID')!
 
-    const subscriptionData: Record<string, unknown> = {
-      metadata: { store_id },
-    }
-
-    // まだトライアル中で期限内なら残日数をトライアルとして設定
-    if (store.subscription_status === 'trialing' && store.trial_ends_at) {
-      const remaining = Math.ceil((new Date(store.trial_ends_at).getTime() - Date.now()) / 86400000)
-      if (remaining > 0) {
-        subscriptionData.trial_period_days = remaining
-      }
-    }
-
-    const session = await stripe.checkout.sessions.create({
+    // 14日間トライアル付きサブスクリプション作成（カード不要）
+    // idempotencyKey で同一store_idの重複リクエスト（ダブルクリック等）を防止
+    const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/?saas=1&checkout=success`,
-      cancel_url: `${appUrl}/?saas=1&checkout=cancel`,
-      subscription_data: subscriptionData,
-      payment_method_collection: 'always',
+      items: [{ price: priceId }],
+      trial_period_days: 14,
+      payment_settings: {
+        save_default_payment_method: 'on_subscription',
+      },
+      trial_settings: {
+        end_behavior: { missing_payment_method: 'pause' },
+      },
+      metadata: { store_id },
+    }, {
+      // idempotencyKey: ダブルクリック等の即時重複を防ぐ。
+      // 日付を含めることで日をまたいだ再トライアル（解約後の再申込み）は別キーになる。
+      // ※既存サブスクの確認はL40-45で先行実施済み。
+      idempotencyKey: `create-trial-${store_id}-${new Date().toISOString().slice(0,10)}`,
     })
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    const trialEnd = subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : new Date(Date.now() + 14 * 86400000).toISOString()
+
+    await supabase.from('stores').update({
+      stripe_subscription_id: subscription.id,
+      subscription_status: 'trialing',
+      trial_ends_at: trialEnd,
+    }).eq('id', store_id)
+
+    return new Response(JSON.stringify({ status: 'created', trial_ends_at: trialEnd }), {
       headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     })
   } catch (e) {
-    console.error('stripe-checkout error:', e)
+    console.error('create-trial-subscription error:', e)
     // 日本語メッセージ（意図的にthrowしたユーザー向けエラー）はそのまま返す
     const isUserFacingError = /[　-鿿]/.test(e.message)
     return new Response(JSON.stringify({
       error: isUserFacingError ? e.message : 'サーバーエラーが発生しました',
     }), {
-      // ユーザー入力起因(認証/権限/不正入力)は400、サーバー側障害(Stripe/DB)は500
+      // ユーザー入力起因は400、サーバー側障害(Stripe/DB)は500
       status: isUserFacingError ? 400 : 500,
       headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     })
