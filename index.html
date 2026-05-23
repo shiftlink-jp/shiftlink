@@ -2733,7 +2733,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   modal.id='cast-hist-modal'
   modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center'
   const escName = (custName||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')
-  modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;gap:.5rem"><div style="font-weight:700;font-size:1rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋 ${escapeHtml(custName)} の来店履歴</div><button id="cast-hist-memo-btn" onclick="castOpenMemoFromHist('${escName}')" style="background:var(--gold,#c8a96a);color:#fff;border:none;border-radius:8px;padding:.35rem .6rem;font-size:.72rem;font-weight:600;cursor:pointer;flex-shrink:0">📝 メモを書く</button><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3);flex-shrink:0">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem"><div class="spin">読み込み中...</div></div></div>`
+  modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;height:90vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;gap:.5rem"><div style="font-weight:700;font-size:1rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋 ${escapeHtml(custName)} の履歴</div><button id="cast-hist-memo-btn" onclick="castOpenMemoFromHist('${escName}')" style="background:var(--gold,#c8a96a);color:#fff;border:none;border-radius:8px;padding:.35rem .6rem;font-size:.72rem;font-weight:600;cursor:pointer;flex-shrink:0">📝 メモを書く</button><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3);flex-shrink:0">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem;flex:1"><div class="spin">読み込み中...</div></div></div>`
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
   document.body.appendChild(modal)
 
@@ -2772,26 +2772,48 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+escapeHtml(vErr.message)+'</div>';return}
 
   const fmt=n=>n!=null?'¥'+Number(n).toLocaleString():'-'
-  // 今日の記録も含めて全件表示（メモ入力直後の確認、当日メモの閲覧のため）
-  const pastVisits=(visits||[])
-  const visitsHtml=pastVisits.length
-    ? pastVisits.map(v=>{
-        // 自分のシフト以外はキャスト名を「他セラピスト」に
+  const allVisits=(visits||[])
+  // メモがある記録だけ抽出
+  const memoVisits = allVisits.filter(v=>v.cast_memo && String(v.cast_memo).trim())
+
+  // セクション1: 接客メモ
+  const memosHtml = memoVisits.length
+    ? memoVisits.map(v=>{
         const castLabel = (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
-        const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
-        const memoHtml = v.cast_memo ? `<div style="margin-top:.3rem;font-size:.78rem;color:var(--text2);background:var(--surface2);border-radius:6px;padding:.3rem .5rem;line-height:1.5">💬 ${v.cast_memo}</div>` : ''
-        return `<div style="padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
+        return `<div style="padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem">
             <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
-            <span style="color:var(--text2);font-size:.75rem">${castLabel}</span>
+            <span style="color:var(--text2);font-size:.72rem">${castLabel}</span>
           </div>
-          <div style="color:var(--text3)">${v.course||''}${v.shimei_type&&v.shimei_type!=='なし'?' / '+v.shimei_type:''}${opts?' / OP:'+opts:''}</div>
-          ${memoHtml}
+          <div style="font-size:.82rem;color:var(--text2);background:var(--surface2);border-radius:6px;padding:.4rem .55rem;line-height:1.55">💬 ${v.cast_memo}</div>
         </div>`
       }).join('')
-    : '<div style="color:var(--text3);padding:1rem 0;text-align:center">来店記録がありません</div>'
+    : '<div style="color:var(--text3);padding:.5rem 0;text-align:center;font-size:.78rem">メモはまだありません</div>'
 
-  body.innerHTML=visitsHtml
+  // セクション2: 来店履歴
+  const visitsHtml = allVisits.length
+    ? allVisits.map(v=>{
+        const castLabel = (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
+        const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
+        return `<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
+            <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
+            <span style="color:var(--text2);font-size:.72rem">${castLabel}</span>
+          </div>
+          <div style="color:var(--text3);font-size:.76rem">${v.course||''}${v.shimei_type&&v.shimei_type!=='なし'?' / '+v.shimei_type:''}${opts?' / OP:'+opts:''}</div>
+        </div>`
+      }).join('')
+    : '<div style="color:var(--text3);padding:.5rem 0;text-align:center;font-size:.78rem">来店記録がありません</div>'
+
+  body.innerHTML =
+    `<div style="margin-top:.5rem">
+       <div style="font-size:.78rem;font-weight:700;color:var(--text2);padding:.4rem 0;position:sticky;top:0;background:#fff;z-index:1">📝 接客メモ</div>
+       ${memosHtml}
+     </div>
+     <div style="margin-top:1rem">
+       <div style="font-size:.78rem;font-weight:700;color:var(--text2);padding:.4rem 0;position:sticky;top:0;background:#fff;z-index:1">📋 来店履歴</div>
+       ${visitsHtml}
+     </div>`
 }
 
 // 来店履歴モーダルから「メモを書く」ボタンクリック → メモ入力シートを開く
