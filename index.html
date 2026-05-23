@@ -7095,6 +7095,14 @@ async function saveRvEdit(rvId){
     extension_count:extCount
   }).eq('id',rvId)
   if(error){toast('保存エラー: '+error.message);return}
+  // 来店履歴(customer_visits)も同期：course/options/shimei_typeが編集後の値になるよう更新
+  try {
+    await sb.from('customer_visits').update({
+      shimei_type:shimei,
+      course,
+      options:opts.join(',')
+    }).eq('reservation_id',rvId)
+  } catch(e){ console.error('customer_visits同期エラー:',e) }
   toast('保存しました！')
   openRvDetail(rvId)
   loadToday()
