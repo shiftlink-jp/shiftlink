@@ -2772,8 +2772,8 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   if(vErr){body.innerHTML='<div style="color:var(--rtx);padding:1rem">取得エラー: '+escapeHtml(vErr.message)+'</div>';return}
 
   const fmt=n=>n!=null?'¥'+Number(n).toLocaleString():'-'
-  const todayStr=new Date().toLocaleDateString('sv-SE')
-  const pastVisits=(visits||[]).filter(v=>v.visit_date!==todayStr)
+  // 今日の記録も含めて全件表示（メモ入力直後の確認、当日メモの閲覧のため）
+  const pastVisits=(visits||[])
   const visitsHtml=pastVisits.length
     ? pastVisits.map(v=>{
         // 自分のシフト以外はキャスト名を「他セラピスト」に
