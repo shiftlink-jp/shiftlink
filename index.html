@@ -324,6 +324,29 @@ if("serviceWorker" in navigator && !_isSaaS){
         if(e.data && e.data.type === 'PUSH_SUB_CHANGED' && e.data.subscription){
           console.log('[SW] Push subscription変更通知 → DB再登録');
           window._pendingPushSubChange = e.data.subscription;
+          // ★ 店舗（オーナー）ログイン中のみ即座にDB登録（セラピスト側は触らない）
+          try {
+            if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
+              const newSub = e.data.subscription;
+              sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0).then(function(res){
+                const allSubs = res.data || [];
+                const exists = allSubs.some(function(r){
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                });
+                if (exists) { console.log('[OwnerPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
+                const staleIds = allSubs.filter(function(r){
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newSub.endpoint).origin; } catch(e2){ return false; }
+                }).map(function(r){ return r.id; });
+                var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
+                cleanup.then(function(){
+                  sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: newSub })).then(function(ins){
+                    if (ins.error) console.warn('[OwnerPush] PUSH_SUB_CHANGED登録失敗:', ins.error);
+                    else console.log('[OwnerPush] PUSH_SUB_CHANGED→DB登録完了');
+                  });
+                });
+              });
+            }
+          } catch(err) { console.warn('[OwnerPush] PUSH_SUB_CHANGED処理エラー:', err); }
         }
       });
     });
@@ -2012,7 +2035,26 @@ async function checkOwnerPushBtn(){
         btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
         return;
       }
-      // ブラウザにsubscriptionはあるがオーナーのDB登録ではない → 未登録として表示
+      // ★ ブラウザに新しいsubscriptionがあるがDB未登録 → 自動でDBへ登録（iOS Safariのendpointローテーション対策）
+      if (Notification.permission === 'granted') {
+        try {
+          console.log('[OwnerPush] ブラウザのsubscriptionがDB未登録 → 自動登録');
+          // 同一端末の古いsubscription（endpoint originが同じ）を削除して重複通知を防ぐ
+          const staleIds = (allSubs||[]).filter(r=>{
+            try {
+              const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
+              return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+            } catch { return false; }
+          }).map(r=>r.id);
+          if (staleIds.length > 0) {
+            await sb.from('push_subscriptions').delete().in('id', staleIds);
+          }
+          const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: subJson }));
+          if (insErr) { console.warn('[OwnerPush] 自動登録失敗:', insErr); return; }
+          btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          console.log('[OwnerPush] 自動登録完了');
+        } catch(e) { console.warn('[OwnerPush] 自動登録エラー:', e); }
+      }
       return;
     }
     // ブラウザにsubscriptionがない → DBに古い登録があれば自動復元を試みる
