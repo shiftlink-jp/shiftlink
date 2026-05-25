@@ -372,9 +372,36 @@ if("serviceWorker" in navigator && !_isSaaS){
       <input class="linput" type="password" id="saas-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSaasLogin()">
       <button class="btn-login" style="background:var(--accent);margin-top:1rem" onclick="doSaasLogin()" id="btn-saas-login">ログイン</button>
       <div class="lerr" id="saas-err"></div>
-      <div style="text-align:center;margin-top:1.25rem">
+      <div style="text-align:center;margin-top:.75rem">
+        <button onclick="showPasswordReset()" style="background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">パスワードを忘れた方はこちら</button>
+      </div>
+      <div style="text-align:center;margin-top:.5rem">
         <button onclick="showSaasSignup()" style="background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;font-family:inherit">新規登録はこちら</button>
       </div>
+    </div>
+
+    <!-- パスワードリセット申請フォーム -->
+    <div id="saas-reset-form" style="display:none;margin-top:1.5rem">
+      <div class="login-sub">パスワードをリセット</div>
+      <p style="font-size:.82rem;color:var(--text3);margin:.4rem 0 .85rem;line-height:1.6">登録済みのメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。</p>
+      <label class="lbl">メールアドレス</label>
+      <input class="linput" type="email" id="saas-reset-email" placeholder="owner@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doPasswordReset()">
+      <button class="btn-login" style="background:var(--accent);margin-top:.85rem" onclick="doPasswordReset()" id="btn-saas-reset">リセットメールを送信</button>
+      <div class="lerr" id="saas-reset-err"></div>
+      <div style="text-align:center;margin-top:1rem">
+        <button onclick="showSaasLogin()" style="background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログインに戻る</button>
+      </div>
+    </div>
+
+    <!-- 新パスワード設定フォーム（リセットリンクから遷移） -->
+    <div id="saas-newpw-form" style="display:none;margin-top:1.5rem">
+      <div class="login-sub">新しいパスワードを設定</div>
+      <label class="lbl">新しいパスワード（8文字以上）</label>
+      <input class="linput" type="password" id="saas-newpw" placeholder="••••••••" minlength="8" autocomplete="new-password" onkeydown="if(event.key==='Enter')doUpdatePassword()">
+      <label class="lbl" style="margin-top:.75rem">確認のため再入力</label>
+      <input class="linput" type="password" id="saas-newpw-confirm" placeholder="••••••••" minlength="8" autocomplete="new-password" onkeydown="if(event.key==='Enter')doUpdatePassword()">
+      <button class="btn-login" style="background:var(--accent);margin-top:.85rem" onclick="doUpdatePassword()" id="btn-saas-newpw">パスワードを変更する</button>
+      <div class="lerr" id="saas-newpw-err"></div>
     </div>
 
     <div id="saas-signup-form" style="display:none;margin-top:1.5rem">
@@ -387,7 +414,11 @@ if("serviceWorker" in navigator && !_isSaaS){
       <input class="linput" type="email" id="saas-signup-email" placeholder="owner@example.com" autocomplete="email">
       <label class="lbl" style="margin-top:.75rem">パスワード（8文字以上）</label>
       <input class="linput" type="password" id="saas-signup-password" placeholder="••••••••" minlength="8" autocomplete="new-password">
-      <button class="btn-login" style="background:var(--accent);margin-top:1rem" onclick="doSaasSignup()" id="btn-saas-signup">無料で始める（14日間トライアル）</button>
+      <label style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.85rem;font-size:.82rem;color:var(--text3);cursor:pointer;line-height:1.5">
+        <input type="checkbox" id="saas-signup-agree" style="width:18px;height:18px;flex-shrink:0;margin-top:.1rem;accent-color:var(--accent)">
+        <span><a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意します</span>
+      </label>
+      <button class="btn-login" style="background:var(--accent);margin-top:.75rem" onclick="doSaasSignup()" id="btn-saas-signup">無料で始める（14日間トライアル）</button>
       <div class="lerr" id="saas-signup-err"></div>
       <div style="text-align:center;margin-top:1rem">
         <button onclick="showSaasLogin()" style="background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログインに戻る</button>
@@ -482,6 +513,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <div class="hdr-r">
       <span class="badge" id="hdr-name">-</span>
       <button class="btn-sm" id="hdr-push-btn" style="display:none;font-size:.7rem" onclick="hdrPushBtnClick()">🔔 通知設定</button>
+      <button class="btn-sm" id="hdr-billing-btn" style="display:none;font-size:.7rem;background:rgba(255,255,255,.15);color:var(--text3)" onclick="openBillingPortal()">プラン管理</button>
       <button class="btn-sm" id="hdr-logout-btn" style="display:none;font-size:.7rem;background:rgba(255,255,255,.15);color:var(--text3)" onclick="saasLogout()">ログアウト</button>
       <button class="btn-sm" id="hdr-pin-logout-btn" onclick="doLogout()">ログアウト</button>
     </div>
@@ -1194,6 +1226,11 @@ function withStoreId(payload){
   if(Array.isArray(payload)) return payload.map(p=>({store_id:currentStoreId,...p}))
   return {store_id:currentStoreId,...payload}
 }
+// SaaS用ヘルパー: SELECTクエリにstore_idフィルタを自動付与
+function withStoreFilter(q){
+  if(SAAS_MODE && currentStoreId) return q.eq('store_id',currentStoreId)
+  return q
+}
 // ルーム情報はDBから読み込み（roomListグローバル変数）
 let roomList=[]
 function getROOMS(){ return roomList.map(r=>r.name) }
@@ -1340,6 +1377,18 @@ async function init(){
   // ── SaaSモード：Supabase Auth認証 ──
   if(SAAS_MODE){
     console.log('[init] SaaS path entered')
+    // パスワードリセットリンクからのリダイレクト検知
+    // Supabase は #access_token=xxx&type=recovery のようなハッシュを付けてリダイレクトする
+    const hash=window.location.hash
+    if(hash.includes('type=recovery')){
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+      document.getElementById('s-saas-login').classList.add('on')
+      _hideSaasForms()
+      document.getElementById('saas-newpw-form').style.display='block'
+      // URLハッシュをクリア（ブックマーク対策）
+      history.replaceState(null,'',location.pathname+'?saas=1')
+      return
+    }
     try{
       // 既存セッション確認
       const{data:{session}}=await sb.auth.getSession()
@@ -1669,15 +1718,75 @@ async function doCastLogin(){
 }
 
 // ── SaaS認証関数 ──
+function _hideSaasForms(){
+  ;['saas-login-form','saas-signup-form','saas-reset-form','saas-newpw-form'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none'
+  })
+}
 function showSaasLogin(){
+  _hideSaasForms()
   document.getElementById('saas-login-form').style.display='block'
-  document.getElementById('saas-signup-form').style.display='none'
   document.getElementById('saas-err').textContent=''
 }
 function showSaasSignup(){
-  document.getElementById('saas-login-form').style.display='none'
+  _hideSaasForms()
   document.getElementById('saas-signup-form').style.display='block'
   document.getElementById('saas-signup-err').textContent=''
+}
+function showPasswordReset(){
+  _hideSaasForms()
+  document.getElementById('saas-reset-form').style.display='block'
+  document.getElementById('saas-reset-err').textContent=''
+  const e=document.getElementById('saas-reset-email')
+  // ログインフォームに入力済みのメールを引き継ぐ
+  const loginEmail=document.getElementById('saas-email')?.value.trim()
+  if(loginEmail && e) e.value=loginEmail
+}
+
+async function doPasswordReset(){
+  const email=document.getElementById('saas-reset-email').value.trim()
+  const err=document.getElementById('saas-reset-err')
+  const btn=document.getElementById('btn-saas-reset')
+  err.textContent=''
+  if(!email){err.textContent='メールアドレスを入力してください';return}
+  btn.disabled=true; btn.textContent='送信中...'
+  try{
+    const appUrl=location.origin+location.pathname+'?saas=1'
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:appUrl})
+    if(error) throw error
+    err.style.color='var(--accent)'
+    err.textContent='リセットメールを送信しました。メール内のリンクをクリックしてパスワードを変更してください。'
+    btn.textContent='送信しました'
+  }catch(e){
+    err.style.color=''
+    err.textContent=e.message||'エラーが発生しました'
+    btn.disabled=false; btn.textContent='リセットメールを送信'
+  }
+}
+
+async function doUpdatePassword(){
+  const pw=document.getElementById('saas-newpw').value
+  const pw2=document.getElementById('saas-newpw-confirm').value
+  const err=document.getElementById('saas-newpw-err')
+  const btn=document.getElementById('btn-saas-newpw')
+  err.textContent=''
+  if(pw.length<8){err.textContent='パスワードは8文字以上で入力してください';return}
+  if(pw!==pw2){err.textContent='パスワードが一致しません';return}
+  btn.disabled=true; btn.textContent='変更中...'
+  try{
+    const{error}=await sb.auth.updateUser({password:pw})
+    if(error) throw error
+    err.style.color='var(--accent)'
+    err.textContent='パスワードを変更しました。ログイン画面に移動します...'
+    setTimeout(()=>{
+      // セッションをクリアしてログイン画面へ
+      sb.auth.signOut().then(()=>{showSaasLogin()})
+    },2000)
+  }catch(e){
+    err.style.color=''
+    err.textContent=e.message||'エラーが発生しました'
+    btn.disabled=false; btn.textContent='パスワードを変更する'
+  }
 }
 
 async function doSaasLogin(){
@@ -1706,11 +1815,13 @@ async function doSaasSignup(){
   const pass=document.getElementById('saas-signup-password').value
   const err=document.getElementById('saas-signup-err')
   const btn=document.getElementById('btn-saas-signup')
+  const agreed=document.getElementById('saas-signup-agree')?.checked
   err.textContent=''
   if(!storeName){err.textContent='店舗名を入力してください';return}
   if(!slug||slug.length<3){err.textContent='店舗IDは3文字以上で入力してください';return}
   if(!email){err.textContent='メールアドレスを入力してください';return}
   if(pass.length<8){err.textContent='パスワードは8文字以上で入力してください';return}
+  if(!agreed){err.textContent='利用規約・プライバシーポリシーへの同意が必要です';return}
   btn.disabled=true; btn.textContent='登録中...'
   try{
     // 1. Supabase Authでアカウント作成
@@ -1744,13 +1855,45 @@ async function doSaasSignup(){
       console.error('Trial subscription creation failed:',e)
       toast('トライアルの開始に問題がありました。ログイン後に再試行されます。')
     }
-    // 4. アプリ起動
+    // 4. 初期データ投入（コース・オプション・ルーム）
+    try{
+      await setupInitialStoreData(storeId)
+    }catch(e){
+      console.warn('Initial data setup failed (non-critical):', e)
+    }
+    // 5. アプリ起動
     await initSaasApp(authData.session)
   }catch(e){
     err.textContent=e.message.includes('duplicate')?'この店舗IDは既に使用されています':e.message
   }finally{
     btn.disabled=false; btn.textContent='無料で始める（14日間トライアル）'
   }
+}
+
+// 新規店舗の初期データ投入（既存PINアプリには影響なし: store_id付きでINSERT）
+async function setupInitialStoreData(storeId){
+  const sid = storeId
+  // コース
+  const courses = [
+    {name:'60分コース', price:10000, duration:60, sort_order:1},
+    {name:'90分コース', price:15000, duration:90, sort_order:2},
+    {name:'120分コース', price:20000, duration:120, sort_order:3},
+    {name:'延長30分', price:5000, duration:30, sort_order:4},
+  ]
+  await sb.from('courses').insert(courses.map(c=>({store_id:sid,...c})))
+  // オプション
+  const options = [
+    {name:'オイルマッサージ', price:2000, sort_order:1},
+    {name:'アロマ', price:1000, sort_order:2},
+  ]
+  await sb.from('options').insert(options.map(o=>({store_id:sid,...o})))
+  // ルーム
+  const rooms = [
+    {name:'Aルーム', color_bg:'#fff0f6', color_tx:'#be185d', color_bd:'#fbcfe8', color_card:'#fce7f3', sort_order:1},
+    {name:'Bルーム', color_bg:'#eff6ff', color_tx:'#1d4ed8', color_bd:'#bfdbfe', color_card:'#dbeafe', sort_order:2},
+  ]
+  await sb.from('rooms').insert(rooms.map(r=>({store_id:sid,...r})))
+  console.log('[setup] Initial data created for store:', sid)
 }
 
 async function initSaasApp(session){
@@ -1837,6 +1980,27 @@ async function saasLogout(){
   location.reload()
 }
 
+async function openBillingPortal(){
+  const btn=document.getElementById('hdr-billing-btn')
+  if(btn){btn.disabled=true;btn.textContent='処理中...'}
+  try{
+    const{data:{session}}=await sb.auth.getSession()
+    if(!session) throw new Error('セッションが切れています。再ログインしてください。')
+    const res=await fetch(SUPABASE_URL+'/functions/v1/stripe-portal',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({store_id:currentStoreId})
+    })
+    const json=await res.json()
+    if(json.url) window.location.href=json.url
+    else throw new Error(json.error||'ポータルへのアクセスに失敗しました')
+  }catch(e){
+    toast(e.message||'エラーが発生しました')
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='プラン管理'}
+  }
+}
+
 async function startStripeCheckout(){
   const btn=document.getElementById('btn-stripe-checkout')
   btn.disabled=true; btn.textContent='処理中...'
@@ -1866,6 +2030,9 @@ function startApp(){
   if(SAAS_MODE){
     const lb=document.getElementById('hdr-logout-btn');if(lb)lb.style.display=''
     const plb=document.getElementById('hdr-pin-logout-btn');if(plb)plb.style.display='none'
+    // オーナーのみプラン管理ボタンを表示
+    const bb=document.getElementById('hdr-billing-btn')
+    if(bb) bb.style.display=me.is_owner?'':'none'
   }
   // タブ表示切り替え
   document.querySelectorAll('.cast-tab').forEach(b=>b.style.display=me.is_owner?'none':'flex')
@@ -2790,7 +2957,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   }
   if(!custId){
     // DBから直接検索
-    const{data:custs}=await sb.from('customers').select('id,customer_no')
+    const{data:custs}=await withStoreFilter(sb.from('customers').select('id,customer_no'))
     const found=(custs||[]).find(c=>Number(c.customer_no)===Number(customerNo))
     if(found) custId=found.id
   }
@@ -3065,7 +3232,7 @@ async function loadMySalary(){
   const todayArea=document.getElementById('sal-today-area')
   if(todayArea && salMonth===todayStr.slice(0,7)){
     // cast_feesを取得（予想バック計算用）
-    const{data:myFee}=await sb.from('cast_fees').select('*').eq('cast_id',me.id).single()
+    const{data:myFee}=await withStoreFilter(sb.from('cast_fees').select('*')).eq('cast_id',me.id).single()
     const fee=myFee||DEFAULT_FEE
     // コース名・指名・OPのバックをcast_fees設定から正確に計算
     function calcBack(courseName,shimeiType,optNames){
@@ -3118,7 +3285,7 @@ async function loadMySalary(){
       return{cb,sb2,ob,opDetails,total:cb+sb2+ob}
     }
     // 今日のシフトを取得
-    const{data:todayShifts}=await sb.from('shifts').select('id').eq('cast_id',me.id).eq('date',todayStr).eq('status','approved')
+    const{data:todayShifts}=await withStoreFilter(sb.from('shifts').select('id')).eq('cast_id',me.id).eq('date',todayStr).eq('status','approved')
     let todayHtml=''
     if(todayShifts&&todayShifts.length){
       const sids=todayShifts.map(s=>s.id)
@@ -3261,7 +3428,7 @@ async function loadMySalary(){
     todayArea.style.display='none'
   }
 
-  const{data:works}=await sb.from('works').select('*').eq('cast_id',me.id).gte('date',salMonth+'-01').lt('date',nextYM(salMonth)+'-01').order('date')
+  const{data:works}=await withStoreFilter(sb.from('works').select('*')).eq('cast_id',me.id).gte('date',salMonth+'-01').lt('date',nextYM(salMonth)+'-01').order('date')
   if(!works||!works.length){
     if(totalArea){totalArea.innerHTML='<div class="empty">この月の記録はまだありません</div>';totalArea.style.display=salTabMode==='total'?'block':'none'}
     if(dailyArea){dailyArea.innerHTML='';dailyArea.style.display=salTabMode==='daily'?'block':'none'}
@@ -3460,7 +3627,7 @@ let allCustomers=[]
 let currentCustomerId=null
 
 async function loadCustomers(){
-  const{data}=await sb.from('customers').select('*').order('customer_no')
+  const{data}=await withStoreFilter(sb.from('customers').select('*')).order('customer_no')
   allCustomers=data||[]
   renderCustomers(allCustomers)
   const badge=document.getElementById('customer-count-badge')
@@ -3505,11 +3672,11 @@ async function openCustomerDetail(id){
   document.getElementById('customer-detail-body').innerHTML='<div class="spin">読み込み中...</div>'
   
   // 来店記録取得
-  const{data:visits}=await sb.from('customer_visits').select('*').eq('customer_id',id).order('visit_date',{ascending:false})
+  const{data:visits}=await withStoreFilter(sb.from('customer_visits').select('*')).eq('customer_id',id).order('visit_date',{ascending:false})
   // キャストメモ取得（cast_memoがnullでないもの）
-  const{data:memos}=await sb.from('customer_visits').select('id,cast_memo,cast_name,created_at').eq('customer_id',id).not('cast_memo','is',null).neq('cast_memo','').order('created_at',{ascending:false})
+  const{data:memos}=await withStoreFilter(sb.from('customer_visits').select('id,cast_memo,cast_name,created_at')).eq('customer_id',id).not('cast_memo','is',null).neq('cast_memo','').order('created_at',{ascending:false})
   // キャスト一覧取得（NGプルダウン用）
-  const{data:allCastsData}=await sb.from('casts').select('id,name').eq('active',true).order('sort_order')
+  const{data:allCastsData}=await withStoreFilter(sb.from('casts').select('id,name')).eq('active',true).order('sort_order')
   const ngSelected=(c.ng_casts||'').split(/[,、]/).map(x=>x.trim()).filter(Boolean)
   const ngOptions=(allCastsData||[]).map(cast=>`<option value="${cast.name}" ${ngSelected.includes(cast.name)?'selected':''}>${cast.name}</option>`).join('')
   
@@ -3673,7 +3840,7 @@ function openAddCustomer(){
   if(chipsWrap){
     const activeCasts=allCustomers._casts||(window._allCastsForNg||[])
     // キャスト一覧を使ってチップを生成（非同期取得）
-    sb.from('casts').select('id,name').eq('active',true).order('sort_order').then(({data})=>{
+    withStoreFilter(sb.from('casts').select('id,name')).eq('active',true).order('sort_order').then(({data})=>{
       window._allCastsForNg=data||[]
       chipsWrap.innerHTML=(data||[]).map(c=>'<button type="button" class="ce-ng-chip" data-name="'+escapeHtml(c.name)+'" onclick="toggleCeNgChip(this)" style="flex-shrink:0;padding:.35rem .9rem;border-radius:99px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap">'+escapeHtml(c.name)+'</button>').join('')
     })
@@ -3764,7 +3931,7 @@ async function openReservation(shiftId,castName,date){
   if(_warnEl){_warnEl.style.display='block';_warnEl.textContent='⚠️ 顧客番号が未入力です。予約後に顧客管理から登録してください。'}
   // allCustomersが空ならDBから読み込む（顧客番号自動入力のため）
   if(!allCustomers||!allCustomers.length){
-    const{data:custs}=await sb.from('customers').select('*').order('customer_no')
+    const{data:custs}=await withStoreFilter(sb.from('customers').select('*')).order('customer_no')
     allCustomers=custs||[]
   }
   if(document.getElementById('rv-pay-course')) document.getElementById('rv-pay-course').value='現金'
@@ -3808,7 +3975,7 @@ async function openReservation(shiftId,castName,date){
   }
   // 割引一覧をチェックボックスで表示（店舗共通割引 cast_id=0 から読み込み）
   const discList=document.getElementById('rv-discount-list')
-  const{data:storeDiscs}=await sb.from('cast_discounts').select('*').eq('cast_id',0).order('id')
+  const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0).order('id')
   // キャストの入店日を取得（新人割チェック用）
   const{data:shiftData}=await sb.from('shifts').select('cast_id').eq('id',shiftId).single()
   let rvCastJoinedAt=null
@@ -3938,7 +4105,7 @@ async function toggleAutoRegister(chk){
     if(existingArea) existingArea.style.display='none'
     if(autoArea) autoArea.style.display='block'
     // 次の顧客番号を取得
-    const {data:last}=await sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
+    const {data:last}=await withStoreFilter(sb.from('customers').select('customer_no')).order('customer_no',{ascending:false}).limit(1)
     const nextNo=((last||[])[0]?.customer_no||0)+1
     const el=document.getElementById('rv-next-no')
     if(el) el.textContent='No.'+nextNo
@@ -4155,7 +4322,7 @@ async function loadGantt(){
   const[y,m,d]=ganttDate.split('-')
   if(lbl) lbl.textContent=parseInt(m)+'月'+parseInt(d)+'日'
   area.innerHTML='<div class="spin">読み込み中...</div>'
-  const{data:rawShiftsG}=await sb.from('shifts').select('*').eq('date',ganttDate).eq('status','approved').order('start_time')
+  const{data:rawShiftsG}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',ganttDate).eq('status','approved').order('start_time')
   const castIdsG=[...new Set((rawShiftsG||[]).map(s=>s.cast_id).filter(Boolean))]
   let castMapG={}
   if(castIdsG.length){const{data:cr}=await sb.from('casts').select('id,name').in('id',castIdsG);if(cr)cr.forEach(c=>{castMapG[c.id]=c.name})}
@@ -4331,7 +4498,7 @@ async function renderGanttInto(area, date, filterShifts=null){
   if(filterShifts){
     shifts=filterShifts
   } else {
-    const{data:rawRGI}=await sb.from('shifts').select('*').eq('date',date).eq('status','approved').order('start_time')
+    const{data:rawRGI}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',date).eq('status','approved').order('start_time')
     const cidsRGI=[...new Set((rawRGI||[]).map(s=>s.cast_id).filter(Boolean))]
     let cmapRGI={}
     if(cidsRGI.length){const{data:crRGI}=await sb.from('casts').select('id,name').in('id',cidsRGI);if(crRGI)crRGI.forEach(c=>{cmapRGI[c.id]=c.name})}
@@ -4467,9 +4634,9 @@ let ownerShiftData={pending:[],approved:[]}
 async function loadOwnerCal(){
   const[y,m]=ownerCalMonth.split('-').map(Number)
   document.getElementById('owner-cal-title').textContent=y+'年'+m+'月'
-  const{data:pendingRaw}=await sb.from('shifts').select('*').gte('date',ownerCalMonth+'-01').lt('date',nextYM(ownerCalMonth)+'-01').eq('status','requested').order('date')
-  const{data:approvedRaw}=await sb.from('shifts').select('*').gte('date',ownerCalMonth+'-01').lt('date',nextYM(ownerCalMonth)+'-01').eq('status','approved').order('date')
-  const{data:castList}=await sb.from('casts').select('id,name')
+  const{data:pendingRaw}=await withStoreFilter(sb.from('shifts').select('*')).gte('date',ownerCalMonth+'-01').lt('date',nextYM(ownerCalMonth)+'-01').eq('status','requested').order('date')
+  const{data:approvedRaw}=await withStoreFilter(sb.from('shifts').select('*')).gte('date',ownerCalMonth+'-01').lt('date',nextYM(ownerCalMonth)+'-01').eq('status','approved').order('date')
+  const{data:castList}=await withStoreFilter(sb.from('casts').select('id,name'))
   const getName=id=>{const c=(castList||[]).find(x=>Number(x.id)===Number(id));return c?c.name:'?'}
   const pending=(pendingRaw||[]).map(s=>({...s,casts:{name:getName(s.cast_id)}}))
   const approved=(approvedRaw||[]).map(s=>({...s,casts:{name:getName(s.cast_id)}}))
@@ -4845,12 +5012,12 @@ async function loadToday(){
   // 問合せ数を読み込み
   const inqEl=document.getElementById('today-inquiry')
   if(inqEl){
-    const{data:inqData}=await sb.from('daily_notes').select('inquiry_count').eq('date',td).maybeSingle()
+    const{data:inqData}=await withStoreFilter(sb.from('daily_notes').select('inquiry_count')).eq('date',td).maybeSingle()
     inqEl.value=inqData?.inquiry_count||''
     document.getElementById('today-inquiry-status').textContent=''
   }
-  const{data:shiftsRaw}=await sb.from('shifts').select('*').eq('date',td).eq('status','approved').order('start_time')
-  const{data:castList2}=await sb.from('casts').select('id,name')
+  const{data:shiftsRaw}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',td).eq('status','approved').order('start_time')
+  const{data:castList2}=await withStoreFilter(sb.from('casts').select('id,name'))
   const getName2=id=>{const c=(castList2||[]).find(x=>Number(x.id)===Number(id));return c?c.name:'?'}
   const shifts=(shiftsRaw||[]).map(s=>({...s,casts:{name:getName2(s.cast_id)}}))
   // ルームに複数人を対応
@@ -5121,7 +5288,7 @@ async function loadGanttModal(){
   const norm=s=>(s||'').trim()
   const targetRoom=norm(ganttModalRoom)
 
-  const{data:rawShifts,error:shiftErr}=await sb.from('shifts').select('*').eq('date',ganttModalDate).eq('status','approved').order('start_time')
+  const{data:rawShifts,error:shiftErr}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',ganttModalDate).eq('status','approved').order('start_time')
   const castIds=[...new Set((rawShifts||[]).map(s=>s.cast_id).filter(Boolean))]
   let castNameMap={}
   if(castIds.length){
@@ -5519,9 +5686,20 @@ function addSession(data=null){
   div.innerHTML=`
     <div class="session-hdr">
       <span class="session-no">${currentNo}本目</span>
-      <button class="session-del" onclick="removeSession(this)">削除</button>
+      <div style="display:flex;gap:.4rem">
+        <button class="session-override-btn" onclick="toggleBackOverride(this)" style="font-size:.7rem;padding:.2rem .55rem;border-radius:5px;border:1.5px solid var(--accent);background:${data?.back_override!=null?'var(--accent)':'transparent'};color:${data?.back_override!=null?'#fff':'var(--accent)'};cursor:pointer;line-height:1.4">${data?.back_override!=null?'自動':'修正'}</button>
+        <button class="session-del" onclick="removeSession(this)">削除</button>
+      </div>
     </div>
     <div class="session-inner">
+      <div class="session-override-area" style="${data?.back_override!=null?'':'display:none;'}margin-bottom:.6rem;padding:.5rem .65rem;background:#fff8f0;border:1.5px solid var(--accent);border-radius:8px">
+        <div class="session-label" style="color:var(--accent);font-weight:600;margin-bottom:.3rem">✏️ 委託金を手動で修正</div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <input type="number" class="fi2 s-back-override" placeholder="空欄＝自動計算" min="0" step="100" value="${data?.back_override!=null?data.back_override:''}" oninput="calcTotal2()" style="flex:1">
+          <span style="font-size:.8rem;color:var(--text3)">円</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:.2rem">空欄にすると自動計算に戻ります</div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:.35rem;margin-bottom:.5rem;align-items:end">
         <div><div class="session-label">コース</div><select class="fi2 s-course" onchange="calcTotal2()">${courseOpts}</select></div>
         <div><div class="session-label">指名</div><select class="fi2 s-shimei" onchange="calcTotal2()">${shimeiOpts}</select></div>
@@ -5550,6 +5728,26 @@ function removeSession(btn){
     const no=b.querySelector('.session-no');if(no) no.textContent=(i+1)+'本目'
   })
   calcTotal2()
+}
+function toggleBackOverride(btn){
+  const block=btn.closest('.session-block')
+  const area=block.querySelector('.session-override-area')
+  if(!area) return
+  const visible=area.style.display!=='none'
+  if(visible){
+    area.style.display='none'
+    block.querySelector('.s-back-override').value=''
+    btn.textContent='修正'
+    btn.style.background='transparent'
+    btn.style.color='var(--accent)'
+    calcTotal2()
+  } else {
+    area.style.display='block'
+    btn.textContent='自動'
+    btn.style.background='var(--accent)'
+    btn.style.color='#fff'
+    block.querySelector('.s-back-override').focus()
+  }
 }
 
 // 予約登録画面の割引警告チェック
@@ -5791,8 +5989,11 @@ function calcTotal2(){
     const blockSalesBase=coursePrice+shimeiPrice+optSale+extSale-blockDiscShop-blockDiscBack
     const blockSales=blockSalesBase+cardSurcharge
     const blockBack=cback+sback+optBack+extBack-blockDiscBack
+    const overrideEl=block.querySelector('.s-back-override')
+    const overrideRaw=overrideEl?.value?.trim()
+    const effectiveBack=overrideRaw!==''&&overrideRaw!=null&&overrideRaw!==undefined&&!isNaN(parseFloat(overrideRaw))?parseFloat(overrideRaw):blockBack
     totalSales+=blockSales
-    totalBack+=blockBack
+    totalBack+=effectiveBack
     totalCardBase+=cardBase
     totalCardFee+=blockCardFee
     discFromBack+=blockDiscBack
@@ -5857,11 +6058,12 @@ function calcTotal2(){
         <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--btx)">-${fmt(blockCardFee)}</div></div>
       </div>`
     }
-    const sessionShop=blockSales-blockBack-blockCardFee
+    const sessionShop=blockSales-effectiveBack-blockCardFee
+    const overrideLabel=overrideRaw!==''&&overrideRaw!=null&&!isNaN(parseFloat(overrideRaw))?'<span style="font-size:.6rem;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px">手動</span>':''
     brows+=`<div style="display:flex;align-items:center;padding:.55rem .75rem;background:var(--surface2)">
       <span style="flex:1;font-size:.8rem;font-weight:700">小計</span>
       <div style="text-align:right;width:4rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700">${fmt(blockSales)}</div></div>
-      <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--rtx)">${fmt(blockBack)}</div></div>
+      <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--rtx)">${fmt(effectiveBack)}${overrideLabel}</div></div>
       <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--btx)">${fmt(sessionShop)}</div></div>
     </div>`
     breakdown.innerHTML=brows
@@ -5959,10 +6161,14 @@ async function saveWork(){
     const sessionSalesBase=(c.price||0)+shimeiPrice+optSaleTotal+extSaleTotal-discShop-discBack
     const sessionSales=sessionSalesBase+sesCardSurcharge
     const sessionBack=cback+sback+optBack+extBackTotal-discBack
+    const overrideElSave=block.querySelector('.s-back-override')
+    const overrideRawSave=overrideElSave?.value?.trim()
+    const backOverride=overrideRawSave!==''&&overrideRawSave!=null&&!isNaN(parseFloat(overrideRawSave))?parseFloat(overrideRawSave):null
+    const effectiveSessionBack=backOverride!=null?backOverride:sessionBack
     const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
     const sesCash=sessionSalesBase-sesCardBase
-    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption})
-    totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
+    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(backOverride!=null?{back_override:backOverride}:{})})
+    totalSales+=sessionSales;totalBack+=effectiveSessionBack;totalCount++
   })
   const hoshoSave=parseInt(document.getElementById('w-hosho')?.value)||0
   let net=totalBack-misc
@@ -5999,7 +6205,7 @@ async function saveWork(){
 async function loadCastMgmt(){
   const area=document.getElementById('cast-area')
   area.innerHTML='<div class="spin">読み込み中...</div>'
-  const{data:casts}=await sb.from('casts').select('*').eq('active',true).order('sort_order')
+  const{data:casts}=await withStoreFilter(sb.from('casts').select('*')).eq('active',true).order('sort_order')
   if(!casts||!casts.length){area.innerHTML='<div class="empty">在籍中のキャストがいません</div>';return}
   // cast_feesから入店日を取得
   const castIds=casts.map(c=>c.id)
@@ -6034,7 +6240,7 @@ async function loadCastMgmt(){
 }
 
 async function openInactiveSheet(){
-  const{data:casts}=await sb.from('casts').select('*').eq('active',false).order('sort_order')
+  const{data:casts}=await withStoreFilter(sb.from('casts').select('*')).eq('active',false).order('sort_order')
   const area=document.getElementById('inactive-list')
   if(!casts||!casts.length){
     area.innerHTML='<div class="empty" style="padding:1.5rem 0">退店済みのキャストはいません</div>'
@@ -6419,12 +6625,12 @@ async function loadOwnerSalary(){
     const monthStart=ty+'-'+tm+'-01'
     const nextM=new Date(parseInt(ty),parseInt(tm),1).toISOString().slice(0,10)
     // 当月の承認済みシフトを取得（今日より前）
-    const{data:shiftsM}=await sb.from('shifts').select('date,cast_id').gte('date',monthStart).lt('date',today).eq('status','approved')
+    const{data:shiftsM}=await withStoreFilter(sb.from('shifts').select('date,cast_id')).gte('date',monthStart).lt('date',today).eq('status','approved')
     if(shiftsM&&shiftsM.length){
       // シフトがある日付セットを作成
       const shiftDates=[...new Set(shiftsM.map(s=>s.date))].sort()
       // その日付のworksを取得
-      const{data:worksM}=await sb.from('works').select('date,cast_id').in('date',shiftDates)
+      const{data:worksM}=await withStoreFilter(sb.from('works').select('date,cast_id')).in('date',shiftDates)
       // シフトはあるがworksがない日を検索
       const workedDates=new Set((worksM||[]).map(w=>w.date))
       const missingDates=shiftDates.filter(dt=>!workedDates.has(dt))
@@ -6438,8 +6644,8 @@ async function loadOwnerSalary(){
       warnEl.innerHTML=''
     }
   }
-  const{data:worksRaw}=await sb.from('works').select('*').eq('date',td).order('cast_id')
-  const{data:castList3}=await sb.from('casts').select('id,name')
+  const{data:worksRaw}=await withStoreFilter(sb.from('works').select('*')).eq('date',td).order('cast_id')
+  const{data:castList3}=await withStoreFilter(sb.from('casts').select('id,name'))
   const getName3=id=>{const c=(castList3||[]).find(x=>Number(x.id)===Number(id));return c?c.name:'?'}
   const works=(worksRaw||[]).map(w=>({...w,castName:getName3(w.cast_id)}))
   if(!works||!works.length){
@@ -6734,7 +6940,7 @@ async function changeOwnerPinFromSheet(){
 async function loadStoreDiscList(){
   const area=document.getElementById('store-disc-list')
   if(!area)return
-  const{data:discs}=await sb.from('cast_discounts').select('*').eq('cast_id',0).order('id')
+  const{data:discs}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0).order('id')
   if(!discs||!discs.length){area.innerHTML='<div style="font-size:.78rem;color:var(--text3);margin-bottom:.4rem">割引なし</div>';return}
   area.innerHTML=discs.map(d=>`
     <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;padding:.35rem;background:var(--surface2);border-radius:8px">
@@ -6768,9 +6974,9 @@ async function openShiftReservations(shiftId, castName){
   if(error){body.innerHTML='<div class="empty">取得エラー: '+escapeHtml(error.message)+'</div>';return}
   if(!rvs||!rvs.length){body.innerHTML='<div class="empty">予約はまだありません</div>';return}
   // 課金テーブルを取得（受取金額計算用）
-  const {data:courseList} = await sb.from('courses').select('*')
-  const {data:optList} = await sb.from('options').select('*')
-  const {data:discList} = await sb.from('cast_discounts').select('*').eq('cast_id',0)
+  const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
+  const {data:optList} = await withStoreFilter(sb.from('options').select('*'))
+  const {data:discList} = await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
   body.innerHTML = rvs.map((r,i)=>{
     let pj={}
     try{pj=JSON.parse(r.payment||'{}')}catch(e){}
@@ -6859,9 +7065,9 @@ async function openRvDetail(rvId, shiftId, castName){
 
   const {data:r} = await sb.from('reservations').select('*').eq('id',rvId).single()
   if(!r){toast('予約データが見つかりません');return}
-  const {data:courseList} = await sb.from('courses').select('*')
-  const {data:optList} = await sb.from('options').select('*')
-  const {data:discListAll} = await sb.from('cast_discounts').select('*').eq('cast_id',0)
+  const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
+  const {data:optList} = await withStoreFilter(sb.from('options').select('*'))
+  const {data:discListAll} = await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
   let pj={}
   try{pj=JSON.parse(r.payment||'{}')}catch(e){}
   const opts = r.options ? r.options.split(',').filter(Boolean) : []
@@ -7022,9 +7228,9 @@ async function deleteRv(rvId){
 async function openRvEdit(rvId){
   const{data:r}=await sb.from('reservations').select('*').eq('id',rvId).single()
   if(!r){toast('予約データが見つかりません');return}
-  const{data:courseList}=await sb.from('courses').select('*').order('price')
-  const{data:optList}=await sb.from('options').select('*').order('name')
-  const{data:discListAll}=await sb.from('cast_discounts').select('*').eq('cast_id',0)
+  const{data:courseList}=await withStoreFilter(sb.from('courses').select('*')).order('price')
+  const{data:optList}=await withStoreFilter(sb.from('options').select('*')).order('name')
+  const{data:discListAll}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
   let pj={}
   try{pj=JSON.parse(r.payment||'{}')}catch(e){}
   const selectedOpts=r.options?r.options.split(',').filter(Boolean):[]
@@ -7260,7 +7466,7 @@ async function loadCastMemoPage(){
   area.innerHTML = '<div class="spin">読み込み中...</div>'
   // 当日の自分のシフトに紐づく予約を取得
   const td = today()
-  const {data:shifts} = await sb.from('shifts').select('id').eq('cast_id', me.id).eq('date', td).eq('status','approved')
+  const {data:shifts} = await withStoreFilter(sb.from('shifts').select('id')).eq('cast_id', me.id).eq('date', td).eq('status','approved')
   if(!shifts||!shifts.length){area.innerHTML='<div style="font-size:.8rem;color:var(--text3);margin-bottom:.5rem">本日のシフトがありません</div>';return}
   const sids = shifts.map(s=>s.id)
   const {data:rvs} = await sb.from('reservations').select('*').in('shift_id', sids).order('checkin_time')
@@ -7284,7 +7490,7 @@ async function loadCastMemoList(){
   const area = document.getElementById('cast-memo-area')
   if(!area) return
   // 顧客一覧を読み込んでおく（検索用）
-  const {data} = await sb.from('customers').select('id,name,customer_no').order('customer_no')
+  const {data} = await withStoreFilter(sb.from('customers').select('id,name,customer_no')).order('customer_no')
   castMemoAllCustomers = data||[]
   // 過去メモ一覧を表示
   loadMyMemoLog()
@@ -7483,23 +7689,23 @@ async function renderMonthlyContent(){
   if(!area) return
   area.innerHTML='<div class="spin">読み込み中...</div>'
   const [y,m]=monthlyMonth.split('-').map(Number)
-  const {data:worksRaw}=await sb.from('works').select('*').gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01').order('date')
-  const {data:castList}=await sb.from('casts').select('id,name')
+  const {data:worksRaw}=await withStoreFilter(sb.from('works').select('*')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01').order('date')
+  const {data:castList}=await withStoreFilter(sb.from('casts').select('id,name'))
   const getName=id=>{const c=(castList||[]).find(x=>Number(x.id)===Number(id));return c?c.name:'?'}
   const works=(worksRaw||[]).map(w=>({...w,castName:getName(w.cast_id)}))
-  const {data:shiftsRaw}=await sb.from('shifts').select('id,cast_id,date,status').gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
+  const {data:shiftsRaw}=await withStoreFilter(sb.from('shifts').select('id,cast_id,date,status')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   let rvs=[]
   if(shiftsRaw&&shiftsRaw.length){
     const {data:rvsRaw}=await sb.from('reservations').select('*').in('shift_id',shiftsRaw.map(s=>s.id))
     rvs=rvsRaw||[]
   }
-  const {data:storeRaw}=await sb.from('monthly_sales').select('*').eq('month',monthlyMonth).single()
+  const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).single()
   const sd=storeRaw||{}
-  const {data:dailyNotesRaw}=await sb.from('daily_notes').select('date,inquiry_count').gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
+  const {data:dailyNotesRaw}=await withStoreFilter(sb.from('daily_notes').select('date,inquiry_count')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   const inquiryByDate={};(dailyNotesRaw||[]).forEach(n=>{inquiryByDate[n.date]=n.inquiry_count||0})
-  const {data:courseList}=await sb.from('courses').select('*')
-  const {data:optList}=await sb.from('options').select('*')
-  const {data:discListAll}=await sb.from('cast_discounts').select('*').eq('cast_id',0)
+  const {data:courseList}=await withStoreFilter(sb.from('courses').select('*'))
+  const {data:optList}=await withStoreFilter(sb.from('options').select('*'))
+  const {data:discListAll}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
   const ss=storeSettings||{}
 
   function calcRv(r){
@@ -8033,7 +8239,7 @@ async function openMonthlySalesEdit(){
 async function loadMonthlySalesForm(){
   const [y,m]=monthlyMonth.split('-').map(Number)
   document.getElementById('mse-title').textContent=y+'年'+m+'月 経費・目標・集客入力'
-  const {data}=await sb.from('monthly_sales').select('*').eq('month',monthlyMonth).single()
+  const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).single()
   const ad=data?.ad_expenses||{},rent=data?.rent_expenses||{},util=data?.utility_expenses||{}
   const fixed=data?.fixed_expenses||{},vari=data?.variable_expenses||{}
   const routes=data?.acquisition_routes||{}

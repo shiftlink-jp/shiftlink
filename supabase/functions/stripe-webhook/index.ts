@@ -105,14 +105,29 @@ serve(async (req) => {
       }
       case 'customer.subscription.trial_will_end': {
         // トライアル終了3日前（Stripeが自動送信）
-        // DBのtrial_ends_atを最新値で更新し、将来のメール通知拡張に備える
         const sub = event.data.object as Stripe.Subscription
-        if (sub.trial_end) {
-          await updateStore(sub.id, {
-            trial_ends_at: new Date(sub.trial_end * 1000).toISOString(),
-          })
+        const trialEndAt = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null
+        if (trialEndAt) {
+          await updateStore(sub.id, { trial_ends_at: trialEndAt })
         }
-        console.log('trial_will_end for subscription:', sub.id)
+        // store_idをmetadataから取得してリマインダーメールを送信
+        const storeId = sub.metadata?.store_id
+        if (storeId) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-trial-reminder`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({ store_id: storeId, trial_end_at: trialEndAt }),
+            })
+          } catch (mailErr) {
+            // メール送信失敗はcriticalではない（ログのみ）
+            console.error('trial reminder email failed:', mailErr)
+          }
+        }
+        console.log('trial_will_end processed for subscription:', sub.id)
         break
       }
     }
