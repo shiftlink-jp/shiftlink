@@ -5640,6 +5640,7 @@ function addSession(data=null){
   const div=document.createElement('div')
   div.className='session-block'
   div.id='session-'+idx
+  div._overrides=data?.overrides||{}
   const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${c.name}</option>`).join('')
   const shimeiTypes=['フリー','ネット指名','本指名']
   const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
@@ -5686,20 +5687,9 @@ function addSession(data=null){
   div.innerHTML=`
     <div class="session-hdr">
       <span class="session-no">${currentNo}本目</span>
-      <div style="display:flex;gap:.4rem">
-        <button class="session-override-btn" onclick="toggleBackOverride(this)" style="font-size:.7rem;padding:.2rem .55rem;border-radius:5px;border:1.5px solid var(--accent);background:${data?.back_override!=null?'var(--accent)':'transparent'};color:${data?.back_override!=null?'#fff':'var(--accent)'};cursor:pointer;line-height:1.4">${data?.back_override!=null?'自動':'修正'}</button>
-        <button class="session-del" onclick="removeSession(this)">削除</button>
-      </div>
+      <button class="session-del" onclick="removeSession(this)">削除</button>
     </div>
     <div class="session-inner">
-      <div class="session-override-area" style="${data?.back_override!=null?'':'display:none;'}margin-bottom:.6rem;padding:.5rem .65rem;background:#fff8f0;border:1.5px solid var(--accent);border-radius:8px">
-        <div class="session-label" style="color:var(--accent);font-weight:600;margin-bottom:.3rem">✏️ 委託金を手動で修正</div>
-        <div style="display:flex;align-items:center;gap:.5rem">
-          <input type="number" class="fi2 s-back-override" placeholder="空欄＝自動計算" min="0" step="100" value="${data?.back_override!=null?data.back_override:''}" oninput="calcTotal2()" style="flex:1">
-          <span style="font-size:.8rem;color:var(--text3)">円</span>
-        </div>
-        <div style="font-size:.68rem;color:var(--text3);margin-top:.2rem">空欄にすると自動計算に戻ります</div>
-      </div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:.35rem;margin-bottom:.5rem;align-items:end">
         <div><div class="session-label">コース</div><select class="fi2 s-course" onchange="calcTotal2()">${courseOpts}</select></div>
         <div><div class="session-label">指名</div><select class="fi2 s-shimei" onchange="calcTotal2()">${shimeiOpts}</select></div>
@@ -5729,25 +5719,37 @@ function removeSession(btn){
   })
   calcTotal2()
 }
-function toggleBackOverride(btn){
-  const block=btn.closest('.session-block')
-  const area=block.querySelector('.session-override-area')
-  if(!area) return
-  const visible=area.style.display!=='none'
-  if(visible){
-    area.style.display='none'
-    block.querySelector('.s-back-override').value=''
-    btn.textContent='修正'
-    btn.style.background='transparent'
-    btn.style.color='var(--accent)'
+function startEditAmt(el){
+  const key=el.dataset.key
+  const sid=el.dataset.sid
+  const block=document.getElementById(sid)
+  if(!block||!key) return
+  const cur=block._overrides[key]
+  // 現在の表示テキストから数値を取得（カンマ除去）
+  const curVal=cur!=null?cur:parseInt((el.textContent||'').replace(/[^0-9]/g,''))||0
+  const inp=document.createElement('input')
+  inp.type='number'
+  inp.value=curVal
+  inp.min=0
+  inp.step=100
+  inp.style.cssText='width:100%;font-size:.72rem;text-align:right;border:1.5px solid var(--accent);border-radius:4px;padding:2px 4px;background:#fff'
+  const save=()=>{
+    const v=inp.value.trim()
+    if(v===''||isNaN(parseFloat(v))){
+      delete block._overrides[key]
+    } else {
+      block._overrides[key]=parseFloat(v)
+    }
     calcTotal2()
-  } else {
-    area.style.display='block'
-    btn.textContent='自動'
-    btn.style.background='var(--accent)'
-    btn.style.color='#fff'
-    block.querySelector('.s-back-override').focus()
   }
+  inp.onblur=save
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){e.preventDefault();inp.blur()}
+    if(e.key==='Escape'){inp.value=curVal;inp.blur()}
+  }
+  el.replaceWith(inp)
+  inp.select()
+  inp.focus()
 }
 
 // 予約登録画面の割引警告チェック
@@ -5932,19 +5934,19 @@ function calcTotal2(){
     document.getElementById('w-misc').value=autoMiscAmt
   }
   blocks.forEach((block,bi)=>{
+    const ov=block._overrides||{}
     const cid=parseInt(block.querySelector('.s-course').value)
     const stype=block.querySelector('.s-shimei').value
-    const cback=getCourseBack(cid)
-    const sback=getShimeiBack(stype)
     const c=courses.find(x=>x.id===cid)
-    const coursePrice=c?c.price||0:0
-    const courseShop=coursePrice-cback  // コースの店落ち分
-    const shimeiPrice=getShimeiPrice(stype)
+    const cback=ov['course:back']!=null?ov['course:back']:getCourseBack(cid)
+    const sback=ov['shimei:back']!=null?ov['shimei:back']:getShimeiBack(stype)
+    const coursePrice=ov['course:price']!=null?ov['course:price']:(c?c.price||0:0)
+    const shimeiPrice=ov['shimei:price']!=null?ov['shimei:price']:getShimeiPrice(stype)
     let optSale=0,optBack=0
     const optRows=[]
     block.querySelectorAll('.op-check:checked').forEach(cb=>{
-      const p=getOptPrice(cb.dataset.name)
-      const b=getOptBack2(cb.dataset.name)
+      const p=ov['opt:'+cb.dataset.name+':price']!=null?ov['opt:'+cb.dataset.name+':price']:getOptPrice(cb.dataset.name)
+      const b=ov['opt:'+cb.dataset.name+':back']!=null?ov['opt:'+cb.dataset.name+':back']:getOptBack2(cb.dataset.name)
       optSale+=p; optBack+=b
       optRows.push({name:cb.dataset.name,price:p,back:b,shop:p-b})
     })
@@ -5957,11 +5959,13 @@ function calcTotal2(){
     const extCourseCalc=courses.find(c=>c.name&&c.name.includes('延長'))
     const extBackUnit=sheetFee.back_ext30||DEFAULT_FEE.back_ext30
     const extPriceUnit=extCourseCalc?.price||0
-    let extBack=0,extSale=0
+    let extBack_base=0,extSale_base=0
     block.querySelectorAll('.ext-check:checked').forEach(()=>{
-      extBack+=extBackUnit
-      extSale+=extPriceUnit
+      extBack_base+=extBackUnit
+      extSale_base+=extPriceUnit
     })
+    const extBack=ov['ext:back']!=null?ov['ext:back']:extBack_base
+    const extSale=ov['ext:price']!=null?ov['ext:price']:extSale_base
     // どちらの割引も総売上（客の支払い）は下がる
     // 店落ちから引く→店が負担（店落ちが減る）、委託金から引く→キャストが負担（委託金が減る）
     // カード金額（10%上乗せ前の元額）を支払い方法から算出
@@ -5989,11 +5993,8 @@ function calcTotal2(){
     const blockSalesBase=coursePrice+shimeiPrice+optSale+extSale-blockDiscShop-blockDiscBack
     const blockSales=blockSalesBase+cardSurcharge
     const blockBack=cback+sback+optBack+extBack-blockDiscBack
-    const overrideEl=block.querySelector('.s-back-override')
-    const overrideRaw=overrideEl?.value?.trim()
-    const effectiveBack=overrideRaw!==''&&overrideRaw!=null&&overrideRaw!==undefined&&!isNaN(parseFloat(overrideRaw))?parseFloat(overrideRaw):blockBack
     totalSales+=blockSales
-    totalBack+=effectiveBack
+    totalBack+=blockBack
     totalCardBase+=cardBase
     totalCardFee+=blockCardFee
     discFromBack+=blockDiscBack
@@ -6005,39 +6006,46 @@ function calcTotal2(){
       breakdown.className='session-breakdown'
       block.appendChild(breakdown)
     }
-    // 内訳：スマホ最適化カードUI
-    const mkRow=(label,cat,basePrice,back,isCard=false)=>{
-      const billedPrice=isCard?Math.round(basePrice*1.1):basePrice
+    // 内訳：スマホ最適化カードUI（金額タップで直接編集可）
+    const sid=block.id
+    const mkRow=(label,cat,price,back,isCard=false,rowKey=null)=>{
+      const billedPrice=isCard?Math.round(price*1.1):price
       const shop=billedPrice-back
       const payTag=isCard?'💳':'💴'
+      const mkCell=(val,type,color='',fw='')=>{
+        if(!rowKey) return `<div style="font-size:.72rem;${fw?'font-weight:'+fw+';':''}${color?'color:'+color+';':''}">${fmt(val)}</div>`
+        const k=rowKey+':'+type
+        const isOv=ov[k]!=null
+        return `<div class="editable-amt" data-key="${escapeHtml(k)}" data-sid="${sid}" onclick="startEditAmt(this)" style="cursor:pointer;font-size:.72rem;${fw?'font-weight:'+fw+';':''}${color?'color:'+color+';':''}border-bottom:1.5px dashed ${color||'var(--border)'}" title="タップして修正">${fmt(val)}${isOv?'<sup style="font-size:.5rem;color:var(--accent)">✏</sup>':''}</div>`
+      }
       return `<div style="display:flex;align-items:center;padding:.45rem .75rem;border-bottom:.5px solid var(--border)">
         <div style="flex:1;min-width:0">
-          <div style="font-size:.8rem;font-weight:500;color:var(--text)">${label} ${payTag}</div>
+          <div style="font-size:.8rem;font-weight:500;color:var(--text)">${escapeHtml(label)} ${payTag}</div>
           <div style="font-size:.65rem;color:var(--text3)">${cat}</div>
         </div>
-        <div style="text-align:right;width:4rem;flex-shrink:0"><div style="font-size:.72rem">${fmt(billedPrice)}</div></div>
-        <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;font-weight:600;color:var(--rtx)">${fmt(back)}</div></div>
+        <div style="text-align:right;width:4rem;flex-shrink:0">${mkCell(billedPrice,'price','','')}</div>
+        <div style="text-align:right;width:3.8rem;flex-shrink:0">${mkCell(back,'back','var(--rtx)','600')}</div>
         <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--btx)">${shop>0?fmt(shop):'-'}</div></div>
       </div>`
     }
     let brows=`<div style="display:flex;padding:.3rem .75rem;border-bottom:1px solid var(--border);font-size:.6rem;color:var(--text3);font-weight:600">
       <span style="flex:1">項目</span>
       <span style="text-align:right;width:4rem">請求額</span>
-      <span style="text-align:right;width:3.8rem;color:var(--rtx)">委託金</span>
+      <span style="text-align:right;width:3.8rem;color:var(--rtx)">委託金 ✏</span>
       <span style="text-align:right;width:3.8rem;color:var(--btx)">店舗利益</span>
     </div>`
-    if(c) brows+=mkRow(c.name,'コース',coursePrice,cback,payCourse2==='カード')
-    if(shimeiPrice) brows+=mkRow(stype,'指名料',shimeiPrice,sback,payShimei2==='カード')
+    if(c) brows+=mkRow(c.name,'コース',coursePrice,cback,payCourse2==='カード','course')
+    if(shimeiPrice) brows+=mkRow(stype,'指名料',shimeiPrice,sback,payShimei2==='カード','shimei')
     optRows.forEach(o=>{
-      const optSel=block.querySelector(`.s-opt-pay[data-opt="${o.name}"]`)
-      brows+=mkRow(o.name,'オプション',o.price,o.back,optSel?.value==='カード')
+      const optSel=block.querySelector(`.s-opt-pay[data-opt="${escapeHtml(o.name)}"]`)
+      brows+=mkRow(o.name,'オプション',o.price,o.back,optSel?.value==='カード','opt:'+o.name)
     })
     if(extSale){
       let extIsCard=false
       block.querySelectorAll('.ext-check:checked').forEach((cb,ei)=>{
         const ps=block.querySelector('.s-pay-ext-'+(ei+1));if(ps?.value==='カード') extIsCard=true
       })
-      brows+=mkRow('延長','延長',extSale,extBack,extIsCard)
+      brows+=mkRow('延長','延長',extSale,extBack,extIsCard,'ext')
     }
     block.querySelectorAll('.disc-check:checked').forEach(cb=>{
       const amt=parseInt(cb.dataset.amount)||0
@@ -6058,12 +6066,12 @@ function calcTotal2(){
         <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--btx)">-${fmt(blockCardFee)}</div></div>
       </div>`
     }
-    const sessionShop=blockSales-effectiveBack-blockCardFee
-    const overrideLabel=overrideRaw!==''&&overrideRaw!=null&&!isNaN(parseFloat(overrideRaw))?'<span style="font-size:.6rem;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-left:3px">手動</span>':''
+    const sessionShop=blockSales-blockBack-blockCardFee
+    const hasOv=Object.keys(ov).length>0
     brows+=`<div style="display:flex;align-items:center;padding:.55rem .75rem;background:var(--surface2)">
-      <span style="flex:1;font-size:.8rem;font-weight:700">小計</span>
+      <span style="flex:1;font-size:.8rem;font-weight:700">小計${hasOv?'<span style="font-size:.58rem;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px">手動修正あり</span>':''}</span>
       <div style="text-align:right;width:4rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700">${fmt(blockSales)}</div></div>
-      <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--rtx)">${fmt(effectiveBack)}${overrideLabel}</div></div>
+      <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--rtx)">${fmt(blockBack)}</div></div>
       <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.8rem;font-weight:700;color:var(--btx)">${fmt(sessionShop)}</div></div>
     </div>`
     breakdown.innerHTML=brows
@@ -6105,15 +6113,16 @@ async function saveWork(){
   const misc=parseInt(document.getElementById('w-misc').value)||0
   const sessions=[];let totalSales=0,totalBack=0,discFromBack=0,discFromShop=0,totalCount=0
   document.querySelectorAll('.session-block').forEach(block=>{
+    const ov=block._overrides||{}
     const cid=parseInt(block.querySelector('.s-course').value)
     const stype=block.querySelector('.s-shimei').value
     const c=courses.find(x=>x.id===cid);if(!c) return
-    const cback=getCourseBack(cid)
-    const sback=getShimeiBack(stype)
+    const cback=ov['course:back']!=null?ov['course:back']:getCourseBack(cid)
+    const sback=ov['shimei:back']!=null?ov['shimei:back']:getShimeiBack(stype)
     const options=[]
     let optBack=0
     block.querySelectorAll('.op-check:checked').forEach(cb=>{
-      const ob=getOptBack2(cb.dataset.name)
+      const ob=ov['opt:'+cb.dataset.name+':back']!=null?ov['opt:'+cb.dataset.name+':back']:getOptBack2(cb.dataset.name)
       const paySel=cb.closest('div').querySelector('.s-opt-pay')
       const pay=paySel?.value||'現金'
       options.push({name:cb.dataset.name,back:ob,pay})
@@ -6160,15 +6169,13 @@ async function saveWork(){
     const sesCardFee=sesCardBase>0?Math.floor(sesCardBase*0.06)+80:0
     const sessionSalesBase=(c.price||0)+shimeiPrice+optSaleTotal+extSaleTotal-discShop-discBack
     const sessionSales=sessionSalesBase+sesCardSurcharge
-    const sessionBack=cback+sback+optBack+extBackTotal-discBack
-    const overrideElSave=block.querySelector('.s-back-override')
-    const overrideRawSave=overrideElSave?.value?.trim()
-    const backOverride=overrideRawSave!==''&&overrideRawSave!=null&&!isNaN(parseFloat(overrideRawSave))?parseFloat(overrideRawSave):null
-    const effectiveSessionBack=backOverride!=null?backOverride:sessionBack
+    const extBackTotalEff=ov['ext:back']!=null?ov['ext:back']:extBackTotal
+    const sessionBack=cback+sback+optBack+extBackTotalEff-discBack
     const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
     const sesCash=sessionSalesBase-sesCardBase
-    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(backOverride!=null?{back_override:backOverride}:{})})
-    totalSales+=sessionSales;totalBack+=effectiveSessionBack;totalCount++
+    const ovKeys=Object.keys(ov)
+    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(ovKeys.length?{overrides:ov}:{})})
+    totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
   })
   const hoshoSave=parseInt(document.getElementById('w-hosho')?.value)||0
   let net=totalBack-misc
