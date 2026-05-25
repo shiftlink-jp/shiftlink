@@ -6016,7 +6016,7 @@ function calcTotal2(){
         if(!rowKey) return `<div style="font-size:.72rem;${fw?'font-weight:'+fw+';':''}${color?'color:'+color+';':''}">${fmt(val)}</div>`
         const k=rowKey+':'+type
         const isOv=ov[k]!=null
-        return `<div class="editable-amt" data-key="${escapeHtml(k)}" data-sid="${sid}" onclick="startEditAmt(this)" style="cursor:pointer;font-size:.72rem;${fw?'font-weight:'+fw+';':''}${color?'color:'+color+';':''}border-bottom:1.5px dashed ${color||'var(--border)'}" title="タップして修正">${fmt(val)}${isOv?'<sup style="font-size:.5rem;color:var(--accent)">✏</sup>':''}</div>`
+        return `<div class="editable-amt" data-key="${escapeHtml(k)}" data-sid="${sid}" onclick="startEditAmt(this)" style="cursor:pointer;font-size:.72rem;${fw?'font-weight:'+fw+';':''}${color?'color:'+color+';':''}" title="タップして修正">${fmt(val)}</div>`
       }
       return `<div style="display:flex;align-items:center;padding:.45rem .75rem;border-bottom:.5px solid var(--border)">
         <div style="flex:1;min-width:0">
@@ -6031,7 +6031,7 @@ function calcTotal2(){
     let brows=`<div style="display:flex;padding:.3rem .75rem;border-bottom:1px solid var(--border);font-size:.6rem;color:var(--text3);font-weight:600">
       <span style="flex:1">項目</span>
       <span style="text-align:right;width:4rem">請求額</span>
-      <span style="text-align:right;width:3.8rem;color:var(--rtx)">委託金 ✏</span>
+      <span style="text-align:right;width:3.8rem;color:var(--rtx)">委託金</span>
       <span style="text-align:right;width:3.8rem;color:var(--btx)">店舗利益</span>
     </div>`
     if(c) brows+=mkRow(c.name,'コース',coursePrice,cback,payCourse2==='カード','course')
