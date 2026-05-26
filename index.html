@@ -324,7 +324,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         if(e.data && e.data.type === 'PUSH_SUB_CHANGED' && e.data.subscription){
           console.log('[SW] Push subscription変更通知 → DB再登録');
           window._pendingPushSubChange = e.data.subscription;
-          // ★ 店舗（オーナー）ログイン中のみ即座にDB登録（セラピスト側は触らない）
+          // ログイン中ユーザーのDB登録を即座に更新（オーナー・キャスト両対応）
           try {
             if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
               const newSub = e.data.subscription;
@@ -345,8 +345,28 @@ if("serviceWorker" in navigator && !_isSaaS){
                   });
                 });
               });
+            } else if (typeof me !== 'undefined' && me && !me.is_owner && me.id && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
+              const newSub = e.data.subscription;
+              const castId = me.id;
+              sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId).then(function(res){
+                const allSubs = res.data || [];
+                const exists = allSubs.some(function(r){
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                });
+                if (exists) { console.log('[CastPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
+                const staleIds = allSubs.filter(function(r){
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newSub.endpoint).origin; } catch(e2){ return false; }
+                }).map(function(r){ return r.id; });
+                var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
+                cleanup.then(function(){
+                  sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: newSub })).then(function(ins){
+                    if (ins.error) console.warn('[CastPush] PUSH_SUB_CHANGED登録失敗:', ins.error);
+                    else console.log('[CastPush] PUSH_SUB_CHANGED→DB登録完了 castId:', castId);
+                  });
+                });
+              });
             }
-          } catch(err) { console.warn('[OwnerPush] PUSH_SUB_CHANGED処理エラー:', err); }
+          } catch(err) { console.warn('[Push] PUSH_SUB_CHANGED処理エラー:', err); }
         }
       });
     });
@@ -2071,8 +2091,22 @@ function startApp(){
           });
           if (exists) {
             btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          } else if (Notification.permission === 'granted') {
+            // ブラウザにsubがあり通知許可済み → pushsubscriptionchange後のオフロード中ログアウトに対応して自動再登録
+            console.log('[CastPush] endpointずれ検出 → 自動再登録');
+            const oldIds = (castSubs||[]).filter(r=>{
+              try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
+            }).map(r=>r.id);
+            if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
+            const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
+            if (!insErr) {
+              btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+              console.log('[CastPush] 自動再登録完了');
+            } else {
+              btn.textContent = '🔔 通知設定';
+              console.warn('[CastPush] 自動再登録失敗:', insErr);
+            }
           } else {
-            // ブラウザにsubscriptionはあるがこのcast_idのDB登録ではない → 未登録として表示
             btn.textContent = '🔔 通知設定';
           }
         } else if ((castSubs||[]).length > 0 && Notification.permission === 'granted') {
@@ -5025,15 +5059,19 @@ async function loadToday(){
   const td=todayNavDate||bizDay();const[y,m,d]=td.split('-')
   const isToday2=td===bizDay()
   document.getElementById('today-lbl').textContent=y+'年'+parseInt(m)+'月'+parseInt(d)+'日'+(isToday2?' (今日)':'')
-  // 問合せ数を読み込み
+  // 問合せ数・シフト・キャスト一覧を並列取得
   const inqEl=document.getElementById('today-inquiry')
+  const[inqRes,shiftsRes,castRes]=await Promise.all([
+    withStoreFilter(sb.from('daily_notes').select('inquiry_count')).eq('date',td).maybeSingle(),
+    withStoreFilter(sb.from('shifts').select('*')).eq('date',td).eq('status','approved').order('start_time'),
+    withStoreFilter(sb.from('casts').select('id,name'))
+  ])
   if(inqEl){
-    const{data:inqData}=await withStoreFilter(sb.from('daily_notes').select('inquiry_count')).eq('date',td).maybeSingle()
-    inqEl.value=inqData?.inquiry_count||''
+    inqEl.value=inqRes.data?.inquiry_count||''
     document.getElementById('today-inquiry-status').textContent=''
   }
-  const{data:shiftsRaw}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',td).eq('status','approved').order('start_time')
-  const{data:castList2}=await withStoreFilter(sb.from('casts').select('id,name'))
+  const shiftsRaw=shiftsRes.data
+  const castList2=castRes.data
   const getName2=id=>{const c=(castList2||[]).find(x=>Number(x.id)===Number(id));return c?c.name:'?'}
   const shifts=(shiftsRaw||[]).map(s=>({...s,casts:{name:getName2(s.cast_id)}}))
   // ルームに複数人を対応
@@ -5063,27 +5101,22 @@ async function loadToday(){
   const area=document.getElementById('today-area')
   if(!shifts||!shifts.length){area.innerHTML='<div class="empty">本日の承認済みシフトはありません</div>';return}
   let html=''
-  // 各シフトの予約を取得
+  // 予約・インターバル・works を並列取得
   const shiftIds=shifts.map(s=>s.id)
-  let rvByShift2={}
-  if(shiftIds.length){
-    const{data:rvs2}=await sb.from('reservations').select('*').in('shift_id',shiftIds).order('checkin_time')
-    if(rvs2) rvs2.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
-    if(rvs2) rvs2.forEach(r=>{if(!rvByShift2[r.shift_id])rvByShift2[r.shift_id]=[];rvByShift2[r.shift_id].push(r)})
-  }
-  // インターバル設定を取得（cast_feesのinterval_minカラム）
   const castIds=[...new Set(shifts.map(s=>s.cast_id))]
+  const[rvsRes,feesRes,worksRes]=await Promise.all([
+    shiftIds.length?sb.from('reservations').select('*').in('shift_id',shiftIds).order('checkin_time'):Promise.resolve({data:[]}),
+    castIds.length?sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIds):Promise.resolve({data:[]}),
+    castIds.length?sb.from('works').select('cast_id').eq('date',td).in('cast_id',castIds):Promise.resolve({data:[]})
+  ])
+  let rvByShift2={}
+  const rvs2=rvsRes.data||[]
+  rvs2.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999))
+  rvs2.forEach(r=>{if(!rvByShift2[r.shift_id])rvByShift2[r.shift_id]=[];rvByShift2[r.shift_id].push(r)})
   let intervalBycast={}
-  if(castIds.length){
-    const{data:fees}=await sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIds)
-    if(fees) fees.forEach(f=>{intervalBycast[f.cast_id]=f.interval_min||0})
-  }
-  // 当日のworksデータを取得（委託金入力済み判定用）
+  ;(feesRes.data||[]).forEach(f=>{intervalBycast[f.cast_id]=f.interval_min||0})
   let worksBycast={}
-  if(castIds.length){
-    const{data:todayWorks}=await sb.from('works').select('cast_id').eq('date',td).in('cast_id',castIds)
-    if(todayWorks) todayWorks.forEach(w=>{worksBycast[w.cast_id]=true})
-  }
+  ;(worksRes.data||[]).forEach(w=>{worksBycast[w.cast_id]=true})
   shifts.forEach(s=>{
     const workDone=!!worksBycast[s.cast_id]
     const rc2=getRoomColor(s.room)
