@@ -1244,6 +1244,44 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 // SaaS用変数
 let _saasStore=null, _saasSession=null
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// グローバルエラー監視（本番のバグ可視化）
+// JSエラー・未処理Promise rejectionをerror_logsテーブルに送信する
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+let _errorLogCount=0
+const ERROR_LOG_MAX_PER_SESSION=20 // 暴発防止（1セッション最大20件まで）
+async function logErrorToDB(err, context){
+  if(_errorLogCount>=ERROR_LOG_MAX_PER_SESSION) return
+  _errorLogCount++
+  try{
+    const payload={
+      user_id: (typeof me!=='undefined'&&me)?(me.id??null):null,
+      user_name: (typeof me!=='undefined'&&me)?(me.name||null):null,
+      is_owner: (typeof me!=='undefined'&&me)?!!me.is_owner:null,
+      error_type: err?.name||'Error',
+      error_message: String(err?.message||err||'unknown').slice(0,500),
+      error_stack: String(err?.stack||'').slice(0,2000),
+      url: location.href.slice(0,500),
+      user_agent: navigator.userAgent.slice(0,300),
+      context: String(context||'').slice(0,200)
+    }
+    // store_id は SaaSモード時のみ自動付与
+    const insertPayload = (typeof withStoreId==='function')?withStoreId(payload):payload
+    await sb.from('error_logs').insert(insertPayload)
+  }catch(e){
+    // エラーログ送信自体が失敗しても無視（無限ループ防止）
+    console.warn('[ErrorLog] 送信失敗:',e)
+  }
+}
+window.addEventListener('error',e=>{
+  console.error('[GlobalError]',e.error||e.message)
+  logErrorToDB(e.error||{message:e.message,name:'WindowError'},'window.onerror')
+})
+window.addEventListener('unhandledrejection',e=>{
+  console.error('[UnhandledRejection]',e.reason)
+  logErrorToDB(e.reason||{message:'unhandledrejection'},'unhandledrejection')
+})
+
 // SaaS用ヘルパー: INSERT時にstore_idを自動注入
 function withStoreId(payload){
   if(!SAAS_MODE || !currentStoreId) return payload
