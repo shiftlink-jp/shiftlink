@@ -3000,7 +3000,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
             <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
             <span style="color:var(--text2);font-size:.72rem">${castLabel}</span>
           </div>
-          <div style="font-size:.82rem;color:var(--text2);background:var(--surface2);border-radius:6px;padding:.4rem .55rem;line-height:1.55">💬 ${v.cast_memo}</div>
+          <div style="font-size:.82rem;color:var(--text2);background:var(--surface2);border-radius:6px;padding:.4rem .55rem;line-height:1.55;white-space:pre-wrap">💬 ${escapeHtml(v.cast_memo)}</div>
         </div>`
       }).join('')
     : '<div style="color:var(--text3);padding:.5rem 0;text-align:center;font-size:.78rem">メモはまだありません</div>'
@@ -3737,7 +3737,7 @@ async function openCustomerDetail(id){
           <div style="font-size:.75rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</div>
           <button class="btn btn-red btn-xs" onclick="deleteMemo(${m.id},${id})" style="font-size:.6rem;padding:2px 6px">削除</button>
         </div>
-        <div style="font-size:.83rem">${m.cast_memo}</div>
+        <div style="font-size:.83rem;white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
       </div>`
     })
   } else {
@@ -7138,7 +7138,7 @@ async function openRvDetail(rvId, shiftId, castName){
             <span style="font-size:.65rem;color:var(--text2);font-weight:600">${me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）')}</span>
             <span style="font-size:.62rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</span>
           </div>
-          ${m.cast_memo}
+          <div style="white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
         </div>`).join('')
       }
 
@@ -7551,7 +7551,7 @@ async function loadMyMemoLog(){
         <div style="font-size:.85rem;font-weight:600">${custLabel}</div>
         <div style="font-size:.72rem;color:var(--text3)">${dateLabel}</div>
       </div>
-      <div style="font-size:.8rem;color:var(--text2);line-height:1.5;white-space:pre-wrap">${m.cast_memo}</div>
+      <div style="font-size:.8rem;color:var(--text2);line-height:1.5;white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
     </div>`
   }).join('')
 }
@@ -7648,7 +7648,7 @@ async function renderCastMemoLog(){
         <div style="font-size:.78rem;font-weight:600">${ci?`No.${ci.no} ${ci.name}`:'顧客不明'}</div>
         <div style="font-size:.68rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</div>
       </div>
-      <div style="font-size:.83rem">${m.cast_memo}</div>
+      <div style="font-size:.83rem;white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
     </div>`
   }).join('')
 }
