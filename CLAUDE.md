@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 単一ファイル構成（`index.html` 約8000行）で全機能を実装。ビルドプロセスなし。
 
 - **本番URL**: https://kyoukano.vercel.app / https://app.shiftlink.jp（SaaS）
-- **デプロイ**: `git push origin main` → Vercel自動デプロイ（mainブランチ直接push、PRなし）
+- **ステージングURL**: Vercelのstagingブランチ自動プレビューURL（Vercel Dashboard → Deployments で確認）
+- **デプロイフロー**: `staging`ブランチで開発・確認 → 問題なければ`main`にマージ → Vercel自動デプロイ
+- **緊急修正のみ**: mainブランチへの直接pushは緊急バグ修正時のみ許可
 - **ローカル確認**: `python3 -m http.server 3100`（npx使用不可）
 
 ## 技術スタック
@@ -24,9 +26,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **既存アプリへの影響ゼロが最優先**（store_id=NULLの既存データが壊れないこと）
 - UIを隠す場合、DOM要素を削除せず `height:0;overflow:hidden` で非表示にする（JSが参照するDOM要素を消すと壊れる）
-- mainブランチに直接push（featureブランチ不要）
+- **作業は必ずstagingブランチで行い、確認後にmainへマージする**（mainへの直接pushは緊急時のみ）
 - 管理画面への直接ログインは禁止（Claudeがデータ取得・分析のために使わない）
-- 複雑な問題・重要な設計判断・セキュリティ関連の場合は、Opusへの切り替えを提案すること
+- 複雑な問題・重要な設計判断・セキュリティ関連の場合は、**必ず**Opusへの切り替えを提案すること
 
 ## アーキテクチャ
 
