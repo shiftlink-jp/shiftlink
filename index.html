@@ -1285,7 +1285,7 @@ function ym(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')
 function fmt(n){return '¥'+Math.round(n||0).toLocaleString()}
 function addMonth(y,d){const[yr,m]=y.split('-').map(Number);const nd=new Date(yr,m-1+d,1);return nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')}
 function nextYM(y){return addMonth(y,1)}
-function jpDate(s){const[y,m,d]=s.split('-');return parseInt(m)+'月'+parseInt(d)+'日'}
+function jpDate(s){const[y,m,d]=s.split('-');return Number(m)+'月'+Number(d)+'日'}
 function today(){const d=new Date();return new Date(d.getTime()+9*60*60*1000).toISOString().slice(0,10)}
 // 営業時間設定を取得（startH: 開始時, endH: 終了時(翌日は24+h)）
 function getBusinessHours(){
