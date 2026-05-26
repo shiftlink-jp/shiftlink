@@ -192,11 +192,11 @@ tr:last-child td{border-bottom:none}
 .room-empty{font-size:.8rem;color:var(--text3)}
 
 /* OVERLAY */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
-.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;height:100vh;height:100dvh;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.sheet-overlay{display:none;position:fixed;inset:0;height:100vh;height:100dvh;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
 .sheet-overlay.on{display:flex}
 .overlay.on{display:flex}
-.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:1rem 1rem calc(1.5rem + env(safe-area-inset-bottom))}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:90vh;max-height:90dvh;overflow-y:auto;padding:1rem 1rem calc(1.5rem + env(safe-area-inset-bottom))}
 .sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:.2rem auto .8rem}
 .sh-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:1rem}
 .sh-close{float:right;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;font-size:1rem;color:var(--text3);cursor:pointer;line-height:28px;text-align:center;margin-top:-.1rem}
@@ -4048,6 +4048,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(e.target.id==='rv-name'){
       e.target._composing=false
       autoKatakana(e.target)
+    }
+  })
+  // iOS Safariでキーボード出現時にinput/textareaがシートに隠れないようスクロール
+  document.addEventListener('focusin',e=>{
+    if((e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')&&/iPhone|iPad|iPod/.test(navigator.userAgent)){
+      setTimeout(()=>e.target.scrollIntoView({block:'center',behavior:'smooth'}),350)
     }
   })
 })
