@@ -4139,7 +4139,7 @@ function autoFillCustomer(){
     if(warn){warn.style.display='block';warn.textContent='⚠️ 顧客番号が未入力です。予約後に顧客管理から登録してください。'}
     return
   }
-  const c=allCustomers.find(x=>x.customer_no===no)
+  const c=allCustomers.find(x=>Number(x.customer_no)===no)
   if(c){
     document.getElementById('rv-name').value=c.name.endsWith('様')?c.name:c.name+'様'
     // 出禁チェック
@@ -4172,7 +4172,7 @@ function checkBanWarning(c){
 async function lookupCustomer(){
   const no=parseInt(document.getElementById('rv-cust-id').value)
   if(!no){return}
-  const c=allCustomers.find(x=>x.customer_no===no)
+  const c=allCustomers.find(x=>Number(x.customer_no)===no)
   if(c){
     document.getElementById('rv-name').value=c.name.endsWith('様')?c.name:c.name+'様'
     const banWarn=checkBanWarning(c)
@@ -4270,10 +4270,10 @@ async function saveReservation(){
   let custId=null
   if(autoRegister){
     // 新規自動登録：直前にDBから取得したidを使う
-    custId=allCustomers.find(x=>x.customer_no===custNoInt)?.id||null
+    custId=allCustomers.find(x=>Number(x.customer_no)===custNoInt)?.id||null
   } else if(custNoInt){
     // 既存顧客：customer_noのみで検索（idと混在させない）
-    const found=allCustomers.find(x=>x.customer_no===custNoInt)
+    const found=allCustomers.find(x=>Number(x.customer_no)===custNoInt)
     if(found){
       custId=found.id
     } else {
@@ -7589,7 +7589,7 @@ async function openMemoCustomerSearch(){
 
 async function openCastMemoForReservation(customerNo, customerName){
   // 顧客番号からID取得
-  const c = castMemoAllCustomers.find(x=>x.customer_no===customerNo)
+  const c = castMemoAllCustomers.find(x=>Number(x.customer_no)===Number(customerNo))
   if(!c){
     // まだ読み込まれていない場合はDBから取得
     const {data} = await sb.from('customers').select('id,name,customer_no').eq('customer_no',customerNo).single()
