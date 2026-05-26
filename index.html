@@ -1189,6 +1189,10 @@ if("serviceWorker" in navigator && !_isSaaS){
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 }
+// onclick属性内のJS文字列引数を安全にエスケープ（XSS対策）
+function jsEsc(s){
+  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/</g,'\\x3c').replace(/>/g,'\\x3e').replace(/\n/g,'\\n').replace(/\r/g,'\\r')
+}
 // オーナーセッショントークン生成（PIN検証の証跡用、PINを平文保存しない簡易ハッシュ）
 function makeOwnerTok(pin){
   if(!pin) return ''
@@ -1248,7 +1252,7 @@ function buildRoomButtons(sid){
     html+='<div style="display:grid;grid-template-columns:'+'1fr '.repeat(cols).trim()+';gap:.28rem;margin-bottom:.28rem">'
     for(let j=i;j<Math.min(i+2,rooms.length);j++){
       const r=rooms[j], key='R'+j
-      html+=`<button id="rb-${sid}-${key}" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp(${sid},'${r.replace(/'/g,"\\'")}')">${r}</button>`
+      html+=`<button id="rb-${sid}-${key}" class="btn btn-xs" style="background:#fdf6ec;border:1.5px solid #b8893a;color:#b8893a;font-weight:600" onclick="selectRoomTemp(${sid},'${jsEsc(r)}')">${escapeHtml(r)}</button>`
     }
     html+='</div>'
   }
@@ -1412,7 +1416,7 @@ async function init(){
   const cardList=document.getElementById('cast-card-list')
   if(cardList){
     cardList.innerHTML=(casts||[]).map(c=>`
-      <button type="button" onclick="selectCastCard(${c.id},'${c.name.replace(/'/g,"\'")}')"
+      <button type="button" onclick="selectCastCard(${c.id},'${jsEsc(c.name)}')"
         style="background:rgba(255,255,255,0.82);border:1.5px solid var(--border);border-radius:14px;padding:.7rem .5rem;font-size:.88rem;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .18s;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.07)"
         onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
@@ -2795,19 +2799,19 @@ function renderCastTodayCards(rvs) {
     const doneBtn = btnBase + 'background:#d0c9b8;color:#888;cursor:default;';
 
     const histBtn = r.customer_no
-      ? `<button onclick="castOpenCustHistory(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\\'")}',${r.customer_id||'null'})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.78rem;font-weight:600;cursor:pointer">📋 来店履歴</button>`
+      ? `<button onclick="castOpenCustHistory(${r.customer_no},'${jsEsc(r.customer_name)}',${r.customer_id||'null'})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.78rem;font-weight:600;cursor:pointer">📋 来店履歴</button>`
       : '';
     const payBtn = `<button onclick="castOpenPayment(${r.id})" style="margin-top:.5rem;width:100%;padding:.5rem 0;border:1.5px solid #7aaee0;border-radius:10px;background:#f4f8ff;color:#1d4ed8;font-size:.78rem;font-weight:600;cursor:pointer">💳 支払い確認</button>`;
     const actionBtns = isPast && hasRoomOut ? histBtn + payBtn : `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-top:.75rem">
         ${hasRoomIn
           ? `<button disabled style="${doneBtn}">入室済み</button>`
-          : `<button onclick="castRoomIn(${r.id},'${r.customer_name||''}','${r.checkin_time?.slice(0,5)||''}')" style="${goldBtn}">入室</button>`}
+          : `<button onclick="castRoomIn(${r.id},'${jsEsc(r.customer_name)}','${jsEsc(r.checkin_time?.slice(0,5)||'')}')" style="${goldBtn}">入室</button>`}
         ${hasRoomOut
           ? `<button disabled style="${doneBtn}">退室済み</button>`
-          : `<button onclick="castRoomOut(${r.id},'${r.customer_name||''}','${r.checkout_time?.slice(0,5)||''}')" style="${goldBtn}">退室</button>`}
-        <button onclick="castAddOption(${r.id},'${r.customer_name||''}')" style="${goldBtn}">＋OP</button>
-        <button onclick="castExtend(${r.id},'${r.customer_name||''}')" style="${goldBtn}">延長</button>
+          : `<button onclick="castRoomOut(${r.id},'${jsEsc(r.customer_name)}','${jsEsc(r.checkout_time?.slice(0,5)||'')}')" style="${goldBtn}">退室</button>`}
+        <button onclick="castAddOption(${r.id},'${jsEsc(r.customer_name)}')" style="${goldBtn}">＋OP</button>
+        <button onclick="castExtend(${r.id},'${jsEsc(r.customer_name)}')" style="${goldBtn}">延長</button>
       </div>
       ${payBtn}
       ${histBtn}`;
@@ -2941,7 +2945,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   const modal=document.createElement('div')
   modal.id='cast-hist-modal'
   modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center'
-  const escName = (custName||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')
+  const escName = jsEsc(custName)
   modal.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;height:90vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;gap:.5rem"><div style="font-weight:700;font-size:1rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋 ${escapeHtml(custName)} の履歴</div><button id="cast-hist-memo-btn" onclick="castOpenMemoFromHist('${escName}')" style="background:var(--gold,#c8a96a);color:#fff;border:none;border-radius:8px;padding:.35rem .6rem;font-size:.72rem;font-weight:600;cursor:pointer;flex-shrink:0">📝 メモを書く</button><button onclick="document.getElementById('cast-hist-modal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text3);flex-shrink:0">✕</button></div><div id="cast-hist-body" style="overflow-y:auto;padding:0 1rem 1rem;flex:1"><div class="spin">読み込み中...</div></div></div>`
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
   document.body.appendChild(modal)
@@ -3689,7 +3693,7 @@ async function openCustomerDetail(id){
         <div id="edit-cust-ng-wrap" style="display:flex;gap:.4rem;overflow-x:auto;padding:.4rem 0;-webkit-overflow-scrolling:touch;scrollbar-width:none">
           ${(allCastsData||[]).map(cast=>{
             const chk=ngSelected.includes(cast.name)
-            return '<button type="button" class="ng-chip" data-name="'+cast.name+'" onclick="toggleNgChip(this)" style="flex-shrink:0;padding:.35rem .9rem;border-radius:99px;border:1.5px solid '+(chk?'var(--rtx)':'var(--border)')+';background:'+(chk?'var(--rtx)':'var(--surface2)')+';color:'+(chk?'#fff':'var(--text)')+';font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap">'+cast.name+'</button>'
+            return '<button type="button" class="ng-chip" data-name="'+escapeHtml(cast.name)+'" onclick="toggleNgChip(this)" style="flex-shrink:0;padding:.35rem .9rem;border-radius:99px;border:1.5px solid '+(chk?'var(--rtx)':'var(--border)')+';background:'+(chk?'var(--rtx)':'var(--surface2)')+';color:'+(chk?'#fff':'var(--text)')+';font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap">'+escapeHtml(cast.name)+'</button>'
           }).join('')}
         </div>
       </div>
@@ -5031,13 +5035,13 @@ async function loadToday(){
     const rc=getRoomColor(r)
     if(ss&&ss.length){
       const names=ss.map(s=>`<div style="font-size:${ss.length>1?'.8rem':'.9rem'};font-weight:700;color:${rc.tx}">${s.casts?.name||'?'}<span style="font-size:.6rem;font-weight:400;margin-left:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
-      rh+=`<div class="room-card" style="background:${rc.card};border-color:${rc.bd};cursor:pointer" onclick="openGanttModal('${r.replace(/'/g,"\'")}')">
-        <div class="room-lbl" style="color:${rc.tx}">${r}</div>${names}
+      rh+=`<div class="room-card" style="background:${rc.card};border-color:${rc.bd};cursor:pointer" onclick="openGanttModal('${jsEsc(r)}')">
+        <div class="room-lbl" style="color:${rc.tx}">${escapeHtml(r)}</div>${names}
         <div style="font-size:.55rem;color:${rc.tx};opacity:.6;margin-top:.3rem">タップでガント表示</div>
       </div>`
     } else {
-      rh+=`<div class="room-card" style="cursor:pointer" onclick="openGanttModal('${r.replace(/'/g,"\'")}')">
-        <div class="room-lbl">${r}</div>
+      rh+=`<div class="room-card" style="cursor:pointer" onclick="openGanttModal('${jsEsc(r)}')">
+        <div class="room-lbl">${escapeHtml(r)}</div>
         <div class="room-empty">空き</div>
         <div style="font-size:.55rem;color:var(--text3);opacity:.6;margin-top:.3rem">タップでガント表示</div>
       </div>`
@@ -5417,7 +5421,7 @@ async function loadGanttModal(){
         rvBars+=`<div style="position:absolute;left:${rS}px;width:${bW}px;top:1px;bottom:1px;
           background:linear-gradient(160deg,#FF9A2E,#FF6400);border-radius:5px;z-index:5;
           overflow:hidden;cursor:pointer;box-shadow:0 2px 5px rgba(255,140,0,.35)"
-          onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${(s.casts?.name||'').replace(/'/g,"\\\\'")}','${ganttModalDate}'),150)">
+          onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${jsEsc(s.casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">
           <div style="padding:2px 4px;height:100%;display:flex;flex-direction:column;justify-content:center;gap:0">
             <div style="font-size:${fsMain}rem;color:#fff;font-weight:800;white-space:nowrap;overflow:visible;line-height:1.2">${name}</div>
             ${minStr?`<div style="font-size:${fsSub}rem;color:rgba(255,255,255,.92);line-height:1.2;white-space:nowrap">${minStr}</div>`:''}
@@ -5535,7 +5539,7 @@ async function loadGanttModal(){
   </div>`
 
   const rvBtn=targetShifts.length
-    ?`<div style="padding:.3rem ${PAD}px 0"><button style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;border:none;border-radius:7px;font-size:.76rem;font-weight:700;padding:.35rem .9rem;cursor:pointer;box-shadow:0 2px 6px rgba(79,172,254,.35)" onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${(targetShifts[0].casts?.name||'').replace(/'/g,"\\\\'")}','${ganttModalDate}'),150)">＋ 予約登録</button></div>`
+    ?`<div style="padding:.3rem ${PAD}px 0"><button style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;border:none;border-radius:7px;font-size:.76rem;font-weight:700;padding:.35rem .9rem;cursor:pointer;box-shadow:0 2px 6px rgba(79,172,254,.35)" onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${jsEsc(targetShifts[0].casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">＋ 予約登録</button></div>`
     :''
 
   area.innerHTML=`${rows}${legend}${rvBtn}`
@@ -7454,7 +7458,7 @@ async function renderMyCastMemoLog(){
                   <div style="font-size:.72rem;color:var(--text3)">${r.checkin_time?.slice(0,5)||''}〜${r.checkout_time?.slice(0,5)||''}　${r.course||''}</div>
                 </div>
                 ${hasCust
-                  ? `<button class="btn btn-purple btn-xs" onclick="openCastMemoForReservation(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\'")}')">メモ確認</button>`
+                  ? `<button class="btn btn-purple btn-xs" onclick="openCastMemoForReservation(${r.customer_no},'${jsEsc(r.customer_name)}')">メモ確認</button>`
                   : '<span style="font-size:.7rem;color:var(--text3)">顧客番号なし</span>'
                 }
               </div>`
@@ -7487,7 +7491,7 @@ async function loadCastMemoPage(){
     </div>
     <div style="font-size:.75rem;color:var(--text3)">${[r.shimei_type,r.course,r.options].filter(Boolean).join(' / ')}</div>
     ${r.customer_no
-      ? `<button class="btn btn-purple btn-xs" style="align-self:flex-start;margin-top:.2rem" onclick="openCastMemoForReservation(${r.customer_no},'${(r.customer_name||'').replace(/'/g,"\\'")}')">メモを書く</button>`
+      ? `<button class="btn btn-purple btn-xs" style="align-self:flex-start;margin-top:.2rem" onclick="openCastMemoForReservation(${r.customer_no},'${jsEsc(r.customer_name)}')">メモを書く</button>`
       : '<span style="font-size:.7rem;color:var(--text3)">顧客番号未登録</span>'
     }
   </div>`).join('')
@@ -7562,7 +7566,7 @@ function filterMemos(){
   )
   if(!filtered.length){area.innerHTML='<div class="empty">該当する顧客がいません</div>';return}
   area.innerHTML = filtered.map(c=>`
-    <div class="item" style="justify-content:space-between;align-items:center;cursor:pointer" onclick="castOpenCustHistory(${c.customer_no},'${(c.name||'').replace(/'/g,"\\'")}',${c.id})">
+    <div class="item" style="justify-content:space-between;align-items:center;cursor:pointer" onclick="castOpenCustHistory(${c.customer_no},'${jsEsc(c.name)}',${c.id})">
       <div>
         <div style="font-size:.88rem;font-weight:600">No.${c.customer_no}　${c.name}</div>
         <div style="font-size:.72rem;color:var(--text3)">タップして来店履歴を確認</div>
