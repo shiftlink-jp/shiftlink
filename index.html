@@ -1428,7 +1428,7 @@ async function init(){
     return
   }
   // ── 従来モード：PINログイン ──
-  const{data:casts}=await sb.from('casts').select('id,name').eq('active',true).order('sort_order',{ascending:true})
+  const{data:casts}=await withStoreFilter(sb.from('casts').select('id,name').eq('active',true).order('sort_order',{ascending:true}))
   // hidden select（互換用）
   const html='<option value="">選んでください</option>'+(casts||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
   document.getElementById('cast-sel').innerHTML=html
@@ -1443,9 +1443,9 @@ async function init(){
         ${c.name}
       </button>`).join('')
   }
-  const{data:cs}=await sb.from('courses').select('*').order('price')
-  const{data:op}=await sb.from('options').select('*').order('id')
-  const{data:ss}=await sb.from('store_settings').select('*').single()
+  const{data:cs}=await withStoreFilter(sb.from('courses').select('*').order('price'))
+  const{data:op}=await withStoreFilter(sb.from('options').select('*').order('id'))
+  const{data:ss}=await withStoreFilter(sb.from('store_settings').select('*')).maybeSingle()
   const{data:rm}=await sb.from('rooms').select('*').is('store_id',null).order('sort_order')
   courses=cs||[]; opts=op||[]; storeSettings=ss||{}; roomList=rm||[]
   // DBにowner_pinがあればそれを使う、なければlocalStorageにフォールバック
@@ -1458,7 +1458,7 @@ async function init(){
       const parsed=JSON.parse(savedMe)
       if(parsed&&parsed.name){
         if(!parsed.is_owner&&parsed.id){
-          const{data:c}=await sb.from('casts').select('*').eq('id',parsed.id).eq('active',true).single()
+          const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',parsed.id).eq('active',true)).maybeSingle()
           if(c){me={...c,is_owner:false};startApp();return}
           else{sessionStorage.removeItem('shiftlink_me')}
         } else if(parsed.is_owner){
@@ -1511,7 +1511,7 @@ async function autoPasskeyLogin(castId){
         timeout:60000
       }
     })
-    const{data:c}=await sb.from('casts').select('*').eq('id',castId).single()
+    const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',castId)).maybeSingle()
     if(!c) throw new Error('ユーザー情報取得失敗')
     me={...c,is_owner:false}
     sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
@@ -1547,7 +1547,7 @@ async function passkeyLogin(){
     })
 
     // 認証成功 → ユーザー情報取得してログイン
-    const{data:c}=await sb.from('casts').select('*').eq('id',cid).single()
+    const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid)).maybeSingle()
     if(!c){ throw new Error('ユーザー情報の取得に失敗しました') }
     me={...c,is_owner:false}
     sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
@@ -1658,7 +1658,7 @@ async function doCastLoginSmart(){
             timeout:60000
           }
         })
-        const{data:c}=await sb.from('casts').select('*').eq('id',cid).single()
+        const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid)).maybeSingle()
         if(!c) throw new Error('ユーザー情報取得失敗')
         me={...c,is_owner:false}
         sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
@@ -1731,7 +1731,7 @@ async function doCastLogin(){
   if(pin.length<1||pin.length>8){err.textContent='PINは1〜8桁で入力してください';return}
   const btn=document.getElementById('btn-cast')
   btn.disabled=true; btn.textContent='確認中...'
-  const{data:c,error}=await sb.from('casts').select('*').eq('id',cid).eq('pin',pin).single()
+  const{data:c,error}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid).eq('pin',pin)).maybeSingle()
   btn.disabled=false; btn.textContent='ログイン'
   if(error||!c){err.textContent='PINが正しくありません';return}
   me={...c,is_owner:false}
@@ -1971,7 +1971,7 @@ async function initSaasApp(session){
   }else{
     // castとして取得
     if(member.cast_id){
-      const{data:c}=await sb.from('casts').select('*').eq('id',member.cast_id).single()
+      const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',member.cast_id)).maybeSingle()
       if(c) me={...c,is_owner:false}
       else me={id:member.cast_id,name:session.user.email,is_owner:false}
     }else{
@@ -2506,7 +2506,7 @@ function calMove(d){calMonth=addMonth(calMonth,d);loadCal()}
 async function loadCal(){
   const[y,m]=calMonth.split('-').map(Number)
   document.getElementById('cal-title').textContent=y+'年'+m+'月'
-  const{data:shifts}=await sb.from('shifts').select('*').eq('cast_id',me.id).gte('date',calMonth+'-01').lt('date',nextYM(calMonth)+'-01')
+  const{data:shifts}=await withStoreFilter(sb.from('shifts').select('*').eq('cast_id',me.id).gte('date',calMonth+'-01').lt('date',nextYM(calMonth)+'-01'))
   myShifts=shifts||[]; renderCal(); renderInlineShiftList()
 }
 function renderCal(){
@@ -2619,7 +2619,7 @@ async function submitShift(){
     const end=document.getElementById('f-end').value
     const note=document.getElementById('f-note')?.value||''
     // キャッシュが古い可能性があるため最新DBを確認
-    const{data:dbShifts}=await sb.from('shifts').select('id,status').eq('cast_id',me.id).eq('date',selectedDate)
+    const{data:dbShifts}=await withStoreFilter(sb.from('shifts').select('id,status').eq('cast_id',me.id).eq('date',selectedDate))
     const existing=dbShifts&&dbShifts.length>0?dbShifts[0]:null
     const payload={cast_id:me.id,date:selectedDate,start_time:start,end_time:end,note,status:'requested'}
     let err
@@ -2668,7 +2668,7 @@ async function renderInlineShiftList(){
   const approvedShiftIds = approved.map(s=>s.id)
   let rvByShift={}
   if(approvedShiftIds.length){
-    const{data:rvs}=await sb.from('reservations').select('shift_id').in('shift_id',approvedShiftIds)
+    const{data:rvs}=await withStoreFilter(sb.from('reservations').select('shift_id').in('shift_id',approvedShiftIds))
     if(rvs) rvs.forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=0;rvByShift[r.shift_id]++})
   }
   const td=today()
@@ -2896,11 +2896,11 @@ async function castOpenPayment(rvId) {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 
-  const {data:r} = await sb.from('reservations').select('*').eq('id', rvId).single();
+  const {data:r} = await withStoreFilter(sb.from('reservations').select('*').eq('id', rvId)).maybeSingle();
   if (!r) { modal.remove(); toast('予約データが見つかりません'); return; }
-  const {data:courseList} = await sb.from('courses').select('*');
-  const {data:optList} = await sb.from('options').select('*');
-  const {data:discListAll} = await sb.from('cast_discounts').select('*').eq('cast_id', 0);
+  const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'));
+  const {data:optList} = await withStoreFilter(sb.from('options').select('*'));
+  const {data:discListAll} = await withStoreFilter(sb.from('cast_discounts').select('*').eq('cast_id', 0));
 
   let pj = {};
   try { pj = JSON.parse(r.payment || '{}'); } catch(e) {}
@@ -3133,7 +3133,7 @@ async function castAddOption(rvId, custName) {
     if (checked.length === 0) { alert('オプションを選んでください'); return; }
 
     // DB更新：既存optionsに追加 + 支払い方法
-    const { data: rv } = await sb.from('reservations').select('options, payment').eq('id', rvId).single();
+    const { data: rv } = await withStoreFilter(sb.from('reservations').select('options, payment').eq('id', rvId)).maybeSingle();
     const existing = rv?.options ? rv.options.split(',').filter(Boolean) : [];
     const newOpts = [...new Set([...existing, ...checked])];
     let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
@@ -3156,7 +3156,7 @@ async function castAddOption(rvId, custName) {
 
 async function castExtend(rvId, custName) {
   // checkout_timeを事前取得
-  const { data: rv } = await sb.from('reservations').select('checkout_time, extension_count, payment').eq('id', rvId).single();
+  const { data: rv } = await withStoreFilter(sb.from('reservations').select('checkout_time, extension_count, payment').eq('id', rvId)).maybeSingle();
   if (!rv?.checkout_time) { toast('退室時刻が設定されていません'); return; }
 
   document.getElementById('cast-extend-sheet')?.remove()
@@ -3224,7 +3224,7 @@ async function saveCastShiftEdit(){
   const end = document.getElementById('cse-end').value
   const note = document.getElementById('cse-note').value
   // 承認済みシフトを訂正した場合は承認待ちに戻す
-  const{data:curShift}=await sb.from('shifts').select('status,date').eq('id',castShiftEditId).single()
+  const{data:curShift}=await withStoreFilter(sb.from('shifts').select('status,date').eq('id',castShiftEditId)).maybeSingle()
   const wasApproved=curShift?.status==='approved'
   const updatePayload={start_time:start, end_time:end, note}
   if(wasApproved) updatePayload.status='requested'
@@ -3333,13 +3333,13 @@ async function loadMySalary(){
     let todayHtml=''
     if(todayShifts&&todayShifts.length){
       const sids=todayShifts.map(s=>s.id)
-      const{data:todayRvs_raw}=await sb.from('reservations').select('*').in('shift_id',sids).order('checkin_time')
+      const{data:todayRvs_raw}=await withStoreFilter(sb.from('reservations').select('*').in('shift_id',sids).order('checkin_time'))
       const todayRvs=sortRvsByTime(todayRvs_raw)
       // customer_noからcustomer_nameを補完
       const custNos=[...new Set((todayRvs||[]).map(r=>r.customer_no).filter(Boolean))]
       let custMap={}
       if(custNos.length){
-        const{data:custs}=await sb.from('customers').select('customer_no,name').in('customer_no',custNos)
+        const{data:custs}=await withStoreFilter(sb.from('customers').select('customer_no,name').in('customer_no',custNos))
         ;(custs||[]).forEach(c=>{custMap[c.customer_no]=c.name})
       }
       const dn=['日','月','火','水','木','金','土'][new Date(todayStr).getDay()]
@@ -3996,13 +3996,13 @@ async function openReservation(shiftId,castName,date){
   document.getElementById('rv-checkin').value=_hh+':'+_mm
   document.getElementById('rv-checkout').value=''
   // コース一覧をロード
-  const{data:courses}=await sb.from('courses').select('*').order('price')
+  const{data:courses}=await withStoreFilter(sb.from('courses').select('*').order('price'))
   const sel=document.getElementById('rv-course')
   if(courses&&courses.length){
     sel.innerHTML='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}（¥${c.price?.toLocaleString()||''}）</option>`).join('')
   }
   // オプション一覧をチェックボックスで表示
-  const{data:opts}=await sb.from('options').select('*').order('name')
+  const{data:opts}=await withStoreFilter(sb.from('options').select('*').order('name'))
   const optsList=document.getElementById('rv-options-list')
   if(opts&&opts.length){
       optsList.innerHTML=opts.map(o=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .2rem;border-bottom:1px solid var(--border)">
@@ -4021,10 +4021,10 @@ async function openReservation(shiftId,castName,date){
   const discList=document.getElementById('rv-discount-list')
   const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0).order('id')
   // キャストの入店日を取得（新人割チェック用）
-  const{data:shiftData}=await sb.from('shifts').select('cast_id').eq('id',shiftId).single()
+  const{data:shiftData}=await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',shiftId)).maybeSingle()
   let rvCastJoinedAt=null
   if(shiftData?.cast_id){
-    const{data:feeData}=await sb.from('cast_fees').select('joined_at').eq('cast_id',shiftData.cast_id).single()
+    const{data:feeData}=await withStoreFilter(sb.from('cast_fees').select('joined_at').eq('cast_id',shiftData.cast_id)).maybeSingle()
     rvCastJoinedAt=feeData?.joined_at||null
   }
   if(storeDiscs&&storeDiscs.length){
@@ -4318,7 +4318,7 @@ async function saveReservation(){
       custId=found.id
     } else {
       // allCustomersにない場合はDBから直接取得
-      const{data:dbCust}=await sb.from('customers').select('id').eq('customer_no',custNoInt).maybeSingle()
+      const{data:dbCust}=await withStoreFilter(sb.from('customers').select('id').eq('customer_no',custNoInt)).maybeSingle()
       if(dbCust?.id){
         custId=dbCust.id
       } else {
@@ -4342,7 +4342,7 @@ async function saveReservation(){
   }
   // Push通知送信（担当セラピストへ）
   try {
-    const {data:shiftData} = await sb.from('shifts').select('cast_id').eq('id',shiftId).single();
+    const {data:shiftData} = await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',shiftId)).maybeSingle();
     if(shiftData?.cast_id){
       const timeStr = checkin ? `（${checkin}〜）` : '';
       await sendPushNotification(shiftData.cast_id, '予約が入りました📋', `${finalName}様 ${course}${timeStr}`);
@@ -4375,10 +4375,10 @@ async function loadGantt(){
   const{data:rawShiftsG}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',ganttDate).eq('status','approved').order('start_time')
   const castIdsG=[...new Set((rawShiftsG||[]).map(s=>s.cast_id).filter(Boolean))]
   let castMapG={}
-  if(castIdsG.length){const{data:cr}=await sb.from('casts').select('id,name').in('id',castIdsG);if(cr)cr.forEach(c=>{castMapG[c.id]=c.name})}
+  if(castIdsG.length){const{data:cr}=await withStoreFilter(sb.from('casts').select('id,name').in('id',castIdsG));if(cr)cr.forEach(c=>{castMapG[c.id]=c.name})}
   const shifts=(rawShiftsG||[]).map(s=>({...s,casts:{name:castMapG[s.cast_id]||'?'}}))
   const{data:rvs}=shifts&&shifts.length
-    ? await sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time').then(r=>({...r,data:sortRvsByTime(r.data)}))
+    ? await withStoreFilter(sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time')).then(r=>({...r,data:sortRvsByTime(r.data)}))
     : {data:[]}
   const rvByShift={}
   ;(rvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
@@ -4439,7 +4439,7 @@ async function loadGantt(){
   const castIdsL=[...new Set(shifts.map(s=>s.cast_id).filter(Boolean))]
   let intervalBycastL={}
   if(castIdsL.length){
-    const{data:feesL}=await sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsL)
+    const{data:feesL}=await withStoreFilter(sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsL))
     if(feesL) feesL.forEach(f=>{intervalBycastL[f.cast_id]=f.interval_min||0})
   }
   const COURSE_MINS_L={'50分':50,'80分':80,'100分':100,'130分':130,'延長':30}
@@ -4551,11 +4551,11 @@ async function renderGanttInto(area, date, filterShifts=null){
     const{data:rawRGI}=await withStoreFilter(sb.from('shifts').select('*')).eq('date',date).eq('status','approved').order('start_time')
     const cidsRGI=[...new Set((rawRGI||[]).map(s=>s.cast_id).filter(Boolean))]
     let cmapRGI={}
-    if(cidsRGI.length){const{data:crRGI}=await sb.from('casts').select('id,name').in('id',cidsRGI);if(crRGI)crRGI.forEach(c=>{cmapRGI[c.id]=c.name})}
+    if(cidsRGI.length){const{data:crRGI}=await withStoreFilter(sb.from('casts').select('id,name').in('id',cidsRGI));if(crRGI)crRGI.forEach(c=>{cmapRGI[c.id]=c.name})}
     shifts=(rawRGI||[]).map(s=>({...s,casts:{name:cmapRGI[s.cast_id]||'?'}}))
   }
   if(!shifts.length){area.innerHTML='<div class="empty">この日の承認済みシフトはありません</div>';return}
-  const{data:rvs}=await sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time')
+  const{data:rvs}=await withStoreFilter(sb.from('reservations').select('*').in('shift_id',shifts.map(s=>s.id)).order('checkin_time'))
     if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   const rvByShift={}
   ;(rvs||[]).forEach(r=>{if(!rvByShift[r.shift_id])rvByShift[r.shift_id]=[];rvByShift[r.shift_id].push(r)})
@@ -4563,7 +4563,7 @@ async function renderGanttInto(area, date, filterShifts=null){
   const castIdsG=[...new Set(shifts.map(s=>s.cast_id).filter(Boolean))]
   let intervalBycastG={}
   if(castIdsG.length){
-    const{data:feesG}=await sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsG)
+    const{data:feesG}=await withStoreFilter(sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsG))
     if(feesG) feesG.forEach(f=>{intervalBycastG[f.cast_id]=f.interval_min||0})
   }
   // 時間軸
@@ -4697,7 +4697,7 @@ async function loadOwnerCal(){
   const approvedIds=(approvedRaw||[]).map(s=>s.id)
   let reservationByDate={}
   if(approvedIds.length){
-    const{data:rvs}=await sb.from('reservations').select('shift_id').in('shift_id',approvedIds)
+    const{data:rvs}=await withStoreFilter(sb.from('reservations').select('shift_id').in('shift_id',approvedIds))
     if(rvs){
       // shift_idから日付に変換
       const shiftDateMap={}
@@ -4820,7 +4820,7 @@ async function ownerSelectDay(ds){
   let shiftRvCount={}
   if(approved.length){
     const sids=approved.map(s=>s.id)
-    const{data:rvs}=await sb.from('reservations').select('shift_id').in('shift_id',sids)
+    const{data:rvs}=await withStoreFilter(sb.from('reservations').select('shift_id').in('shift_id',sids))
     if(rvs) rvs.forEach(r=>{ shiftRvCount[r.shift_id]=(shiftRvCount[r.shift_id]||0)+1 })
   }
   const[y,m,d]=ds.split('-')
@@ -4982,7 +4982,7 @@ async function approveShift(id){
   toast('承認しました');
   // Push通知送信
   try {
-    const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
+    const {data:shift} = await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',id)).maybeSingle();
     await sendPushNotification(shift.cast_id, 'シフトが承認されました✅', 'オーナーがあなたのシフトを承認しました。');
   } catch(e) { console.error('通知エラー',e); }
   loadOwnerCal()
@@ -4993,7 +4993,7 @@ async function rejectShift(id){
   toast('却下しました');
   // Push通知送信
   try {
-    const {data:shift} = await sb.from('shifts').select('cast_id').eq('id',id).single();
+    const {data:shift} = await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',id)).maybeSingle();
     await sendPushNotification(shift.cast_id, 'シフトが却下されました❌', 'オーナーがあなたのシフトを却下しました。');
   } catch(e) { console.error('通知エラー',e); }
   loadOwnerCal()
@@ -5018,7 +5018,7 @@ async function saveShiftEdit(){
 async function deleteShift(){
   if(!confirm('このシフトを削除しますか？'))return
   // このシフトに紐づく予約のIDを取得
-  const{data:shiftRvs}=await sb.from('reservations').select('id').eq('shift_id',editShiftId)
+  const{data:shiftRvs}=await withStoreFilter(sb.from('reservations').select('id').eq('shift_id',editShiftId))
   if(shiftRvs&&shiftRvs.length){
     const rvIds=shiftRvs.map(r=>r.id)
     // 来店履歴から対応レコードを削除
@@ -5105,9 +5105,9 @@ async function loadToday(){
   const shiftIds=shifts.map(s=>s.id)
   const castIds=[...new Set(shifts.map(s=>s.cast_id))]
   const[rvsRes,feesRes,worksRes]=await Promise.all([
-    shiftIds.length?sb.from('reservations').select('*').in('shift_id',shiftIds).order('checkin_time'):Promise.resolve({data:[]}),
-    castIds.length?sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIds):Promise.resolve({data:[]}),
-    castIds.length?sb.from('works').select('cast_id').eq('date',td).in('cast_id',castIds):Promise.resolve({data:[]})
+    shiftIds.length?withStoreFilter(sb.from('reservations').select('*').in('shift_id',shiftIds).order('checkin_time')):Promise.resolve({data:[]}),
+    castIds.length?withStoreFilter(sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIds)):Promise.resolve({data:[]}),
+    castIds.length?withStoreFilter(sb.from('works').select('cast_id').eq('date',td).in('cast_id',castIds)):Promise.resolve({data:[]})
   ])
   let rvByShift2={}
   const rvs2=rvsRes.data||[]
@@ -5341,14 +5341,14 @@ async function loadGanttModal(){
   const castIds=[...new Set((rawShifts||[]).map(s=>s.cast_id).filter(Boolean))]
   let castNameMap={}
   if(castIds.length){
-    const{data:cr}=await sb.from('casts').select('id,name').in('id',castIds)
+    const{data:cr}=await withStoreFilter(sb.from('casts').select('id,name').in('id',castIds))
     if(cr) cr.forEach(c=>{castNameMap[c.id]=c.name})
   }
   const allShifts=(rawShifts||[]).map(s=>({...s,casts:{name:castNameMap[s.cast_id]||'?'}}))
   const targetShifts=allShifts.filter(s=>norm(s.room)===targetRoom)
 
   const{data:allRvs_raw}=targetShifts.length
-    ?await sb.from('reservations').select('*').in('shift_id',targetShifts.map(s=>s.id)).order('checkin_time')
+    ?await withStoreFilter(sb.from('reservations').select('*').in('shift_id',targetShifts.map(s=>s.id)).order('checkin_time'))
     :{data:[]}
   const allRvs=sortRvsByTime(allRvs_raw)
   const rvByShift={}
@@ -5424,7 +5424,7 @@ async function loadGanttModal(){
   const castIdsMod=[...new Set(targetShifts.map(s=>s.cast_id).filter(Boolean))]
   let intervalBycastMod={}
   if(castIdsMod.length){
-    const{data:feesMod}=await sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsMod)
+    const{data:feesMod}=await withStoreFilter(sb.from('cast_fees').select('cast_id,interval_min').in('cast_id',castIdsMod))
     if(feesMod) feesMod.forEach(f=>{intervalBycastMod[f.cast_id]=f.interval_min||0})
   }
   const timeStrToMinM=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h<11?h*60+m+1440:h*60+m}
@@ -5593,26 +5593,26 @@ async function openWorkSheet(shiftId,castName,date,castId){
   sheetCastId=castId;sheetCastName=castName;sheetDate=date
   document.getElementById('work-title').textContent=castName+' の委託金入力'
   document.getElementById('work-info').textContent=jpDate(date)
-  const{data:fee}=await sb.from('cast_fees').select('*').eq('cast_id',castId).single()
+  const{data:fee}=await withStoreFilter(sb.from('cast_fees').select('*').eq('cast_id',castId)).maybeSingle()
   sheetFee=fee?{...DEFAULT_FEE,...fee}:{...DEFAULT_FEE}
   // 体験出勤日数をカウント（入店日以降の承認済みシフト日数）
   trialWorkDays=0
   const trialDaysSet=sheetFee.trial_days||0
   if(trialDaysSet&&sheetFee.joined_at){
-    const{data:trialShifts}=await sb.from('shifts').select('date').eq('cast_id',castId).eq('status','approved').gte('date',sheetFee.joined_at).lte('date',date)
+    const{data:trialShifts}=await withStoreFilter(sb.from('shifts').select('date').eq('cast_id',castId).eq('status','approved').gte('date',sheetFee.joined_at).lte('date',date))
     trialWorkDays=(trialShifts||[]).length
   }
   // 体験期間バナー表示
   const trialBanner=document.getElementById('trial-banner')
   if(trialBanner) trialBanner.style.display=isTrialPeriod()?'block':'none'
   // 店舗共通割引をcast_feesのdisc_typesで上書きしてsheetDiscsを構築
-  const{data:storeDiscs}=await sb.from('cast_discounts').select('*').eq('cast_id',0).order('sort_order')
+  const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*').eq('cast_id',0).order('sort_order'))
   const discTypes=sheetFee.disc_types||{}
   sheetDiscs=(storeDiscs||[]).map(d=>({
     ...d,
     disc_type:discTypes[d.name]||'back'
   }))
-  const{data:w}=await sb.from('works').select('*').eq('cast_id',castId).eq('date',date).single()
+  const{data:w}=await withStoreFilter(sb.from('works').select('*').eq('cast_id',castId).eq('date',date)).maybeSingle()
   document.getElementById('session-list').innerHTML=''
   if(document.getElementById('w-hosho')) document.getElementById('w-hosho').value='0'
   // 雑費の自動計算設定
@@ -5632,7 +5632,7 @@ async function openWorkSheet(shiftId,castName,date,castId){
     })
   } else {
     // 予約データから自動生成
-    const{data:rvs}=await sb.from('reservations').select('*').eq('shift_id',shiftId).order('checkin_time')
+    const{data:rvs}=await withStoreFilter(sb.from('reservations').select('*').eq('shift_id',shiftId).order('checkin_time'))
     if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
     if(rvs&&rvs.length){
       // 入室時間順にソートして1本目から割り当て
@@ -6236,7 +6236,7 @@ async function saveWork(){
   const payload={cast_id:sheetCastId,date:sheetDate,sessions,sales:totalSales,back:totalBack,count:totalCount,misc,net,shop_drop:shopDrop,details:sessions.map(s=>({course_id:s.course_id,name:s.course_name,count:1,sales:s.sales,back:s.course_back}))}
   // hoshoがある場合はsessionsのメタ情報として保存（works.hoshoカラムがあれば別途試みる）
   if(hoshoSave>0) payload.hosho=hoshoSave
-  const{data:ex}=await sb.from('works').select('id').eq('cast_id',sheetCastId).eq('date',sheetDate).single()
+  const{data:ex}=await withStoreFilter(sb.from('works').select('id').eq('cast_id',sheetCastId).eq('date',sheetDate)).maybeSingle()
   let err
   if(ex){const r=await sb.from('works').update(payload).eq('id',ex.id);err=r.error}
   else{const r=await sb.from('works').insert(withStoreId(payload));err=r.error}
@@ -6267,7 +6267,7 @@ async function loadCastMgmt(){
   const castIds=casts.map(c=>c.id)
   let joinedMap={}
   if(castIds.length){
-    const{data:fees}=await sb.from('cast_fees').select('cast_id,joined_at').in('cast_id',castIds)
+    const{data:fees}=await withStoreFilter(sb.from('cast_fees').select('cast_id,joined_at').in('cast_id',castIds))
     if(fees) fees.forEach(f=>{joinedMap[f.cast_id]=f.joined_at||null})
   }
   const now=new Date()
@@ -6343,11 +6343,11 @@ async function addCast(){
   const err=document.getElementById('cast-add-err')
   if(!name){err.textContent='名前を入力してください';return}
   if(pin.length<1||pin.length>8||!/^\d+$/.test(pin)){err.textContent='PINは1〜8桁の数字で入力してください';return}
-  const{data:maxData}=await sb.from('casts').select('sort_order').order('sort_order',{ascending:false}).limit(1)
+  const{data:maxData}=await withStoreFilter(sb.from('casts').select('sort_order').order('sort_order',{ascending:false}).limit(1))
   const nextOrder=((maxData||[])[0]?.sort_order||0)+1
   const{error}=await sb.from('casts').insert(withStoreId({name,pin,sort_order:nextOrder,active:true}))
   if(error){err.textContent='エラー：'+error.message;return}
-  const{data:newCast}=await sb.from('casts').select('id').eq('name',name).order('id',{ascending:false}).limit(1)
+  const{data:newCast}=await withStoreFilter(sb.from('casts').select('id').eq('name',name).order('id',{ascending:false}).limit(1))
   if(newCast&&newCast[0]){
     await sb.from('cast_fees').insert(withStoreId({cast_id:newCast[0].id,back_50:DEFAULT_FEE.back_50,back_80:DEFAULT_FEE.back_80,back_100:DEFAULT_FEE.back_100,back_130:DEFAULT_FEE.back_130,back_ext30:DEFAULT_FEE.back_ext30,shimei_free:DEFAULT_FEE.shimei_free,shimei_net:DEFAULT_FEE.shimei_net,shimei_hon:DEFAULT_FEE.shimei_hon,op_gokueki:DEFAULT_FEE.op_gokueki,op_isho:DEFAULT_FEE.op_isho,op_isho2:DEFAULT_FEE.op_isho2}))
   }
@@ -6358,7 +6358,7 @@ async function addCast(){
 }
 
 async function changePIN(castId,name){
-  const{data:castData}=await sb.from('casts').select('pin').eq('id',castId).single()
+  const{data:castData}=await withStoreFilter(sb.from('casts').select('pin').eq('id',castId)).maybeSingle()
   const currentPin=castData?.pin||'未設定'
   const pin=prompt(name+'のPIN変更\n\n現在のPIN：'+currentPin+'\n\n新しいPIN（1〜8桁）を入力してください')
   if(pin===null)return
@@ -6386,7 +6386,7 @@ async function openFeeSheet(castId,name){
   feeCastId2=Number(castId)
   document.getElementById('fee-title').textContent=name+' の委託金設定'
   const castIdNum2=Number(castId)
-  const{data:fee}=await sb.from('cast_fees').select('*').eq('cast_id',castIdNum2).single()
+  const{data:fee}=await withStoreFilter(sb.from('cast_fees').select('*').eq('cast_id',castIdNum2)).maybeSingle()
   const f=fee||{}
   const extraCourse = f.extra_course_backs||{}
   const extraOp = f.extra_op_backs||{}
@@ -6483,9 +6483,9 @@ async function openFeeSheet(castId,name){
 
 async function renderFeeDiscList(){
   // 店舗共通割引を取得
-  const{data:storeDiscs}=await sb.from('cast_discounts').select('*').eq('cast_id',0).order('sort_order')
+  const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*').eq('cast_id',0).order('sort_order'))
   // このキャストのdisc_types設定を取得
-  const{data:fee}=await sb.from('cast_fees').select('disc_types').eq('cast_id',feeCastId2).single()
+  const{data:fee}=await withStoreFilter(sb.from('cast_fees').select('disc_types').eq('cast_id',feeCastId2)).maybeSingle()
   const discTypes=(fee?.disc_types)||{}
   const area=document.getElementById('fee-disc-list')
   if(!area) return
@@ -6577,7 +6577,7 @@ async function saveFee(){
   }
   console.log('[saveFee] castIdNum=',castIdNum,'op_isho=',dataToSave.op_isho,'dataToSave=',JSON.stringify(dataToSave))
   // まず既存レコード確認
-  const{data:existing,error:fetchErr}=await sb.from('cast_fees').select('id').eq('cast_id',castIdNum).maybeSingle()
+  const{data:existing,error:fetchErr}=await withStoreFilter(sb.from('cast_fees').select('id').eq('cast_id',castIdNum)).maybeSingle()
   console.log('[saveFee] existing=',existing,'fetchErr=',fetchErr)
   let saveError
   if(existing){
@@ -6596,7 +6596,7 @@ async function saveFee(){
     return
   }
   // 保存後DBから再読み込みして確認
-  const{data:saved,error:readErr}=await sb.from('cast_fees').select('*').eq('cast_id',castIdNum).single()
+  const{data:saved,error:readErr}=await withStoreFilter(sb.from('cast_fees').select('*').eq('cast_id',castIdNum)).maybeSingle()
   console.log('[saveFee] saved=',saved,'readErr=',readErr)
   if(saved){
     sheetFee={...DEFAULT_FEE,...saved}
@@ -6621,7 +6621,7 @@ async function openDiscSheet(castId,name){
 }
 
 async function renderDiscList(){
-  const{data:discs}=await sb.from('cast_discounts').select('*').eq('cast_id',discCastId2).order('sort_order')
+  const{data:discs}=await withStoreFilter(sb.from('cast_discounts').select('*').eq('cast_id',discCastId2).order('sort_order'))
   const area=document.getElementById('disc-list')
   if(!area)return
   area.innerHTML=(discs||[]).map(d=>`
@@ -7025,7 +7025,7 @@ async function openShiftReservations(shiftId, castName){
   document.getElementById('shift-reservations-overlay').classList.add('on')
   const body = document.getElementById('shift-reservations-body')
   body.innerHTML = '<div class="spin">読み込み中...</div>'
-  const {data:rvs, error} = await sb.from('reservations').select('*').eq('shift_id', shiftId).order('checkin_time')
+  const {data:rvs, error} = await withStoreFilter(sb.from('reservations').select('*').eq('shift_id', shiftId).order('checkin_time'))
     if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   if(error){body.innerHTML='<div class="empty">取得エラー: '+escapeHtml(error.message)+'</div>';return}
   if(!rvs||!rvs.length){body.innerHTML='<div class="empty">予約はまだありません</div>';return}
@@ -7119,7 +7119,7 @@ async function openRvDetail(rvId, shiftId, castName){
   // ① 予約確認一覧シートを閉じる
   document.getElementById('shift-reservations-overlay').classList.remove('on')
 
-  const {data:r} = await sb.from('reservations').select('*').eq('id',rvId).single()
+  const {data:r} = await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
   if(!r){toast('予約データが見つかりません');return}
   const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
   const {data:optList} = await withStoreFilter(sb.from('options').select('*'))
@@ -7154,7 +7154,7 @@ async function openRvDetail(rvId, shiftId, castName){
   let memoHtml = ''
   let visitHtml = ''
   if(r.customer_no){
-    const {data:custData} = await sb.from('customers').select('id,name,memo').eq('customer_no',r.customer_no).single()
+    const {data:custData} = await withStoreFilter(sb.from('customers').select('id,name,memo').eq('customer_no',r.customer_no)).maybeSingle()
     if(custData){
       // 店舗メモ（顧客管理のメモ欄）
       if(custData.memo){
@@ -7282,7 +7282,7 @@ async function deleteRv(rvId){
 }
 
 async function openRvEdit(rvId){
-  const{data:r}=await sb.from('reservations').select('*').eq('id',rvId).single()
+  const{data:r}=await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
   if(!r){toast('予約データが見つかりません');return}
   const{data:courseList}=await withStoreFilter(sb.from('courses').select('*')).order('price')
   const{data:optList}=await withStoreFilter(sb.from('options').select('*')).order('name')
@@ -7525,7 +7525,7 @@ async function loadCastMemoPage(){
   const {data:shifts} = await withStoreFilter(sb.from('shifts').select('id')).eq('cast_id', me.id).eq('date', td).eq('status','approved')
   if(!shifts||!shifts.length){area.innerHTML='<div style="font-size:.8rem;color:var(--text3);margin-bottom:.5rem">本日のシフトがありません</div>';return}
   const sids = shifts.map(s=>s.id)
-  const {data:rvs} = await sb.from('reservations').select('*').in('shift_id', sids).order('checkin_time')
+  const {data:rvs} = await withStoreFilter(sb.from('reservations').select('*').in('shift_id', sids).order('checkin_time'))
     if(rvs) rvs.sort((a,b)=>(timeStrToMin2(a.checkin_time?.slice(0,5))??9999)-(timeStrToMin2(b.checkin_time?.slice(0,5))??9999));
   if(!rvs||!rvs.length){area.innerHTML='<div style="font-size:.8rem;color:var(--text3);margin-bottom:.5rem">本日の予約はありません</div>';return}
   area.innerHTML = `<div class="sec" style="margin-top:0">本日の予約（${rvs.length}件）</div>`
@@ -7631,7 +7631,7 @@ async function openCastMemoForReservation(customerNo, customerName){
   const c = castMemoAllCustomers.find(x=>Number(x.customer_no)===Number(customerNo))
   if(!c){
     // まだ読み込まれていない場合はDBから取得
-    const {data} = await sb.from('customers').select('id,name,customer_no').eq('customer_no',customerNo).single()
+    const {data} = await withStoreFilter(sb.from('customers').select('id,name,customer_no').eq('customer_no',customerNo)).maybeSingle()
     if(!data){toast('顧客が見つかりません');return}
     castMemoCustomerId = data.id
   } else {
@@ -7666,7 +7666,7 @@ async function renderCastMemoLog(){
   const body = document.getElementById('cast-memo-log-body')
   body.innerHTML = '<div class="spin">読み込み中...</div>'
   // cast_nameで自分のメモを取得
-  const {data:castInfo} = await sb.from('casts').select('name').eq('id',castMemoLogCastId).single()
+  const {data:castInfo} = await withStoreFilter(sb.from('casts').select('name').eq('id',castMemoLogCastId)).maybeSingle()
   const name = castInfo?.name||''
   const {data:memos} = await sb.from('customer_visits')
     .select('id,cast_memo,customer_id,created_at')
@@ -7681,7 +7681,7 @@ async function renderCastMemoLog(){
   const custIds=[...new Set(memos.map(x=>x.customer_id).filter(Boolean))]
   let custMap={}
   if(custIds.length){
-    const {data:custs}=await sb.from('customers').select('id,name,customer_no').in('id',custIds)
+    const {data:custs}=await withStoreFilter(sb.from('customers').select('id,name,customer_no').in('id',custIds))
     if(custs) custs.forEach(c=>{custMap[c.id]={name:c.name,no:c.customer_no}})
   }
   body.innerHTML = memos.map(m=>{
@@ -7752,7 +7752,7 @@ async function renderMonthlyContent(){
   const {data:shiftsRaw}=await withStoreFilter(sb.from('shifts').select('id,cast_id,date,status')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   let rvs=[]
   if(shiftsRaw&&shiftsRaw.length){
-    const {data:rvsRaw}=await sb.from('reservations').select('*').in('shift_id',shiftsRaw.map(s=>s.id))
+    const {data:rvsRaw}=await withStoreFilter(sb.from('reservations').select('*').in('shift_id',shiftsRaw.map(s=>s.id)))
     rvs=rvsRaw||[]
   }
   const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).single()
