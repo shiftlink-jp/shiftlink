@@ -768,6 +768,40 @@ nav a.nav-link:hover { color: var(--white); }
   margin-bottom: 36px;
 }
 
+/* ========== MID CTA ========== */
+.section-mid-cta {
+  background: #FFF7ED;
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+  padding: 48px 24px;
+  text-align: center;
+}
+.section-mid-cta p {
+  font-size: 15px;
+  color: var(--sub);
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+.pricing-plan-for {
+  font-size: 12px;
+  color: var(--sub);
+  margin: 0 0 14px;
+  padding: 6px 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--sub);
+  margin-top: 20px;
+}
+.security-note .material-icons { font-size: 16px; color: #6B7280; }
+
 /* ========== FOOTER ========== */
 footer {
   background: #111;
@@ -1218,25 +1252,36 @@ footer {
   </div>
 </section>
 
+<!-- MID CTA (features → pricing) -->
+<div class="section-mid-cta">
+  <p>まずは無料で試してみませんか？<br>14日間、全機能をクレジットカードなしで使えます。</p>
+  <a class="btn-primary" href="https://app.shiftlink.jp/?saas=1">
+    <span class="material-icons" style="font-size:18px">rocket_launch</span>
+    無料トライアルを始める
+  </a>
+</div>
+
 <!-- PRICING -->
 <section class="section section-pricing" id="pricing">
   <div class="inner">
     <p class="section-label">Pricing</p>
     <h2 class="section-title" style="text-align:center">シンプルな料金体系</h2>
     <p class="section-desc" style="margin: 0 auto; text-align:center">全プラン14日間無料トライアル付き。クレジットカード不要。</p>
+    <p class="security-note"><span class="material-icons">lock</span>顧客データはクラウドに暗号化して保存。外部への提供は一切行いません。</p>
     <div class="pricing-grid">
 
       <div class="pricing-card">
         <div class="pricing-plan-name">ライト</div>
         <div class="pricing-price"><small>¥</small>9,800<small>/月</small></div>
         <div class="pricing-price-sub">税込 · いつでも解約可</div>
+        <p class="pricing-plan-for">セラピスト5名以下の小規模店舗・開業直後の店舗に</p>
         <ul class="pricing-features">
           <li><span class="material-icons">check_circle</span>セラピスト5名まで</li>
           <li><span class="material-icons">check_circle</span>シフト・予約管理</li>
           <li><span class="material-icons">check_circle</span>委託金自動計算</li>
           <li><span class="material-icons">check_circle</span>売上集計（基本）</li>
         </ul>
-        <a class="btn-pricing" href="https://app.shiftlink.jp/?saas=1">無料で試す</a>
+        <a class="btn-pricing" href="https://app.shiftlink.jp/?saas=1">14日間 無料で試す</a>
       </div>
 
       <div class="pricing-card recommended">
@@ -1244,6 +1289,7 @@ footer {
         <div class="pricing-plan-name">スタンダード</div>
         <div class="pricing-price" style="color:var(--orange)"><small>¥</small>20,000<small>/月</small></div>
         <div class="pricing-price-sub">税込 · いつでも解約可</div>
+        <p class="pricing-plan-for">セラピスト6〜15名・通知機能や顧客管理もフル活用したい店舗に</p>
         <ul class="pricing-features">
           <li><span class="material-icons">check_circle</span>セラピスト15名まで</li>
           <li><span class="material-icons">check_circle</span>全機能利用可</li>
@@ -1251,13 +1297,14 @@ footer {
           <li><span class="material-icons">check_circle</span>Push通知</li>
           <li><span class="material-icons">check_circle</span>売上詳細分析</li>
         </ul>
-        <a class="btn-pricing primary" href="https://app.shiftlink.jp/?saas=1">無料で試す</a>
+        <a class="btn-pricing primary" href="https://app.shiftlink.jp/?saas=1">14日間 無料で試す</a>
       </div>
 
       <div class="pricing-card">
         <div class="pricing-plan-name">プロ</div>
         <div class="pricing-price"><small>¥</small>35,000<small>/月</small></div>
         <div class="pricing-price-sub">税込 · いつでも解約可</div>
+        <p class="pricing-plan-for">複数店舗を運営・セラピストが多い大型店舗に</p>
         <ul class="pricing-features">
           <li><span class="material-icons">check_circle</span>人数無制限</li>
           <li><span class="material-icons">check_circle</span>複数店舗対応</li>
@@ -1265,7 +1312,7 @@ footer {
           <li><span class="material-icons">check_circle</span>優先サポート</li>
           <li><span class="material-icons">check_circle</span>カスタム設定</li>
         </ul>
-        <a class="btn-pricing" href="https://app.shiftlink.jp/?saas=1">無料で試す</a>
+        <a class="btn-pricing" href="https://app.shiftlink.jp/?saas=1">14日間 無料で試す</a>
       </div>
 
     </div>
@@ -1306,6 +1353,17 @@ footer {
         <button class="faq-q">プランの途中変更は可能ですか？<span class="material-icons">expand_more</span></button>
         <div class="faq-a">可能です。店舗の規模に合わせていつでもプランをアップグレード・ダウングレードできます。変更は次回更新日から適用されます。</div>
       </div>
+      <div class="faq-item">
+        <button class="faq-q">メンズエステ以外の業種でも使えますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">ShiftLinkはメンズエステ店舗専用に設計・開発されています。委託金計算やセラピスト管理など、メンズエステの業務フローに特化した機能が揃っています。他業種での動作は保証しておりません。</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:40px">
+      <p style="font-size:14px;color:var(--sub);margin-bottom:16px">まだ迷っていますか？まずは無料で試してみてください。</p>
+      <a class="btn-primary" href="https://app.shiftlink.jp/?saas=1">
+        <span class="material-icons" style="font-size:18px">rocket_launch</span>
+        14日間 無料トライアルを始める
+      </a>
     </div>
   </div>
 </section>
