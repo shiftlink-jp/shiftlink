@@ -6742,8 +6742,8 @@ async function deleteWork(id){
 
 // ── 店舗料金設定 ──
 async function loadGlobalData(){
-  const{data:cs}=await sb.from('courses').select('*').order('price')
-  const{data:op}=await sb.from('options').select('*').order('id')
+  const{data:cs}=await withStoreFilter(sb.from('courses').select('*')).order('price')
+  const{data:op}=await withStoreFilter(sb.from('options').select('*')).order('id')
   courses=cs||[]; opts=op||[]
   // キャスト予約入力のコース・オプション選択肢を更新
   refreshCourseOptSelects()
@@ -6774,7 +6774,7 @@ async function openStoreSettings(){
   await loadStoreDiscList()
   await renderStoreCourseList()
   await renderStoreOptionList()
-  const{data:ss}=await sb.from('store_settings').select('*').single()
+  const{data:ss}=await withStoreFilter(sb.from('store_settings').select('*')).maybeSingle()
   if(ss){
     const sfEl=document.getElementById('st-shimei-free');if(sfEl) sfEl.value=ss.shimei_free||0
     const snEl=document.getElementById('st-shimei-net');if(snEl) snEl.value=ss.shimei_net||1000
@@ -6789,7 +6789,7 @@ async function openStoreSettings(){
   }
   document.getElementById('store-overlay').classList.add('on')
   // DBから最新のPINを取得して表示
-  const{data:pinSs}=await sb.from('store_settings').select('owner_pin').eq('id',1).single()
+  const{data:pinSs}=await withStoreFilter(sb.from('store_settings').select('owner_pin')).maybeSingle()
   const latestPin = (pinSs&&pinSs.owner_pin) ? String(pinSs.owner_pin) : OWNER_PIN
   OWNER_PIN = latestPin
   const pinDisp = document.getElementById('current-owner-pin-display')
@@ -6797,7 +6797,7 @@ async function openStoreSettings(){
 }
 
 async function renderStoreCourseList(){
-  const{data:cs}=await sb.from('courses').select('*').order('price')
+  const{data:cs}=await withStoreFilter(sb.from('courses').select('*')).order('price')
   const el=document.getElementById('store-course-list')
   const extEl=document.getElementById('store-ext-list')
   if(!cs) return
@@ -6822,7 +6822,7 @@ async function renderStoreCourseList(){
 }
 
 async function renderStoreOptionList(){
-  const{data:ops}=await sb.from('options').select('*').order('id')
+  const{data:ops}=await withStoreFilter(sb.from('options').select('*')).order('id')
   const el=document.getElementById('store-option-list')
   if(!el||!ops) return
   el.innerHTML=ops.map(o=>`
