@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Claude Code の一時ファイル
+.claude/worktrees/
+
+# Supabase の一時ファイル
+supabase/.temp/
