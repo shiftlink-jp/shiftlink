@@ -1,0 +1,189 @@
+{
+  "date": "2026-05-23",
+  "kyoukano": {
+    "omise_24h_rank": 118,
+    "omotenashi_24h_rank": null,
+    "metrics": {
+      "check_count": 371,
+      "nikki_count": 4,
+      "news_count": 0,
+      "review_count": 4
+    }
+  },
+  "rankings": {
+    "omotenashi": [
+      {
+        "rank": 1,
+        "id": "32160",
+        "name": "ナチュラルリフレ",
+        "url": "https://estama.jp/shop/32160/"
+      },
+      {
+        "rank": 2,
+        "id": "34016",
+        "name": "SALON de -Cuore-｜マーメイド専門店",
+        "url": "https://estama.jp/shop/34016/"
+      },
+      {
+        "rank": 3,
+        "id": "43435",
+        "name": "愛ぃ撫 -アィ〜ブ-",
+        "url": "https://estama.jp/shop/43435/"
+      },
+      {
+        "rank": 4,
+        "id": "40742",
+        "name": "秘書の薫り",
+        "url": "https://estama.jp/shop/40742/"
+      },
+      {
+        "rank": 5,
+        "id": "39791",
+        "name": "",
+        "url": "https://estama.jp/shop/39791/"
+      },
+      {
+        "rank": 6,
+        "id": "31929",
+        "name": "Xフォローで毎月60分無料券が当たる！",
+        "url": "https://estama.jp/shop/31929/"
+      },
+      {
+        "rank": 7,
+        "id": "32246",
+        "name": "ベビードールSPA名古屋",
+        "url": "https://estama.jp/shop/32246/"
+      },
+      {
+        "rank": 8,
+        "id": "42820",
+        "name": "名古屋で1番❤厳選されたセラピストの超濃厚❤密着サービス❤",
+        "url": "https://estama.jp/shop/42820/"
+      },
+      {
+        "rank": 9,
+        "id": "32757",
+        "name": "Samantha-お疲れ様-で癒す場所。",
+        "url": "https://estama.jp/shop/32757/"
+      },
+      {
+        "rank": 10,
+        "id": "41836",
+        "name": "リアルなドキドキがそこにある",
+        "url": "https://estama.jp/shop/41836/"
+      }
+    ],
+    "omise": [
+      {
+        "rank": 1,
+        "id": "32160",
+        "name": "",
+        "url": "https://estama.jp/shop/32160/"
+      },
+      {
+        "rank": 2,
+        "id": "34016",
+        "name": "SALON de -Cuore-｜マーメイド専門店",
+        "url": "https://estama.jp/shop/34016/"
+      },
+      {
+        "rank": 3,
+        "id": "39810",
+        "name": "ノットガイル",
+        "url": "https://estama.jp/shop/39810/"
+      },
+      {
+        "rank": 4,
+        "id": "32962",
+        "name": "エミアス",
+        "url": "https://estama.jp/shop/32962/"
+      },
+      {
+        "rank": 5,
+        "id": "41721",
+        "name": "ウルトラ一宮",
+        "url": "https://estama.jp/shop/41721/"
+      },
+      {
+        "rank": 6,
+        "id": "38159",
+        "name": "Oil沼にハマってみてはいかがですか？💗",
+        "url": "https://estama.jp/shop/38159/"
+      },
+      {
+        "rank": 7,
+        "id": "41412",
+        "name": "💍超Sランク💍のセラピストさん集結❤️高級メンズエステ❤︎",
+        "url": "https://estama.jp/shop/41412/"
+      },
+      {
+        "rank": 8,
+        "id": "40442",
+        "name": "乃木坂なミセスたち",
+        "url": "https://estama.jp/shop/40442/"
+      },
+      {
+        "rank": 9,
+        "id": "50097",
+        "name": "冷えた心を、とろける癒しで満たします。",
+        "url": "https://estama.jp/shop/50097/"
+      },
+      {
+        "rank": 10,
+        "id": "38462",
+        "name": "ー プレミアムな空間で癒しの一時を ー",
+        "url": "https://estama.jp/shop/38462/"
+      }
+    ]
+  },
+  "competitor_metrics": {
+    "32160": {
+      "check_count": 2256,
+      "nikki_count": 0,
+      "news_count": 0,
+      "review_count": 439
+    },
+    "32962": {
+      "check_count": 1223,
+      "nikki_count": 0,
+      "news_count": 0,
+      "review_count": 313
+    },
+    "34016": {
+      "check_count": 3142,
+      "nikki_count": 151,
+      "news_count": 0,
+      "review_count": 72
+    },
+    "39791": {
+      "check_count": 1259,
+      "nikki_count": 0,
+      "news_count": 0,
+      "review_count": 47
+    },
+    "39810": {
+      "check_count": 1368,
+      "nikki_count": 0,
+      "news_count": 0,
+      "review_count": 31
+    },
+    "40742": {
+      "check_count": 1205,
+      "nikki_count": 36,
+      "news_count": 0,
+      "review_count": 36
+    },
+    "41721": {
+      "check_count": 1510,
+      "nikki_count": 0,
+      "news_count": 0,
+      "review_count": 72
+    },
+    "43435": {
+      "check_count": 3170,
+      "nikki_count": 54,
+      "news_count": 0,
+      "review_count": 107
+    }
+  }
+}

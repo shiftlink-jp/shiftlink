@@ -1,0 +1,67 @@
+{
+  "records": [
+    {
+      "date": "2026-05-15",
+      "omotenashi_24h": 31,
+      "omotenashi_week": 34,
+      "omise_24h": 130,
+      "omise_week": 41
+    },
+    {
+      "date": "2026-05-16",
+      "omotenashi_24h": 29,
+      "omotenashi_week": 32,
+      "omise_24h": 128,
+      "omise_week": 39
+    },
+    {
+      "date": "2026-05-17",
+      "omotenashi_24h": 27,
+      "omotenashi_week": 30,
+      "omise_24h": 125,
+      "omise_week": 37
+    },
+    {
+      "date": "2026-05-18",
+      "omotenashi_24h": 26,
+      "omotenashi_week": 28,
+      "omise_24h": 123,
+      "omise_week": 36
+    },
+    {
+      "date": "2026-05-19",
+      "omotenashi_24h": 25,
+      "omotenashi_week": 27,
+      "omise_24h": 121,
+      "omise_week": 35
+    },
+    {
+      "date": "2026-05-20",
+      "omotenashi_24h": 24,
+      "omotenashi_week": 26,
+      "omise_24h": 120,
+      "omise_week": 34
+    },
+    {
+      "date": "2026-05-21",
+      "omotenashi_24h": 24,
+      "omotenashi_week": 25,
+      "omise_24h": 118,
+      "omise_week": 32
+    },
+    {
+      "date": "2026-05-22",
+      "omotenashi_24h": 23,
+      "omotenashi_week": 25,
+      "omise_24h": 118,
+      "omise_week": 32
+    },
+    {
+      "date": "2026-05-23",
+      "omotenashi_24h": 23,
+      "omotenashi_week": 25,
+      "omise_24h": 118,
+      "omise_week": 32
+    }
+  ]
+}
