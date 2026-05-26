@@ -202,7 +202,7 @@ tr:last-child td{border-bottom:none}
 .sh-close{float:right;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;font-size:1rem;color:var(--text3);cursor:pointer;line-height:28px;text-align:center;margin-top:-.1rem}
 
 /* TOAST */
-.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(28,28,30,.9);color:#fff;font-size:.84rem;font-weight:500;padding:.55rem 1.2rem;border-radius:99px;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(28,28,30,.9);color:#fff;font-size:.84rem;font-weight:500;padding:.55rem 1.2rem;border-radius:99px;z-index:10000;transition:transform .3s;white-space:nowrap;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0)}
 .spin{text-align:center;color:var(--text3);font-size:.82rem;padding:2rem 0}
 .empty{text-align:center;color:var(--text3);font-size:.82rem;padding:2.5rem 0}
@@ -2851,7 +2851,7 @@ async function castOpenPayment(rvId) {
   if (existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'cast-pay-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-end;justify-content:center';
   modal.innerHTML = `<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:1.25rem 1.25rem 2rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
       <div style="font-weight:700;font-size:1rem">💳 支払い確認</div>
@@ -3079,11 +3079,13 @@ async function castAddOption(rvId, custName) {
     </div>`
   ).join('');
 
+  document.getElementById('cast-add-opt-sheet')?.remove()
   const sheet = document.createElement('div');
-  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end';
+  sheet.id = 'cast-add-opt-sheet'
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end';
   sheet.innerHTML = `
     <div style="background:white;width:100%;border-radius:20px 20px 0 0;padding:1.25rem;max-height:80vh;overflow-y:auto">
-      <div style="font-weight:700;font-size:1rem;margin-bottom:1rem">＋ 追加オプション（${custName}さん）</div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:1rem">＋ 追加オプション（${escapeHtml(custName)}さん）</div>
       ${optList}
       <div style="display:flex;gap:.75rem;margin-top:1rem">
         <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:.75rem;border:1.5px solid var(--border);border-radius:10px;background:white;font-weight:700;cursor:pointer">キャンセル</button>
@@ -3123,11 +3125,13 @@ async function castExtend(rvId, custName) {
   const { data: rv } = await sb.from('reservations').select('checkout_time, extension_count, payment').eq('id', rvId).single();
   if (!rv?.checkout_time) { toast('退室時刻が設定されていません'); return; }
 
+  document.getElementById('cast-extend-sheet')?.remove()
   const sheet = document.createElement('div');
-  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end';
+  sheet.id = 'cast-extend-sheet'
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end';
   sheet.innerHTML = `
     <div style="background:white;width:100%;border-radius:20px 20px 0 0;padding:1.25rem">
-      <div style="font-weight:700;font-size:1rem;margin-bottom:1rem">⏱ 延長（${custName}さん）</div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:1rem">⏱ 延長（${escapeHtml(custName)}さん）</div>
       <div style="margin-bottom:.75rem">
         <div style="font-size:.85rem;font-weight:600;margin-bottom:.4rem">延長時間（分）</div>
         <input type="number" id="ext-minutes" value="30" min="1" style="width:100%;padding:.6rem;border:1.5px solid var(--border);border-radius:var(--r);font-size:1rem;text-align:center;box-sizing:border-box" inputmode="numeric">
