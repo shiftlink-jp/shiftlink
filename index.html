@@ -290,7 +290,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v13';
+const SW_VER = 'v14';
 const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp';
 if("serviceWorker" in navigator && !_isSaaS){
   // 古いSWをすべて解除してから新しいSWを登録
@@ -5657,10 +5657,13 @@ async function openWorkSheet(shiftId,castName,date,castId){
   const autoMisc=sheetFee.misc_enabled!==false
   if(autoMisc) document.getElementById('w-misc').value=sheetFee.misc_0??0
   else document.getElementById('w-misc').value='0'
-  if(w&&w.sessions!==null&&w.sessions!==undefined){
-    // 保存済みデータがあればそれを使う（sessionsが空配列でもworksレコードがあれば予約自動生成しない）
+  // 保存済みのmisc/hoshoは常に復元（セッションは下の分岐で制御）
+  if(w){
     if(w.misc!=null) document.getElementById('w-misc').value=w.misc
     if(w.hosho!=null&&document.getElementById('w-hosho')) document.getElementById('w-hosho').value=w.hosho
+  }
+  if(!shiftId&&w&&w.sessions!==null&&w.sessions!==undefined){
+    // shiftIdがない（月次ページからの修正）→保存済みセッションを使う
     w.sessions.forEach(s=>{
       // extensionsからext_count/ext_paysを復元（保存済みデータ互換）
       const exts=s.extensions||[]
@@ -6292,7 +6295,8 @@ async function saveWork(){
   }
   // キャストへPush通知
   await sendPushNotification(sheetCastId, '委託金が入力されました💴', sheetDate+'の委託金が確定しました。');
-  toast('保存しました！');closeSheet('work')
+  closeSheet('work');toast('保存しました！')
+  loadToday()
 }
 
 // ── キャスト管理 ──
