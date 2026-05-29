@@ -6015,6 +6015,16 @@ function getOptPrice(name){
 
 function calcCardSurcharge(base){ return base>0?Math.round(base*0.1):0 }
 function calcCardFee(base){ return base>0?Math.floor(base*0.06)+80:0 }
+function workCardBreakdown(w){
+  let billed=0,base=0,fee=0
+  ;(w.sessions||[]).forEach(s=>{
+    const sb=(s.cardBase!=null?s.cardBase:(s.card_base!=null?s.card_base:(s.card||0)))
+    base+=sb
+    billed+=(s.card!=null?s.card:sb+calcCardSurcharge(sb))
+    fee+=(s.card_fee!=null?s.card_fee:calcCardFee(sb))
+  })
+  return {billed,base,fee,cash:(w.sales||0)-billed}
+}
 function calcTotal2(){
   let totalBack=0,totalSales=0,discFromBack=0,discFromShop=0,totalDisc=0,totalCardBase=0,totalCardFee=0,totalCardSurcharge=0
   const blocks=document.querySelectorAll('.session-block')
@@ -7877,9 +7887,8 @@ async function renderMonthlyContent(){
     const count=dayWorks.reduce((s,w)=>s+(w.count||0),0)
     const disc=dayWorks.reduce((s,w)=>s+((w.sessions||[]).reduce((s2,sess)=>s2+(sess.discounts||[]).reduce((a,dd)=>a+(dd.amount||0),0),0)),0)
     let card=0,cardBase=0,cash=0,cardFee=0,rvFree=0,rvNet=0,rvHon=0,newCount=0,repeatCount=0
-    const allSessHasCash=dayWorks.some(w=>(w.sessions||[]).some(s=>s.cash!=null))
-    if(allSessHasCash){
-      dayWorks.forEach(w=>{(w.sessions||[]).forEach(s=>{const sb=(s.cardBase||s.card||0);cash+=(s.cash||0);card+=(s.card||0);cardBase+=sb;cardFee+=(s.card_fee!=null?s.card_fee:calcCardFee(sb))})})
+    if(dayWorks.length){
+      dayWorks.forEach(w=>{const b=workCardBreakdown(w);cash+=b.cash;card+=b.billed;cardBase+=b.base;cardFee+=b.fee})
       dayRvs.forEach(r=>{if(r.shimei_type==='フリー')rvFree++;else if(r.shimei_type==='ネット指名')rvNet++;else if(r.shimei_type==='本指名')rvHon++;if(r.is_new)newCount++;else repeatCount++})
     } else {
       dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;cardFee+=calcCardFee(am.cardBase||0);if(am.shimei==='フリー')rvFree++;else if(am.shimei==='ネット指名')rvNet++;else if(am.shimei==='本指名')rvHon++;if(am.isNew)newCount++;else repeatCount++})
@@ -7887,15 +7896,8 @@ async function renderMonthlyContent(){
     const profit=gross_work-net
     // キャストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
     const castRows=dayWorks.map(w=>{
-      const dk=dateStr+'|'+w.cast_id
-      const wRvs=rvsByDateCast[dk]||[]
-      let wCash=0,wCard=0,wCardBase=0
-      const sessHasCash=(w.sessions||[]).some(s=>s.cash!=null)
-      if(sessHasCash){
-        ;(w.sessions||[]).forEach(s=>{wCash+=(s.cash||0);wCard+=(s.card||0);wCardBase+=(s.cardBase||s.card||0)})
-      } else {
-        wRvs.forEach(r=>{const am=calcRv(r);wCard+=am.card;wCardBase+=am.cardBase||0;wCash+=am.cash})
-      }
+      const b=workCardBreakdown(w)
+      const wCash=b.cash,wCard=b.billed,wCardBase=b.base
       const wNet=w.net||w.back||0
       const wDisc=(w.sessions||[]).reduce((s2,sess)=>s2+(sess.discounts||[]).reduce((a,dd)=>a+(dd.amount||0),0),0)
       const wSales=w.sales||0
