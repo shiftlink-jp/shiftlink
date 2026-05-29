@@ -6013,8 +6013,10 @@ function getOptPrice(name){
   return o?o.price||0:0
 }
 
+function calcCardSurcharge(base){ return base>0?Math.round(base*0.1):0 }
+function calcCardFee(base){ return base>0?Math.floor(base*0.06)+80:0 }
 function calcTotal2(){
-  let totalBack=0,totalSales=0,discFromBack=0,discFromShop=0,totalDisc=0,totalCardBase=0,totalCardFee=0
+  let totalBack=0,totalSales=0,discFromBack=0,discFromShop=0,totalDisc=0,totalCardBase=0,totalCardFee=0,totalCardSurcharge=0
   const blocks=document.querySelectorAll('.session-block')
   const sessionCount=blocks.length
   // 雑費の自動計算
@@ -6079,9 +6081,9 @@ function calcTotal2(){
     })
     cardBase+=extCardBase
     // カード手数料（6%+80円、カードがある場合のみ）
-    const blockCardFee=cardBase>0?Math.floor(cardBase*0.06)+80:0
+    const blockCardFee=calcCardFee(cardBase)
     // カード10%上乗せ分（お客様請求額への加算）
-    const cardSurcharge=cardBase>0?Math.round(cardBase*0.1):0
+    const cardSurcharge=calcCardSurcharge(cardBase)
     // 実際の売上（お客様請求）= 元売上 + カード10%上乗せ
     const blockSalesBase=coursePrice+shimeiPrice+optSale+extSale-blockDiscShop-blockDiscBack
     const blockSales=blockSalesBase+cardSurcharge
@@ -6089,6 +6091,7 @@ function calcTotal2(){
     totalSales+=blockSales
     totalBack+=blockBack
     totalCardBase+=cardBase
+    totalCardSurcharge+=cardSurcharge
     totalCardFee+=blockCardFee
     discFromBack+=blockDiscBack
     discFromShop+=blockDiscShop
@@ -6181,8 +6184,8 @@ function calcTotal2(){
   const totalDiscAll=discFromBack+discFromShop
   bd+=`<div class="sal-row"><span class="sal-rl">売上（お客様請求）</span><span class="sal-rv">${fmt(totalSales)}</span></div>`
   if(totalCardBase>0){
-    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--text3)">└ 現金</span><span class="sal-rv" style="font-size:.78rem">${fmt(totalSales-Math.round(totalCardBase*1.1))}</span></div>`
-    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--btx)">└ カード請求(10%込)</span><span class="sal-rv" style="font-size:.78rem;color:var(--btx)">${fmt(Math.round(totalCardBase*1.1))}</span></div>`
+    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--text3)">└ 現金</span><span class="sal-rv" style="font-size:.78rem">${fmt(totalSales-(totalCardBase+totalCardSurcharge))}</span></div>`
+    bd+=`<div class="sal-row" style="padding-left:.5rem"><span class="sal-rl" style="font-size:.72rem;color:var(--btx)">└ カード請求(10%込)</span><span class="sal-rv" style="font-size:.78rem;color:var(--btx)">${fmt(totalCardBase+totalCardSurcharge)}</span></div>`
   }
   if(totalDiscAll>0) bd+=`<div class="sal-row"><span class="sal-rl">└ 割引</span><span class="sal-rv neg">-${fmt(totalDiscAll)}</span></div>`
   bd+=`<div style="border-top:1px dashed var(--border);margin:.2rem 0"></div>`
@@ -6258,8 +6261,8 @@ async function saveWork(){
     if(payShimei==='カード') sesCardBase+=shimeiPrice
     options.forEach(o=>{if(o.pay==='カード') sesCardBase+=getOptPrice(o.name)})
     extensions.forEach((e,i)=>{if(e.pay==='カード') sesCardBase+=e.price})
-    const sesCardSurcharge=sesCardBase>0?Math.ceil(sesCardBase*0.1):0
-    const sesCardFee=sesCardBase>0?Math.floor(sesCardBase*0.06)+80:0
+    const sesCardSurcharge=calcCardSurcharge(sesCardBase)
+    const sesCardFee=calcCardFee(sesCardBase)
     const sessionSalesBase=(c.price||0)+shimeiPrice+optSaleTotal+extSaleTotal-discShop-discBack
     const sessionSales=sessionSalesBase+sesCardSurcharge
     const extBackTotalEff=ov['ext:back']!=null?ov['ext:back']:extBackTotal
@@ -7834,7 +7837,7 @@ async function renderMonthlyContent(){
       optCardBase=payOpt==='カード'?op:0
     }
     const cardBase=(payCourse==='カード'?cp:0)+(payShimei==='カード'?sp:0)+optCardBase+(payExt==='カード'?extTotal:0)
-    const card=cardBase>0?Math.round(cardBase*1.1):0
+    const card=cardBase+calcCardSurcharge(cardBase)
     return {total,card,cardBase,cash:total-cardBase,shimei:r.shimei_type||'フリー',isNew:!!(r.is_new===true||r.is_new==='true')}
   }
 
@@ -7873,15 +7876,14 @@ async function renderMonthlyContent(){
     const misc=dayWorks.reduce((s,w)=>s+(w.misc||0),0)
     const count=dayWorks.reduce((s,w)=>s+(w.count||0),0)
     const disc=dayWorks.reduce((s,w)=>s+((w.sessions||[]).reduce((s2,sess)=>s2+(sess.discounts||[]).reduce((a,dd)=>a+(dd.amount||0),0),0)),0)
-    let card=0,cardBase=0,cash=0,rvFree=0,rvNet=0,rvHon=0,newCount=0,repeatCount=0
+    let card=0,cardBase=0,cash=0,cardFee=0,rvFree=0,rvNet=0,rvHon=0,newCount=0,repeatCount=0
     const allSessHasCash=dayWorks.some(w=>(w.sessions||[]).some(s=>s.cash!=null))
     if(allSessHasCash){
-      dayWorks.forEach(w=>{(w.sessions||[]).forEach(s=>{cash+=(s.cash||0);card+=(s.card||0);cardBase+=(s.cardBase||s.card||0)})})
+      dayWorks.forEach(w=>{(w.sessions||[]).forEach(s=>{const sb=(s.cardBase||s.card||0);cash+=(s.cash||0);card+=(s.card||0);cardBase+=sb;cardFee+=(s.card_fee!=null?s.card_fee:calcCardFee(sb))})})
       dayRvs.forEach(r=>{if(r.shimei_type==='フリー')rvFree++;else if(r.shimei_type==='ネット指名')rvNet++;else if(r.shimei_type==='本指名')rvHon++;if(r.is_new)newCount++;else repeatCount++})
     } else {
-      dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;if(am.shimei==='フリー')rvFree++;else if(am.shimei==='ネット指名')rvNet++;else if(am.shimei==='本指名')rvHon++;if(am.isNew)newCount++;else repeatCount++})
+      dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;cardFee+=calcCardFee(am.cardBase||0);if(am.shimei==='フリー')rvFree++;else if(am.shimei==='ネット指名')rvNet++;else if(am.shimei==='本指名')rvHon++;if(am.isNew)newCount++;else repeatCount++})
     }
-    const cardFee=cardBase>0?Math.floor(cardBase*0.06)+80:0
     const profit=gross_work-net
     // キャストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
     const castRows=dayWorks.map(w=>{
