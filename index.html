@@ -1405,9 +1405,33 @@ async function initPinAuth(){
       await sb.auth.signOut()  // メンバー不整合 → ログインし直し
     }
   }catch(e){ console.error('[pinauth] restore error', e) }
-  // 未ログイン → ログイン選択画面
+  // 未ログイン → ログイン選択画面＋キャスト一覧描画
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-top').classList.add('on')
+  await renderPinCastPicker()
+}
+// ログイン前のキャスト選択肢を list-store-casts（id+nameのみ）で描画
+async function renderPinCastPicker(){
+  let casts=[]
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({store_id:PIN_STORE_ID})
+    })
+    const j=await res.json().catch(()=>({}))
+    casts=Array.isArray(j.casts)?j.casts:[]
+  }catch(e){ console.error('[pinauth] cast list error', e) }
+  const sel=document.getElementById('cast-sel')
+  if(sel) sel.innerHTML='<option value="">選んでください</option>'+casts.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
+  const cardList=document.getElementById('cast-card-list')
+  if(cardList) cardList.innerHTML=casts.map(c=>`
+      <button type="button" onclick="selectCastCard(${c.id},'${jsEsc(c.name)}')"
+        style="background:rgba(255,255,255,0.82);border:1.5px solid var(--border);border-radius:14px;padding:.7rem .5rem;font-size:.88rem;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .18s;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.07)"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+        ${escapeHtml(c.name)}
+      </button>`).join('')
 }
 // ルーム情報はDBから読み込み（roomListグローバル変数）
 let roomList=[]
@@ -1771,6 +1795,8 @@ async function offerPasskeyRegistration(castId, castName){
 
 // ログインボタン押下時：生体認証が使えれば使う、なければPIN認証
 async function doOwnerLoginSmart(){
+  // PIN認証モードでは生体認証ショートカット（セッション未発行）を使わずPIN経路へ
+  if(PIN_AUTH_MODE) return doOwnerLogin()
   const pin = document.getElementById('owner-pin')?.value
   const localKey = 'passkey_registered_0'
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -1804,6 +1830,8 @@ async function doOwnerLoginSmart(){
 async function doCastLoginSmart(){
   const cid = document.getElementById('cast-sel').value
   if(!cid){ document.getElementById('cast-err').textContent='名前を選んでください'; return }
+  // PIN認証モードでは生体認証ショートカットを使わず、PIN入力時のみPIN経路へ
+  if(PIN_AUTH_MODE){ if(document.getElementById('cast-pin')?.value) doCastLogin(); return }
   const pin = document.getElementById('cast-pin')?.value
   const localKey = 'passkey_registered_' + cid
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -1904,6 +1932,20 @@ async function doCastLogin(){
   err.textContent=''
   if(!cid){err.textContent='名前を選んでください';return}
   if(pin.length<1||pin.length>8){err.textContent='PINは1〜8桁で入力してください';return}
+  // ── Phase2: PIN認証モード（サーバ側照合＋セッション発行） ──
+  if(PIN_AUTH_MODE){
+    const btn=document.getElementById('btn-cast')
+    btn.disabled=true; btn.textContent='確認中...'
+    try{
+      await pinLoginViaServer('cast', parseInt(cid), pin)
+      await loadStoreDataForPin()
+      const{data:c}=await sb.from('casts').select('*').eq('id',cid).maybeSingle()
+      me=c?{...c,is_owner:false}:{id:parseInt(cid),name:'キャスト',is_owner:false}
+      startApp()
+    }catch(e){ err.textContent=e.message||'PINが正しくありません' }
+    finally{ btn.disabled=false; btn.textContent='ログイン' }
+    return
+  }
   const btn=document.getElementById('btn-cast')
   btn.disabled=true; btn.textContent='確認中...'
   const{data:c,error}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid).eq('pin',pin)).maybeSingle()
