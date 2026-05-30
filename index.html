@@ -291,7 +291,7 @@ tr:last-child td{border-bottom:none}
 </style>
 <script>
 const SW_VER = 'v15';
-const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp';
+const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp');
 if("serviceWorker" in navigator && !_isSaaS){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -1286,8 +1286,8 @@ function makeOwnerTok(pin){
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SaaSモード判定: URLパラメータ ?saas=1 または app.shiftlink.jp からアクセス時
-const SAAS_MODE = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp'
+// SaaSモード判定: URLパラメータ ?saas=1 または shiftlink-app.jp / app.shiftlink.jp からアクセス時
+const SAAS_MODE = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp')
 
 // Supabase接続（SaaSモード時は開発用プロジェクト）
 const SUPABASE_URL = SAAS_MODE

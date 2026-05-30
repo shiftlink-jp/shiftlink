@@ -10,6 +10,8 @@ const INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET") ?? "";
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
   "https://app.shiftlink.jp",
+  "https://shiftlink-app.jp",
+  "https://www.shiftlink-app.jp",
 ];
 
 function corsHeaders(origin: string | null) {
