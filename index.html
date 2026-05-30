@@ -472,6 +472,47 @@ if("serviceWorker" in navigator && !_isSaaS){
   </div>
 </div>
 
+<!-- ===== ONBOARDING ===== -->
+<div class="screen" id="s-onboarding" style="align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(160deg,#fff8f0,#fff)">
+  <div style="max-width:400px;width:92%;background:#fff;border-radius:20px;padding:2rem 1.5rem;box-shadow:0 4px 24px rgba(0,0,0,.1)">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2.4rem">🎉</div>
+      <div style="font-size:1.2rem;font-weight:800;color:var(--text);margin-top:.5rem">ShiftLinkへようこそ！</div>
+      <div style="font-size:.8rem;color:var(--text3);margin-top:.4rem;line-height:1.6">最初に店舗の基本設定をしましょう</div>
+    </div>
+    <!-- ステップ表示 -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;margin-bottom:1.5rem">
+      <div id="ob-step-1" style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">1</div>
+      <div style="width:30px;height:2px;background:#e5e7eb"></div>
+      <div id="ob-step-2" style="width:28px;height:28px;border-radius:50%;background:#e5e7eb;color:#9ca3af;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">2</div>
+      <div style="width:30px;height:2px;background:#e5e7eb"></div>
+      <div id="ob-step-3" style="width:28px;height:28px;border-radius:50%;background:#e5e7eb;color:#9ca3af;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">✓</div>
+    </div>
+    <!-- ステップ1: 店舗名確認 -->
+    <div id="ob-panel-1">
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:.75rem">📍 店舗名を確認してください</div>
+      <input class="linput" type="text" id="ob-store-name" placeholder="例: リラクゼーション○○" style="margin-bottom:.5rem">
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:1rem">アプリ内・通知・書類に表示されます</div>
+      <button class="btn-login" style="background:var(--accent)" onclick="obNext(1)">次へ →</button>
+    </div>
+    <!-- ステップ2: オーナーPIN設定 -->
+    <div id="ob-panel-2" style="display:none">
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:.75rem">🔐 オーナー用PINを設定してください</div>
+      <input class="linput" type="number" id="ob-owner-pin" placeholder="例: 1234（1〜8桁）" inputmode="numeric" style="margin-bottom:.5rem">
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:1rem">ログインや管理画面に使います。後から変更できます。</div>
+      <div class="lerr" id="ob-err" style="margin-bottom:.5rem"></div>
+      <button class="btn-login" style="background:var(--accent)" onclick="obNext(2)">次へ →</button>
+    </div>
+    <!-- ステップ3: 完了 -->
+    <div id="ob-panel-3" style="display:none;text-align:center">
+      <div style="font-size:3rem;margin-bottom:.75rem">✅</div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:.5rem">設定完了！</div>
+      <div style="font-size:.82rem;color:var(--text3);margin-bottom:1.5rem;line-height:1.6">シフト・予約・売上の管理を始めましょう。<br>いつでも管理画面から設定を変更できます。</div>
+      <button class="btn-login" style="background:var(--accent)" onclick="obFinish()">アプリを始める 🚀</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LOGIN TOP ===== -->
 <div class="screen login-wrap on" id="s-top">
   <div class="login-box">
@@ -1947,8 +1988,9 @@ async function doSaasSignup(){
     }catch(e){
       console.warn('Initial data setup failed (non-critical):', e)
     }
-    // 5. アプリ起動
-    await initSaasApp(authData.session)
+    // 5. オンボーディング → アプリ起動
+    currentStoreId=storeId
+    showOnboarding(authData.session, storeName)
   }catch(e){
     err.textContent=e.message.includes('duplicate')?'この店舗IDは既に使用されています':e.message
   }finally{
@@ -2064,6 +2106,47 @@ async function saasLogout(){
   currentStoreId=null
   sessionStorage.removeItem('shiftlink_me')
   location.reload()
+}
+
+let _obSession=null
+function showOnboarding(session, storeName){
+  _obSession=session
+  const el=document.getElementById('ob-store-name')
+  if(el) el.value=storeName||''
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  document.getElementById('s-onboarding').classList.add('on')
+}
+async function obNext(step){
+  const errEl=document.getElementById('ob-err')
+  if(errEl) errEl.textContent=''
+  if(step===1){
+    const name=(document.getElementById('ob-store-name')?.value||'').trim()
+    if(!name){if(errEl)errEl.textContent='店舗名を入力してください';return}
+    await withStoreFilter(sb.from('stores').update({name})).eq('id',currentStoreId).catch(()=>{})
+    storeSettings.store_name=name
+    document.getElementById('ob-panel-1').style.display='none'
+    document.getElementById('ob-panel-2').style.display='block'
+    document.getElementById('ob-step-1').style.background='#22c55e'
+    document.getElementById('ob-step-2').style.background='var(--accent)'
+    document.getElementById('ob-step-2').style.color='#fff'
+  } else if(step===2){
+    const pin=(document.getElementById('ob-owner-pin')?.value||'').trim()
+    if(!pin||pin.length<1||pin.length>8||!/^\d+$/.test(pin)){
+      if(errEl)errEl.textContent='PINは1〜8桁の数字で入力してください';return
+    }
+    await withStoreFilter(sb.from('store_settings').update({owner_pin:pin})).catch(()=>{})
+    OWNER_PIN=pin
+    document.getElementById('ob-panel-2').style.display='none'
+    document.getElementById('ob-panel-3').style.display='block'
+    document.getElementById('ob-step-2').style.background='#22c55e'
+    document.getElementById('ob-step-3').style.background='var(--accent)'
+    document.getElementById('ob-step-3').style.color='#fff'
+  }
+}
+async function obFinish(){
+  document.getElementById('s-onboarding').classList.remove('on')
+  if(_obSession) await initSaasApp(_obSession)
+  else startApp()
 }
 
 async function openBillingPortal(){
