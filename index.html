@@ -2723,7 +2723,7 @@ function selectDay(ds){
     document.getElementById('shift-req-title').textContent=dateStr
     document.getElementById('shift-req-body').innerHTML=`
       <div style="font-size:.92rem;font-weight:600;margin-bottom:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</div>
-      ${s.note?`<div style="font-size:.78rem;color:var(--text3);margin-bottom:.4rem">${s.note}</div>`:''}
+      ${s.note?`<div style="font-size:.78rem;color:var(--text3);margin-bottom:.4rem">${escapeHtml(s.note)}</div>`:''}
       <div class="tags">${stTag}${roomTag}</div>
       <div style="margin-top:.75rem">
         <button class="btn btn-gray btn-sm2" onclick="closeSheet('shift-req')">閉じる</button>
@@ -2833,7 +2833,7 @@ async function renderInlineShiftList(){
           <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
             <span style="font-size:.88rem;font-weight:700">${jpDate(s.date)}</span>
             <span style="font-size:.78rem;color:var(--text3)">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span>
-            ${s.note?`<span style="font-size:.72rem;color:var(--text3)">／ ${s.note}</span>`:''}
+            ${s.note?`<span style="font-size:.72rem;color:var(--text3)">／ ${escapeHtml(s.note)}</span>`:''}
           </div>
           <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem;align-items:center">${roomTag}${rvTag}</div>
           ${editBtn||rvBtn?`<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">${editBtn}${rvBtn}</div>`:''}
@@ -3843,8 +3843,8 @@ function renderCustomers(list){
     const banned=c.is_banned?'<span style="font-size:.65rem;background:#f44336;color:#fff;padding:1px 6px;border-radius:99px;margin-left:.4rem">出禁</span>':''
     html+=`<div class="item" onclick="openCustomerDetail(${c.id})">
       <div class="ib">
-        <div class="it">No.${c.customer_no}　${c.name}${banned}</div>
-        <div class="is">${c.phone||'電話番号未登録'}</div>
+        <div class="it">No.${c.customer_no}　${escapeHtml(c.name)}${banned}</div>
+        <div class="is">${escapeHtml(c.phone||'電話番号未登録')}</div>
       </div>
       <div class="ic">›</div>
     </div>`
@@ -3871,8 +3871,8 @@ async function openCustomerDetail(id){
   
   let html=`
     <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
-      <div><div class="fi-lbl">名前</div><input class="fi" id="edit-cust-name" value="${c.name}"></div>
-      <div><div class="fi-lbl">電話番号</div><input class="fi" id="edit-cust-phone" type="tel" value="${c.phone||''}" placeholder="090-0000-0000"></div>
+      <div><div class="fi-lbl">名前</div><input class="fi" id="edit-cust-name" value="${escapeHtml(c.name)}"></div>
+      <div><div class="fi-lbl">電話番号</div><input class="fi" id="edit-cust-phone" type="tel" value="${escapeHtml(c.phone||'')}" placeholder="090-0000-0000"></div>
       <div>
         <div class="fi-lbl">NGキャスト（複数選択可）</div>
         <div id="edit-cust-ng-wrap" style="display:flex;gap:.4rem;overflow-x:auto;padding:.4rem 0;-webkit-overflow-scrolling:touch;scrollbar-width:none">
@@ -3903,7 +3903,7 @@ async function openCustomerDetail(id){
           <button class="btn btn-red btn-xs" onclick="deleteVisit(${v.id},${id})" style="font-size:.6rem;padding:2px 6px">削除</button>
         </div>
         <div style="font-size:.78rem;color:var(--text3)">
-          ${v.cast_name&&v.cast_name!=='予約'?`<span style="color:var(--text);font-weight:600">${v.cast_name}</span> / `:''}${v.shimei_type||'フリー'} / ${v.course||''} ${v.options?'/ '+v.options:''}
+          ${v.cast_name&&v.cast_name!=='予約'?`<span style="color:var(--text);font-weight:600">${escapeHtml(v.cast_name)}</span> / `:''}${escapeHtml(v.shimei_type||'フリー')} / ${escapeHtml(v.course||'')} ${v.options?'/ '+escapeHtml(v.options):''}
         </div>
       </div>`
     })
@@ -4937,9 +4937,9 @@ async function loadOwnerCal(){
       const snote=(s.note||'').replace(/'/g,"\\'")
       html+=`<div id="pending-item-${sid}" style="padding:.4rem 0;border-bottom:1px solid var(--border)">
         <div style="margin-bottom:.3rem">
-          <span style="font-size:.88rem;font-weight:600">${s.casts?.name||'?'}</span>
+          <span style="font-size:.88rem;font-weight:600">${escapeHtml(s.casts?.name||'?')}</span>
           <span style="font-size:.72rem;color:var(--text3);margin-left:.4rem">${sstart}〜${send}</span>
-          ${s.note?`<div style="font-size:.7rem;color:var(--text3)">${s.note}</div>`:''}
+          ${s.note?`<div style="font-size:.7rem;color:var(--text3)">${escapeHtml(s.note)}</div>`:''}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-bottom:.4rem">
           <button class="btn btn-green btn-xs" onclick="approveShift(${sid})">✓ 承認</button>
@@ -5319,7 +5319,7 @@ async function loadToday(){
     html+=`<div class="item" style="flex-direction:column;align-items:stretch;gap:.55rem">
       <div class="ib">
         <div class="it">${s.casts?.name||'?'}${intervalDisplay}</div>
-        <div class="is">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}${s.note?' ／ '+s.note:''}</div>
+        <div class="is">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}${s.note?' ／ '+escapeHtml(s.note):''}</div>
         <div class="tags">${rt}${rvBadge}</div>
         ${rvListHtml}
       </div>
@@ -6470,11 +6470,11 @@ async function loadCastMgmt(){
       }
     }
     return `<div class="cast-row">
-      <div class="cast-nm">${c.name}${badge}<span style="font-size:.65rem;color:var(--text3);margin-left:.5rem;border:1px solid var(--border);border-radius:4px;padding:1px 5px">PIN: ${c.pin||'未設定'}</span></div>
+      <div class="cast-nm">${escapeHtml(c.name)}${badge}<span style="font-size:.65rem;color:var(--text3);margin-left:.5rem;border:1px solid var(--border);border-radius:4px;padding:1px 5px">PIN: ${escapeHtml(c.pin||'未設定')}</span></div>
       <div class="cast-btns">
-        <button class="btn btn-blue btn-xs" onclick="openFeeSheet(${c.id},'${c.name}')">委託金設定</button>
-        <button class="btn btn-gray btn-xs" onclick="changePIN(${c.id},'${c.name}')">PIN変更</button>
-        <button class="btn btn-purple btn-xs" onclick="openCastMemoLog(${c.id},'${c.name}')">メモ</button>
+        <button class="btn btn-blue btn-xs" onclick="openFeeSheet(${c.id},'${jsEsc(c.name)}')">委託金設定</button>
+        <button class="btn btn-gray btn-xs" onclick="changePIN(${c.id},'${jsEsc(c.name)}')">PIN変更</button>
+        <button class="btn btn-purple btn-xs" onclick="openCastMemoLog(${c.id},'${jsEsc(c.name)}')">メモ</button>
         <button class="btn btn-red btn-xs" onclick="toggleActive(${c.id},true)">退店</button>
       </div>
     </div>`
@@ -6489,10 +6489,10 @@ async function openInactiveSheet(){
   } else {
     area.innerHTML=casts.map(c=>`
       <div class="cast-row">
-        <div class="cast-nm">${c.name}</div>
+        <div class="cast-nm">${escapeHtml(c.name)}</div>
         <div class="cast-btns">
           <button class="btn btn-green btn-xs" onclick="toggleActive(${c.id},false);openInactiveSheet()">復帰</button>
-          <button class="btn btn-red btn-xs" onclick="deleteCast(${c.id},'${escapeHtml(c.name)}')">退店処理</button>
+          <button class="btn btn-red btn-xs" onclick="deleteCast(${c.id},'${jsEsc(c.name)}')">退店処理</button>
         </div>
       </div>`).join('')
   }
@@ -7353,7 +7353,7 @@ async function openRvDetail(rvId, shiftId, castName){
       if(custData.memo){
         memoHtml += `<div style="background:#fffde7;border:1px solid #ffe082;border-radius:8px;padding:.5rem .75rem;font-size:.82rem;margin-bottom:.3rem">
           <div style="font-size:.65rem;color:var(--text3);margin-bottom:.2rem">📋 店舗メモ</div>
-          ${custData.memo}
+          ${escapeHtml(custData.memo)}
         </div>`
       }
       // ③ 接客メモ（cast_memo）
@@ -7395,8 +7395,8 @@ async function openRvDetail(rvId, shiftId, castName){
           const dispDetail = [v.shimei_type,v.course,v.options].filter(Boolean).join(' / ')
           return `<div style="border-left:3px solid ${isMine?'var(--accent)':'var(--border)'};padding:.25rem .5rem;margin-bottom:.2rem;font-size:.78rem">
           <span style="font-weight:600">${v.visit_date||''}</span>
-          <span style="font-size:.65rem;color:${isMine?'var(--accent)':'var(--text3)'};margin-left:.3rem">${dispName}</span>
-          <div style="color:var(--text3);font-size:.72rem">${dispDetail}</div>
+          <span style="font-size:.65rem;color:${isMine?'var(--accent)':'var(--text3)'};margin-left:.3rem">${escapeHtml(dispName)}</span>
+          <div style="color:var(--text3);font-size:.72rem">${escapeHtml(dispDetail)}</div>
         </div>`
         }).join('')
       }
@@ -7437,7 +7437,7 @@ async function openRvDetail(rvId, shiftId, castName){
         ${opts.map(n=>{const pm=optPayMap[n]||payOpt;return`<div class="fee-row"><div class="fee-lbl">OP</div><div>${n} <span style="font-size:.72rem;color:${pm==='カード'?'var(--btx)':'var(--text3)'}">(${pm})</span></div></div>`}).join('')}
         ${extCount>0?`<div class="fee-row"><div class="fee-lbl">延長</div><div>${extCount}回（${fmt(extTotal)}） <span style="font-size:.72rem;color:${payExt==='カード'?'var(--btx)':'var(--text3)'}">(${payExt})</span></div></div>`:''}
         ${discs.length?`<div class="fee-row"><div class="fee-lbl">割引</div><div style="color:var(--rtx)">-${fmt(discTotal)}（${discs.join('・')}）</div></div>`:''}
-        ${r.note?`<div class="fee-row"><div class="fee-lbl">備考</div><div>${r.note}</div></div>`:''}
+        ${r.note?`<div class="fee-row"><div class="fee-lbl">備考</div><div>${escapeHtml(r.note)}</div></div>`:''}
       </div>
       ${memoHtml}
       ${visitHtml}
@@ -7779,7 +7779,7 @@ async function loadMyMemoLog(){
   castMemoAllCustomers.forEach(c=>{ custMap[c.id]=c })
   area.innerHTML = memos.map(m=>{
     const c = custMap[m.customer_id]
-    const custLabel = c ? `No.${c.customer_no}　${c.name}` : '顧客不明'
+    const custLabel = c ? `No.${c.customer_no}　${escapeHtml(c.name)}` : '顧客不明'
     const [,mm,dd] = (m.visit_date||'').split('-')
     const dateLabel = m.visit_date ? `${parseInt(mm)}月${parseInt(dd)}日` : ''
     return `<div style="padding:.55rem 0;border-bottom:1px solid var(--border)">
