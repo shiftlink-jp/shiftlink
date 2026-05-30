@@ -18,6 +18,7 @@ const ALLOWED_ORIGINS = [
   "https://app.shiftlink.jp",
   "http://localhost:3100",
   "http://localhost:3200",
+  "http://localhost:3300",
 ];
 
 function cors(origin: string | null) {
