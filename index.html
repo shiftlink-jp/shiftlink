@@ -1412,7 +1412,9 @@ async function initPinAuth(){
 }
 // ログイン前のキャスト選択肢を list-store-casts（id+nameのみ）で描画
 async function renderPinCastPicker(){
-  let casts=[]
+  const _cl0=document.getElementById('cast-card-list')
+  if(_cl0) _cl0.textContent='読み込み中...'
+  let casts=[], errMsg=''
   try{
     const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{
       method:'POST',
@@ -1420,8 +1422,9 @@ async function renderPinCastPicker(){
       body:JSON.stringify({store_id:PIN_STORE_ID})
     })
     const j=await res.json().catch(()=>({}))
+    if(!res.ok) errMsg='HTTP '+res.status+(j&&j.error?' '+j.error:'')
     casts=Array.isArray(j.casts)?j.casts:[]
-  }catch(e){ console.error('[pinauth] cast list error', e) }
+  }catch(e){ errMsg=String(e&&e.message||e); console.error('[pinauth] cast list error', e) }
   // XSS安全: innerHTML/onclick文字列を使わず createElement + addEventListener + textContent で構築
   const sel=document.getElementById('cast-sel')
   if(sel){
@@ -1437,6 +1440,12 @@ async function renderPinCastPicker(){
   const cardList=document.getElementById('cast-card-list')
   if(cardList){
     cardList.innerHTML=''
+    if(!casts.length){
+      const d=document.createElement('div')
+      d.style.cssText='grid-column:1/-1;color:var(--text3);font-size:.8rem;padding:.6rem;text-align:center'
+      d.textContent=errMsg?('読み込みエラー: '+errMsg):'在籍キャストがいません'
+      cardList.appendChild(d)
+    }
     casts.forEach(c=>{
       const id=Number(c.id)
       if(!Number.isFinite(id)) return
