@@ -1592,7 +1592,7 @@ function showLogin(type){
   const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   if(type==='top') document.getElementById('s-top').classList.add('on')
   else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); setTimeout(doOwnerLoginSmart, 500) }
-  else if(type==='cast') document.getElementById('s-cast-login').classList.add('on')
+  else if(type==='cast'){ document.getElementById('s-cast-login').classList.add('on'); if(PIN_AUTH_MODE) renderPinCastPicker() }
 }
 
 async function init(){
@@ -1814,8 +1814,8 @@ async function offerPasskeyRegistration(castId, castName){
 
 // ログインボタン押下時：生体認証が使えれば使う、なければPIN認証
 async function doOwnerLoginSmart(){
-  // PIN認証モードでは生体認証ショートカット（セッション未発行）を使わずPIN経路へ
-  if(PIN_AUTH_MODE) return doOwnerLogin()
+  // PIN認証モードでは生体認証ショートカットを使わず、PIN入力時のみPIN経路へ
+  if(PIN_AUTH_MODE){ if(document.getElementById('owner-pin')?.value) doOwnerLogin(); return }
   const pin = document.getElementById('owner-pin')?.value
   const localKey = 'passkey_registered_0'
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -2608,8 +2608,8 @@ async function registerOwnerPush(){
 }
 function doLogout(){
   me=null; myShifts=[]
-  // PIN認証モードは認証セッションも破棄
-  if(PIN_AUTH_MODE){ currentStoreId=null; sb.auth.signOut().catch(()=>{}) }
+  // PIN認証モードは認証セッションを破棄してリロード（状態を確実に初期化）
+  if(PIN_AUTH_MODE){ currentStoreId=null; sessionStorage.removeItem('shiftlink_tab'); sb.auth.signOut().finally(()=>location.reload()); return }
   sessionStorage.removeItem('shiftlink_me')
   sessionStorage.removeItem('shiftlink_tab')
   document.getElementById('owner-pin').value=''
