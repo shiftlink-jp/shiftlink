@@ -1299,6 +1299,13 @@ const SUPABASE_KEY = SAAS_MODE
 let OWNER_PIN = '' // DBまたはlocalStorageからロードされるまで認証不可
 // SaaS用グローバル変数
 let currentStoreId = null // ログイン後にセットされる
+// ── Phase2: PIN認証モード ──
+// ?pinauth=<store_id> で有効化（テスト用）。本番切替時は定数で設定する。
+// ONのとき、PINログインを pin-login 関数経由の認証セッションにする（anon遮断の前提）。
+// OFF（既定）は従来のanon方式（現行KYOUKANO本番）。
+const _pinAuthParam = new URLSearchParams(location.search).get('pinauth')
+const PIN_AUTH_MODE = !!_pinAuthParam
+let PIN_STORE_ID = _pinAuthParam || null
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -1346,14 +1353,61 @@ window.addEventListener('unhandledrejection',e=>{
 
 // SaaS用ヘルパー: INSERT時にstore_idを自動注入
 function withStoreId(payload){
-  if(!SAAS_MODE || !currentStoreId) return payload
+  // currentStoreId が立っていれば（SaaS でも PIN認証でも）store_id を付与
+  if(!currentStoreId) return payload
   if(Array.isArray(payload)) return payload.map(p=>({store_id:currentStoreId,...p}))
   return {store_id:currentStoreId,...payload}
 }
-// SaaS用ヘルパー: SELECTクエリにstore_idフィルタを自動付与
+// SELECTクエリにstore_idフィルタを自動付与（SaaS / PIN認証 共通）
 function withStoreFilter(q){
-  if(SAAS_MODE && currentStoreId) return q.eq('store_id',currentStoreId)
+  if(currentStoreId) return q.eq('store_id',currentStoreId)
   return q
+}
+
+// ── Phase2: PIN認証（pin-login関数経由で認証セッションを発行） ──
+// 認証後にstore-scopedなデータを読み込む（anon遮断後はこれが唯一の経路になる）
+async function loadStoreDataForPin(){
+  const{data:cs}=await sb.from('courses').select('*').eq('store_id',currentStoreId).order('price')
+  const{data:op}=await sb.from('options').select('*').eq('store_id',currentStoreId).order('id')
+  const{data:rm}=await sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order')
+  const{data:ss}=await sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
+  courses=cs||[]; opts=op||[]; roomList=rm||[]; storeSettings=ss||{}
+  if(ss&&ss.owner_pin) OWNER_PIN=String(ss.owner_pin)
+}
+// PINをサーバ側(pin-login)で照合してセッションを取得し、setSessionする
+async function pinLoginViaServer(role, castId, pin){
+  const res=await fetch(SUPABASE_URL+'/functions/v1/pin-login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body:JSON.stringify({store_id:PIN_STORE_ID, role, cast_id:castId||null, pin})
+  })
+  const j=await res.json().catch(()=>({}))
+  if(!res.ok) throw new Error(j.error||'ログインに失敗しました')
+  await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
+  currentStoreId=j.store_id
+  return j
+}
+// PIN認証モードの初期化（既存セッション復元 or ログイン画面表示）
+async function initPinAuth(){
+  try{
+    const{data:{session}}=await sb.auth.getSession()
+    if(session){
+      currentStoreId=PIN_STORE_ID
+      const{data:mem}=await sb.from('store_members').select('role,cast_id').eq('user_id',session.user.id).eq('store_id',PIN_STORE_ID).maybeSingle()
+      if(mem){
+        await loadStoreDataForPin()
+        if(mem.role==='owner'||mem.role==='manager'){ me={id:0,name:'店舗',is_owner:true}; startApp(); return }
+        if(mem.cast_id){
+          const{data:c}=await sb.from('casts').select('*').eq('id',mem.cast_id).maybeSingle()
+          if(c){ me={...c,is_owner:false}; startApp(); return }
+        }
+      }
+      await sb.auth.signOut()  // メンバー不整合 → ログインし直し
+    }
+  }catch(e){ console.error('[pinauth] restore error', e) }
+  // 未ログイン → ログイン選択画面
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  document.getElementById('s-top').classList.add('on')
 }
 // ルーム情報はDBから読み込み（roomListグローバル変数）
 let roomList=[]
@@ -1499,7 +1553,12 @@ function showLogin(type){
 }
 
 async function init(){
-  console.log('[init] SAAS_MODE=', SAAS_MODE)
+  console.log('[init] SAAS_MODE=', SAAS_MODE, 'PIN_AUTH_MODE=', PIN_AUTH_MODE)
+  // ── Phase2: PIN認証モード（pin-login経由） ──
+  if(PIN_AUTH_MODE){
+    await initPinAuth()
+    return
+  }
   // ── SaaSモード：Supabase Auth認証 ──
   if(SAAS_MODE){
     console.log('[init] SaaS path entered')
@@ -1780,6 +1839,19 @@ async function doOwnerLogin(){
   const err=document.getElementById('owner-err')
   err.textContent=''
   if(pin.length<1||pin.length>8){err.textContent='PINは1〜8桁で入力してください';return}
+  // ── Phase2: PIN認証モード（サーバ側照合＋セッション発行） ──
+  if(PIN_AUTH_MODE){
+    const btn=document.getElementById('btn-owner')
+    btn.disabled=true; btn.textContent='確認中...'
+    try{
+      await pinLoginViaServer('owner', null, pin)
+      await loadStoreDataForPin()
+      me={id:0,name:'店舗',is_owner:true}
+      startApp()
+    }catch(e){ err.textContent=e.message||'ログインに失敗しました' }
+    finally{ btn.disabled=false; btn.textContent='ログイン' }
+    return
+  }
   if(!OWNER_PIN){err.textContent='PINが設定されていません。管理者に連絡してください。';return}
   if(pin!==OWNER_PIN){err.textContent='PINが正しくありません';return}
   const btn=document.getElementById('btn-owner')
@@ -2475,6 +2547,8 @@ async function registerOwnerPush(){
 }
 function doLogout(){
   me=null; myShifts=[]
+  // PIN認証モードは認証セッションも破棄
+  if(PIN_AUTH_MODE){ currentStoreId=null; sb.auth.signOut().catch(()=>{}) }
   sessionStorage.removeItem('shiftlink_me')
   sessionStorage.removeItem('shiftlink_tab')
   document.getElementById('owner-pin').value=''
