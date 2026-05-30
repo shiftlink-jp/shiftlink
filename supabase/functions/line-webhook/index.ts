@@ -56,12 +56,16 @@ function getAutoReply(message: string): string | null {
 }
 
 serve(async (req) => {
+  const rawBody = await req.text()
+  const signature = req.headers.get('x-line-signature') ?? ''
+  // 署名検証は catch の外で実施（catchが200を返す＝フェイルオープンを防ぐ）。
+  // シークレット設定時のみ厳格に検証（未設定でも誤って全拒否しないための保険）。
+  if (CHANNEL_SECRET) {
+    let valid = false
+    try { valid = await verifySignature(rawBody, signature) } catch (_e) { valid = false }
+    if (!valid) return new Response('Unauthorized', { status: 401 })
+  }
   try {
-    const rawBody = await req.text()
-    const signature = req.headers.get('x-line-signature') ?? ''
-    if (!await verifySignature(rawBody, signature)) {
-      return new Response('Unauthorized', { status: 401 })
-    }
     const payload = JSON.parse(rawBody)
 
     for (const event of (payload.events || [])) {

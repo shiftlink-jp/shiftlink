@@ -6,6 +6,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!
+const INTERNAL_SECRET = Deno.env.get('PUSH_INTERNAL_SECRET') ?? ''
 
 async function sendLine(to: string, message: string) {
   await fetch('https://api.line.me/v2/bot/message/push', {
@@ -151,6 +152,15 @@ async function notifyUser(sb: any, castId: string, title: string, body: string, 
 }
 
 serve(async (req) => {
+  // 認証: 内部シークレット必須（公開anon鍵だけで叩けないようにする）
+  // 旧来の無認証では、誰でもキャストのLINE紐付け乗っ取り(顧客PII受信)や偽通知が可能だった
+  const internalSecret = req.headers.get('x-internal-secret')
+  if (!INTERNAL_SECRET || internalSecret !== INTERNAL_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const body = await req.json()
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
 
