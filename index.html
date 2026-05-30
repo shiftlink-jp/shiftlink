@@ -4419,11 +4419,11 @@ async function saveReservation(){
     const phone2=document.getElementById('rv-phone')?.value.trim()||''
     let nextNo=0, insertedCust=null, custErr=null
     for(let attempt=0;attempt<5;attempt++){
-      // DBから最新の最大値を取得（同時登録対策）
+      // DBから最新の最大値を取得（同時登録対策）: 衝突時は毎回最大値を取り直すため番号が飛ばない
       let q=sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
       if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
       const{data:last}=await q
-      nextNo=((last||[])[0]?.customer_no||0)+1+attempt
+      nextNo=((last||[])[0]?.customer_no||0)+1
       const r=await sb.from('customers').insert(withStoreId({
         customer_no:nextNo,
         name:custName2,
@@ -5864,7 +5864,7 @@ function addSession(data=null){
     const checked=data?.options?.some(x=>x.name===o.name)?'checked':''
     const optPay=optPaysData[o.name]||data?.pay_option||'現金'
     const disStyle=checked?'opacity:1;pointer-events:auto':'opacity:.4;pointer-events:none'
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
+    return `<div class="op-row" style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
       <label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;flex:1"><input type="checkbox" class="op-check" data-name="${o.name}" ${checked} onchange="toggleOptPayW(this);calcTotal2()" style="width:18px;height:18px;accent-color:var(--accent)"> ${o.name}</label>
       <select class="s-opt-pay" data-opt="${o.name}" onchange="calcTotal2()" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px;${disStyle}" ${checked?'':'disabled'}>
         <option value="現金" ${optPay==='現金'?'selected':''}>現金</option>
@@ -5919,7 +5919,7 @@ function addSession(data=null){
   calcTotal2()
 }
 function toggleOptPayW(chk){
-  const sel=chk.closest('div').querySelector('.s-opt-pay')
+  const sel=chk.closest('.op-row').querySelector('.s-opt-pay')
   if(!sel) return
   if(chk.checked){sel.disabled=false;sel.style.opacity='1';sel.style.pointerEvents='auto'}
   else{sel.disabled=true;sel.style.opacity='.4';sel.style.pointerEvents='none';sel.value='現金'}
@@ -6208,7 +6208,7 @@ function calcTotal2(){
     if(payCourse2==='カード') cardBase+=coursePrice-blockDiscShop  // 店落ち割引はカード元額から引く
     if(payShimei2==='カード') cardBase+=shimeiPrice
     block.querySelectorAll('.op-check:checked').forEach(cb=>{
-      const sel=cb.closest('div').querySelector('.s-opt-pay')
+      const sel=cb.closest('.op-row').querySelector('.s-opt-pay')
       if(sel?.value==='カード') cardBase+=getOptPrice(cb.dataset.name)
     })
     // 延長のカード
@@ -6357,7 +6357,7 @@ async function saveWork(){
     let optBack=0
     block.querySelectorAll('.op-check:checked').forEach(cb=>{
       const ob=ov['opt:'+cb.dataset.name+':back']!=null?ov['opt:'+cb.dataset.name+':back']:getOptBack2(cb.dataset.name)
-      const paySel=cb.closest('div').querySelector('.s-opt-pay')
+      const paySel=cb.closest('.op-row').querySelector('.s-opt-pay')
       const pay=paySel?.value||'現金'
       options.push({name:cb.dataset.name,back:ob,pay})
       optBack+=ob
