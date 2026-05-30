@@ -2770,11 +2770,11 @@ async function submitShift(){
     let err
     if(existing&&existing.status==='rejected'){
       // 却下済みシフトは削除してから再申請（RLSでUPDATE不可の場合があるため）
-      const{error:delErr}=await sb.from('shifts').delete().eq('id',existing.id)
+      const{error:delErr}=await withStoreFilter(sb.from('shifts').delete()).eq('id',existing.id)
       if(delErr){toast('保存エラー: '+(delErr.message||JSON.stringify(delErr)));return}
       const r=await sb.from('shifts').insert(withStoreId(payload));err=r.error
     } else if(existing){
-      const r=await sb.from('shifts').update(payload).eq('id',existing.id);err=r.error
+      const r=await withStoreFilter(sb.from('shifts').update(payload)).eq('id',existing.id);err=r.error
     } else {
       const r=await sb.from('shifts').insert(withStoreId(payload));err=r.error
     }
@@ -3228,7 +3228,7 @@ function castOpenMemoFromHist(custName){
 async function castRoomIn(rvId, custName, time) {
   if (!confirm(custName + 'さんが入室しますか？')) return;
   // DBに入室時刻を保存
-  await sb.from('reservations').update({ room_in_at: new Date().toISOString() }).eq('id', rvId);
+  await withStoreFilter(sb.from('reservations').update({ room_in_at: new Date().toISOString() })).eq('id', rvId);
   // オーナーに通知
   await sendPushNotification(0, 'お客様入室🚪', me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）');
   toast('入室通知を送りました');
@@ -3238,7 +3238,7 @@ async function castRoomIn(rvId, custName, time) {
 async function castRoomOut(rvId, custName, time) {
   if (!confirm(custName + 'さんが退室しますか？')) return;
   // DBに退室時刻を保存
-  await sb.from('reservations').update({ room_out_at: new Date().toISOString() }).eq('id', rvId);
+  await withStoreFilter(sb.from('reservations').update({ room_out_at: new Date().toISOString() })).eq('id', rvId);
   await sendPushNotification(0, 'お客様退室🚶', me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）');
   toast('退室通知を送りました');
   loadCastToday();
@@ -3289,7 +3289,7 @@ async function castAddOption(rvId, custName) {
     });
     // optPay内にカードがあればoption全体もカードに
     pj.option = Object.values(pj.optPay).includes('カード') ? 'カード' : '現金';
-    await sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) }).eq('id', rvId);
+    await withStoreFilter(sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) })).eq('id', rvId);
 
     // オーナーに通知
     await sendPushNotification(0, '追加OP🟣', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
@@ -3342,7 +3342,7 @@ async function castExtend(rvId, custName) {
     let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
     pj.ext = extPay;
 
-    await sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) }).eq('id', rvId);
+    await withStoreFilter(sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) })).eq('id', rvId);
 
     // オーナーに通知
     await sendPushNotification(0, '延長⏱', me.name + ' / ' + custName + 'さんが' + extMin + '分延長（〜' + newTime.slice(0,5) + '）');
@@ -3373,7 +3373,7 @@ async function saveCastShiftEdit(){
   const wasApproved=curShift?.status==='approved'
   const updatePayload={start_time:start, end_time:end, note}
   if(wasApproved) updatePayload.status='requested'
-  const{error} = await sb.from('shifts').update(updatePayload).eq('id', castShiftEditId)
+  const{error} = await withStoreFilter(sb.from('shifts').update(updatePayload)).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
   const notifyTitle=wasApproved?'シフト訂正（要再承認）📝':'シフト訂正📝'
@@ -3388,7 +3388,7 @@ async function saveCastShiftEdit(){
 
 async function deleteCastShift(){
   if(!confirm('このシフトを取消しますか？')) return
-  const{error} = await sb.from('shifts').delete().eq('id', castShiftEditId)
+  const{error} = await withStoreFilter(sb.from('shifts').delete()).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
   await sendPushNotification(0, 'シフト取消❌', me.name+'さんがシフトを取消しました');
@@ -3974,7 +3974,7 @@ async function saveCustomerEdit(id){
   const memo=document.getElementById('edit-cust-memo').value.trim()
   const bannedEl=document.getElementById('edit-cust-banned')
   const ban=bannedEl?bannedEl.value==='true':false
-  const{error}=await sb.from('customers').update({name,phone,ng_casts:ng,memo,is_banned:ban}).eq('id',id)
+  const{error}=await withStoreFilter(sb.from('customers').update({name,phone,ng_casts:ng,memo,is_banned:ban})).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('保存しました')
   await loadCustomers()
@@ -3985,9 +3985,9 @@ async function saveCustomerEdit(id){
 async function deleteCustomer(custId, name){
   if(!confirm(name+'さんのデータを完全に削除しますか？\n来店記録・メモも全て削除されます。\nこの操作は取り消せません。'))return
   // 来店記録を削除
-  await sb.from('customer_visits').delete().eq('customer_id',custId)
+  await withStoreFilter(sb.from('customer_visits').delete()).eq('customer_id',custId)
   // 顧客本体を削除
-  const{error}=await sb.from('customers').delete().eq('id',custId)
+  const{error}=await withStoreFilter(sb.from('customers').delete()).eq('id',custId)
   if(error){toast('削除エラー: '+error.message);return}
   toast(name+'さんのデータを削除しました')
   await loadCustomers()
@@ -3995,7 +3995,7 @@ async function deleteCustomer(custId, name){
 
 async function deleteVisit(visitId,custId){
   if(!confirm('この来店記録を削除しますか？'))return
-  const{error}=await sb.from('customer_visits').delete().eq('id',visitId)
+  const{error}=await withStoreFilter(sb.from('customer_visits').delete()).eq('id',visitId)
   if(error){toast('エラー: '+error.message);return}
   toast('削除しました')
   monthlyCachedData=null
@@ -4004,7 +4004,7 @@ async function deleteVisit(visitId,custId){
 
 async function deleteMemo(visitId,custId){
   if(!confirm('このメモを削除しますか？'))return
-  const{error}=await sb.from('customer_visits').update({cast_memo:null}).eq('id',visitId)
+  const{error}=await withStoreFilter(sb.from('customer_visits').update({cast_memo:null})).eq('id',visitId)
   if(error){toast('エラー: '+error.message);return}
   toast('削除しました')
   openCustomerDetail(custId)
@@ -4012,7 +4012,7 @@ async function deleteMemo(visitId,custId){
 
 async function toggleBan(id,ban){
   if(ban&&!confirm('出禁にしますか？')){return}
-  const{error}=await sb.from('customers').update({is_banned:ban}).eq('id',id)
+  const{error}=await withStoreFilter(sb.from('customers').update({is_banned:ban})).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast(ban?'出禁にしました':'出禁を解除しました')
   await loadCustomers()
@@ -5100,7 +5100,7 @@ function selectRoomTemp(shiftId, roomName){
 async function confirmRoomAssign(shiftId){
   const roomName = _tempRoomMap[shiftId]
   if(!roomName){toast('ルームを選択してください');return}
-  const{error}=await sb.from('shifts').update({status:'approved',room:roomName}).eq('id',shiftId)
+  const{error}=await withStoreFilter(sb.from('shifts').update({status:'approved',room:roomName})).eq('id',shiftId)
   if(error){toast('エラー: '+error.message);return}
   delete _tempRoomMap[shiftId]
   toast(roomName+'に振り分けました')
@@ -5122,7 +5122,7 @@ async function confirmRoomAssign(shiftId){
 }
 
 async function approveShift(id){
-  const{error}=await sb.from('shifts').update({status:'approved'}).eq('id',id);
+  const{error}=await withStoreFilter(sb.from('shifts').update({status:'approved'})).eq('id',id);
   if(error){toast('エラー: '+error.message);return}
   toast('承認しました');
   // Push通知送信
@@ -5134,7 +5134,7 @@ async function approveShift(id){
 }
 async function rejectShift(id){
   if(!confirm('却下しますか？'))return;
-  await sb.from('shifts').update({status:'rejected'}).eq('id',id);
+  await withStoreFilter(sb.from('shifts').update({status:'rejected'})).eq('id',id);
   toast('却下しました');
   // Push通知送信
   try {
@@ -5156,7 +5156,7 @@ async function saveShiftEdit(){
   const start=document.getElementById('se-start').value
   const end=document.getElementById('se-end').value
   const note=document.getElementById('se-note').value
-  const{error}=await sb.from('shifts').update({start_time:start,end_time:end,note}).eq('id',editShiftId)
+  const{error}=await withStoreFilter(sb.from('shifts').update({start_time:start,end_time:end,note})).eq('id',editShiftId)
   if(error){toast('エラー: '+error.message);console.error('saveShiftEdit error:',error);return}
   toast('シフトを訂正しました');closeSheet('shift-edit');loadOwnerCal()
 }
@@ -5171,7 +5171,7 @@ async function deleteShift(){
     // 予約も削除
     await sb.from('reservations').delete().in('id',rvIds)
   }
-  const{error}=await sb.from('shifts').delete().eq('id',editShiftId)
+  const{error}=await withStoreFilter(sb.from('shifts').delete()).eq('id',editShiftId)
   if(error){toast('エラー: '+error.message);console.error('deleteShift error:',error);return}
   toast('削除しました');closeSheet('shift-edit');loadOwnerCal()
 }
@@ -5384,7 +5384,7 @@ async function addStoreRoom(){
   toast('ルームを追加しました')
 }
 async function deleteStoreRoom(roomId){
-  const{error}=await sb.from('rooms').delete().eq('id',roomId)
+  const{error}=await withStoreFilter(sb.from('rooms').delete()).eq('id',roomId)
   if(error){toast('削除失敗');return}
   await reloadRoomList()
   renderStoreRoomList()
@@ -5418,7 +5418,7 @@ async function saveCardFeeSettings(){
 async function saveRoom(){
   const btn=document.getElementById('btn-save-room')
   btn.disabled=true;btn.textContent='保存中...'
-  const{error}=await sb.from('shifts').update({room:document.getElementById('room-sel').value}).eq('id',roomShiftId)
+  const{error}=await withStoreFilter(sb.from('shifts').update({room:document.getElementById('room-sel').value})).eq('id',roomShiftId)
   btn.disabled=false;btn.textContent='保存する'
   if(error){toast('エラーが発生しました');return}
   toast('ルームを指定しました！');closeSheet('room');loadToday();loadOwnerCal()
@@ -6423,12 +6423,12 @@ async function saveWork(){
   if(hoshoSave>0) payload.hosho=hoshoSave
   const{data:ex}=await withStoreFilter(sb.from('works').select('id').eq('cast_id',sheetCastId).eq('date',sheetDate)).maybeSingle()
   let err
-  if(ex){const r=await sb.from('works').update(payload).eq('id',ex.id);err=r.error}
+  if(ex){const r=await withStoreFilter(sb.from('works').update(payload)).eq('id',ex.id);err=r.error}
   else{const r=await sb.from('works').insert(withStoreId(payload));err=r.error}
   // hoshoカラムがない場合はhoshoを除いて再試行
   if(err&&err.message&&err.message.includes('hosho')){
     const p2={...payload};delete p2.hosho
-    if(ex){const r=await sb.from('works').update(p2).eq('id',ex.id);err=r.error}
+    if(ex){const r=await withStoreFilter(sb.from('works').update(p2)).eq('id',ex.id);err=r.error}
     else{const r=await sb.from('works').insert(withStoreId(p2));err=r.error}
   }
   btn.disabled=false;btn.textContent='保存する'
@@ -6504,9 +6504,9 @@ async function deleteCast(castId, name){
   try {
     // 設定データのみ削除（割引設定はキャスト固有の設定のため削除）
     // works・shifts・cast_fees・reservations は税務記録として保持する
-    const r1=await sb.from('cast_discounts').delete().eq('cast_id',castId)
+    const r1=await withStoreFilter(sb.from('cast_discounts').delete()).eq('cast_id',castId)
     if(r1.error) throw new Error('discounts削除エラー: '+r1.error.message)
-    const r2=await sb.from('casts').delete().eq('id',castId)
+    const r2=await withStoreFilter(sb.from('casts').delete()).eq('id',castId)
     if(r2.error) throw new Error('cast削除エラー: '+r2.error.message)
     toast(name+'を退店処理しました')
     openInactiveSheet()
@@ -6549,7 +6549,7 @@ async function changePIN(castId,name){
   const pin=prompt(name+'のPIN変更\n\n現在のPIN：'+currentPin+'\n\n新しいPIN（1〜8桁）を入力してください')
   if(pin===null)return
   if(pin.length<1||pin.length>8||isNaN(pin)){toast('PINは1〜8桁の数字で入力してください');return}
-  const{error}=await sb.from('casts').update({pin}).eq('id',castId)
+  const{error}=await withStoreFilter(sb.from('casts').update({pin})).eq('id',castId)
   if(error){toast('エラーが発生しました');return}
   toast('PINを変更しました！')
   loadCastMgmt()
@@ -6559,7 +6559,7 @@ async function toggleActive(castId,current){
   if(current){
     if(!confirm('本当に退店させますか？\nこの操作はログイン画面からも削除されます。')) return
   }
-  const{error}=await sb.from('casts').update({active:!current}).eq('id',castId)
+  const{error}=await withStoreFilter(sb.from('casts').update({active:!current})).eq('id',castId)
   if(error){toast('エラー: '+error.message);console.error('toggleActive error:',error);return}
   toast(current?'退店にしました':'復帰しました')
   loadCastMgmt()
@@ -6704,7 +6704,7 @@ async function addFeeDisc(){
 }
 
 async function deleteFeeDisc(id){
-  await sb.from('cast_discounts').delete().eq('id',id)
+  await withStoreFilter(sb.from('cast_discounts').delete()).eq('id',id)
   await renderFeeDiscList()
   toast('削除しました')
 }
@@ -6767,7 +6767,7 @@ async function saveFee(){
   console.log('[saveFee] existing=',existing,'fetchErr=',fetchErr)
   let saveError
   if(existing){
-    const r=await sb.from('cast_fees').update(dataToSave).eq('cast_id',castIdNum)
+    const r=await withStoreFilter(sb.from('cast_fees').update(dataToSave)).eq('cast_id',castIdNum)
     saveError=r.error
     console.log('[saveFee] update result:',r)
   } else {
@@ -6792,7 +6792,7 @@ async function saveFee(){
   document.querySelectorAll('.disc-type-sel').forEach(sel=>{
     discTypes[sel.dataset.discName]=sel.value
   })
-  await sb.from('cast_fees').update({disc_types:discTypes}).eq('cast_id',castIdNum)
+  await withStoreFilter(sb.from('cast_fees').update({disc_types:discTypes})).eq('cast_id',castIdNum)
   btn.disabled=false;btn.textContent='保存する'
   toast('保存しました！');closeSheet('fee')
 }
@@ -6831,7 +6831,7 @@ async function saveDisc(){
 }
 
 async function deleteDisc(id){
-  await sb.from('cast_discounts').delete().eq('id',id)
+  await withStoreFilter(sb.from('cast_discounts').delete()).eq('id',id)
   await renderDiscList()
   toast('削除しました')
 }
@@ -6963,7 +6963,7 @@ async function loadOwnerSalary(){
 
 async function deleteWork(id){
   if(!confirm('この記録を削除しますか？'))return
-  await sb.from('works').delete().eq('id',id)
+  await withStoreFilter(sb.from('works').delete()).eq('id',id)
   toast('削除しました')
   monthlyCachedData=null
   loadOwnerSalary()
@@ -7080,7 +7080,7 @@ async function updateStoreCourse(id){
   const price=parseInt(document.getElementById('cp-'+id)?.value)||0
   if(!name){toast('コース名を入力してください');return}
   const duration=parseInt(document.getElementById('cd-'+id)?.value)||null
-  const{error}=await sb.from('courses').update({name,price,...(duration!==null?{duration}:{})}).eq('id',id)
+  const{error}=await withStoreFilter(sb.from('courses').update({name,price,...(duration!==null?{duration}:{})})).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('コースを更新しました')
   await renderStoreCourseList()
@@ -7089,7 +7089,7 @@ async function updateStoreCourse(id){
 
 async function deleteStoreCourse(id){
   if(!confirm('このコースを削除しますか？')) return
-  const{error}=await sb.from('courses').delete().eq('id',id)
+  const{error}=await withStoreFilter(sb.from('courses').delete()).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('削除しました')
   await renderStoreCourseList()
@@ -7120,7 +7120,7 @@ async function updateStoreOption(id){
   const name=document.getElementById('on-'+id)?.value.trim()
   const price=parseInt(document.getElementById('op-'+id)?.value)||0
   if(!name){toast('オプション名を入力してください');return}
-  const{error}=await sb.from('options').update({name,price}).eq('id',id)
+  const{error}=await withStoreFilter(sb.from('options').update({name,price})).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('オプションを更新しました')
   await renderStoreOptionList()
@@ -7129,7 +7129,7 @@ async function updateStoreOption(id){
 
 async function deleteStoreOption(id){
   if(!confirm('このオプションを削除しますか？')) return
-  const{error}=await sb.from('options').delete().eq('id',id)
+  const{error}=await withStoreFilter(sb.from('options').delete()).eq('id',id)
   if(error){toast('エラー: '+error.message);return}
   toast('削除しました')
   await renderStoreOptionList()
@@ -7209,7 +7209,7 @@ async function addStoreDisc(){
   await loadStoreDiscList();toast('割引を追加しました')
 }
 async function deleteStoreDisc(id){
-  await sb.from('cast_discounts').delete().eq('id',id)
+  await withStoreFilter(sb.from('cast_discounts').delete()).eq('id',id)
   await loadStoreDiscList();toast('削除しました')
 }
 // ── 予約確認シート（キャスト側・店舗側共用） ──
@@ -7459,8 +7459,8 @@ function backToShiftReservations(){
 async function deleteRv(rvId){
   if(!confirm('この予約を削除しますか？'))return
   // 来店履歴から対応レコードを先に削除
-  await sb.from('customer_visits').delete().eq('reservation_id',rvId)
-  const{error}=await sb.from('reservations').delete().eq('id',rvId)
+  await withStoreFilter(sb.from('customer_visits').delete()).eq('reservation_id',rvId)
+  const{error}=await withStoreFilter(sb.from('reservations').delete()).eq('id',rvId)
   if(error){toast('削除エラー: '+error.message);return}
   toast('削除しました')
   monthlyCachedData=null
@@ -7577,7 +7577,7 @@ async function saveRvEdit(rvId){
   const extCount=extChecked.length>0?Math.max(...extChecked):0
   const note=document.getElementById('rve-note').value.trim()
   const payment=JSON.stringify({course:payCourse,shimei:payShimei,option:payOpt,ext:payExt})
-  const{error}=await sb.from('reservations').update({
+  const{error}=await withStoreFilter(sb.from('reservations').update({
     customer_name:name,
     customer_no:custNo?parseInt(custNo)||null:null,
     is_new:isNew==='true',
@@ -7590,15 +7590,15 @@ async function saveRvEdit(rvId){
     payment,
     note,
     extension_count:extCount
-  }).eq('id',rvId)
+  })).eq('id',rvId)
   if(error){toast('保存エラー: '+error.message);return}
   // 来店履歴(customer_visits)も同期：course/options/shimei_typeが編集後の値になるよう更新
   try {
-    await sb.from('customer_visits').update({
+    await withStoreFilter(sb.from('customer_visits').update({
       shimei_type:shimei,
       course,
       options:opts.join(',')
-    }).eq('reservation_id',rvId)
+    })).eq('reservation_id',rvId)
   } catch(e){ console.error('customer_visits同期エラー:',e) }
   toast('保存しました！')
   openRvDetail(rvId)
@@ -7898,7 +7898,7 @@ async function saveCastDiscTypes(){
     const discId = parseInt(row.dataset.discId)
     const sel = row.querySelector('select')
     if(!sel) continue
-    await sb.from('cast_discounts').update({disc_type:sel.value}).eq('id',discId)
+    await withStoreFilter(sb.from('cast_discounts').update({disc_type:sel.value})).eq('id',discId)
   }
   toast('保存しました')
   closeSheet('cast-disc-type')

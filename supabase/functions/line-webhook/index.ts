@@ -1,6 +1,20 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const CHANNEL_TOKEN = Deno.env.get('LINE_INQUIRY_CHANNEL_TOKEN')!
+const CHANNEL_SECRET = Deno.env.get('LINE_INQUIRY_CHANNEL_SECRET')!
+
+async function verifySignature(body: string, signature: string): Promise<boolean> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(CHANNEL_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body))
+  const expected = btoa(String.fromCharCode(...new Uint8Array(mac)))
+  return expected === signature
+}
 
 async function reply(replyToken: string, messages: object[]) {
   await fetch('https://api.line.me/v2/bot/message/reply', {
@@ -44,6 +58,10 @@ function getAutoReply(message: string): string | null {
 serve(async (req) => {
   try {
     const rawBody = await req.text()
+    const signature = req.headers.get('x-line-signature') ?? ''
+    if (!await verifySignature(rawBody, signature)) {
+      return new Response('Unauthorized', { status: 401 })
+    }
     const payload = JSON.parse(rawBody)
 
     for (const event of (payload.events || [])) {
