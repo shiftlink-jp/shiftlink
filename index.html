@@ -1422,16 +1422,35 @@ async function renderPinCastPicker(){
     const j=await res.json().catch(()=>({}))
     casts=Array.isArray(j.casts)?j.casts:[]
   }catch(e){ console.error('[pinauth] cast list error', e) }
+  // XSS安全: innerHTML/onclick文字列を使わず createElement + addEventListener + textContent で構築
   const sel=document.getElementById('cast-sel')
-  if(sel) sel.innerHTML='<option value="">選んでください</option>'+casts.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
+  if(sel){
+    sel.innerHTML='<option value="">選んでください</option>'
+    casts.forEach(c=>{
+      const id=Number(c.id)
+      if(!Number.isFinite(id)) return
+      const o=document.createElement('option')
+      o.value=String(id); o.textContent=String(c.name??'')
+      sel.appendChild(o)
+    })
+  }
   const cardList=document.getElementById('cast-card-list')
-  if(cardList) cardList.innerHTML=casts.map(c=>`
-      <button type="button" onclick="selectCastCard(${c.id},'${jsEsc(c.name)}')"
-        style="background:rgba(255,255,255,0.82);border:1.5px solid var(--border);border-radius:14px;padding:.7rem .5rem;font-size:.88rem;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .18s;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.07)"
-        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-        ${escapeHtml(c.name)}
-      </button>`).join('')
+  if(cardList){
+    cardList.innerHTML=''
+    casts.forEach(c=>{
+      const id=Number(c.id)
+      if(!Number.isFinite(id)) return
+      const name=String(c.name??'')
+      const btn=document.createElement('button')
+      btn.type='button'
+      btn.textContent=name
+      btn.style.cssText='background:rgba(255,255,255,0.82);border:1.5px solid var(--border);border-radius:14px;padding:.7rem .5rem;font-size:.88rem;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .18s;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.07)'
+      btn.addEventListener('click',()=>selectCastCard(id,name))
+      btn.addEventListener('mouseover',()=>{btn.style.borderColor='var(--accent)';btn.style.color='var(--accent)'})
+      btn.addEventListener('mouseout',()=>{btn.style.borderColor='var(--border)';btn.style.color='var(--text)'})
+      cardList.appendChild(btn)
+    })
+  }
 }
 // ルーム情報はDBから読み込み（roomListグローバル変数）
 let roomList=[]
