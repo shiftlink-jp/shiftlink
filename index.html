@@ -2201,11 +2201,11 @@ function startApp(){
 // (D) send-push共通ヘルパー（レスポンスチェック付き）
 async function sendPushNotification(castId, title, body) {
   try {
-    // SaaSモード/非SaaSモードに応じて現在のSupabaseプロジェクトURLとキーを使用
+    const storeId = SAAS_MODE && storeSettings.store_id ? storeSettings.store_id : null
     const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({cast_id:castId, title, body})
+      body:JSON.stringify({cast_id:castId, title, body, store_id:storeId})
     });
     if (!res.ok) console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>''));
   } catch(e) { console.error('[Push] 通知送信エラー:', e); }
@@ -7070,7 +7070,7 @@ async function saveShimeiSettings(){
   const shimei_free=parseInt(document.getElementById('st-shimei-free')?.value)||0
   const shimei_net=parseInt(document.getElementById('st-shimei-net')?.value)||0
   const shimei_hon=parseInt(document.getElementById('st-shimei-hon')?.value)||0
-  const{error}=await sb.from('store_settings').update({shimei_free,shimei_net,shimei_hon}).eq('id',1)
+  const{error}=await withStoreFilter(sb.from('store_settings').update({shimei_free,shimei_net,shimei_hon}))
   if(error){toast('エラー: '+error.message);return}
   toast('指名料金を保存しました')
   await loadGlobalData()
@@ -7084,7 +7084,7 @@ async function changeOwnerPinFromSheet(){
     toast('PINは1〜8桁の数字で入力してください'); return
   }
   // DBに保存（全端末で共有）
-  const{error} = await sb.from('store_settings').update({owner_pin: pin}).eq('id',1)
+  const{error} = await withStoreFilter(sb.from('store_settings').update({owner_pin: pin}))
   if(error){
     // store_settingsにowner_pinカラムがない場合はlocalStorageのみに保存
     console.warn('DB保存エラー（owner_pinカラム未作成の可能性）:', error.message)
