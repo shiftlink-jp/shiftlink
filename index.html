@@ -1744,7 +1744,7 @@ async function passkeyLogin(){
   btn.disabled=true; btn.textContent='認証中...'
   try {
     // DBからcredential_idを取得
-    const{data:pk}=await sb.from('passkeys').select('*').eq('cast_id',cid).single()
+    const{data:pk}=await sb.from('passkeys').select('*').eq('cast_id',cid).maybeSingle()
     if(!pk){ throw new Error('登録済みの認証情報がありません') }
 
     // チャレンジ生成（ランダム）
@@ -2337,13 +2337,18 @@ function startApp(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-app').classList.add('on')
   document.getElementById('hdr-name').textContent=me.is_owner?'店舗 👑':me.name
-  // SaaSモードではSaaSログアウトを表示、PINログアウトを非表示
+  // SaaSモードではSaaSログアウトを表示、PINモードではPINログアウトを表示
+  const lb=document.getElementById('hdr-logout-btn')
+  const plb=document.getElementById('hdr-pin-logout-btn')
   if(SAAS_MODE){
-    const lb=document.getElementById('hdr-logout-btn');if(lb)lb.style.display=''
-    const plb=document.getElementById('hdr-pin-logout-btn');if(plb)plb.style.display='none'
+    if(lb) lb.style.display=''
+    if(plb) plb.style.display='none'
     // オーナーのみプラン管理ボタンを表示
     const bb=document.getElementById('hdr-billing-btn')
     if(bb) bb.style.display=me.is_owner?'':'none'
+  } else if(PIN_AUTH_MODE){
+    if(lb) lb.style.display='none'
+    if(plb) plb.style.display=''
   }
   // タブ表示切り替え
   document.querySelectorAll('.cast-tab').forEach(b=>b.style.display=me.is_owner?'none':'flex')
@@ -3565,7 +3570,7 @@ async function loadMySalary(){
   const todayArea=document.getElementById('sal-today-area')
   if(todayArea && salMonth===todayStr.slice(0,7)){
     // cast_feesを取得（予想バック計算用）
-    const{data:myFee}=await withStoreFilter(sb.from('cast_fees').select('*')).eq('cast_id',me.id).single()
+    const{data:myFee}=await withStoreFilter(sb.from('cast_fees').select('*')).eq('cast_id',me.id).maybeSingle()
     const fee=myFee||DEFAULT_FEE
     // コース名・指名・OPのバックをcast_fees設定から正確に計算
     function calcBack(courseName,shimeiType,optNames){
@@ -8097,7 +8102,7 @@ async function renderMonthlyContent(){
     const {data:rvsRaw}=await withStoreFilter(sb.from('reservations').select('*').in('shift_id',shiftsRaw.map(s=>s.id)))
     rvs=rvsRaw||[]
   }
-  const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).single()
+  const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
   const sd=storeRaw||{}
   const {data:dailyNotesRaw}=await withStoreFilter(sb.from('daily_notes').select('date,inquiry_count')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   const inquiryByDate={};(dailyNotesRaw||[]).forEach(n=>{inquiryByDate[n.date]=n.inquiry_count||0})
@@ -8628,7 +8633,7 @@ async function openMonthlySalesEdit(){
 async function loadMonthlySalesForm(){
   const [y,m]=monthlyMonth.split('-').map(Number)
   document.getElementById('mse-title').textContent=y+'年'+m+'月 経費・目標・集客入力'
-  const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).single()
+  const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
   const ad=data?.ad_expenses||{},rent=data?.rent_expenses||{},util=data?.utility_expenses||{}
   const fixed=data?.fixed_expenses||{},vari=data?.variable_expenses||{}
   const routes=data?.acquisition_routes||{}
