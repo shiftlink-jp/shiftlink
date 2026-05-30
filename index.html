@@ -6075,6 +6075,11 @@ function getShimeiPrice(type){
 function getCourseBack(courseId){
   const c=courses.find(x=>x.id===courseId);if(!c) return 0
   const trial=isTrialPeriod()
+  // 汎用 extra_course_backs を優先（任意のコース名に対応・委託金設定の保存先と一致）
+  const extraCourse=sheetFee.extra_course_backs||{}
+  if(trial && extraCourse['trial_course_'+c.id]!=null) return extraCourse['trial_course_'+c.id]
+  if(extraCourse['course_'+c.id]!=null) return extraCourse['course_'+c.id]
+  // 以下はレガシー固定カラムのフォールバック（コース名依存・既存KYOUKANO互換）
   if(c.name.includes('50分')){
     if(trial && sheetFee.trial_b50!=null) return sheetFee.trial_b50
     return sheetFee.back_50||DEFAULT_FEE.back_50
