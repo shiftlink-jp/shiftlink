@@ -2,11 +2,12 @@
 // これにより「公開anon鍵だけで全データにアクセスできる」根本問題を解消する土台になる。
 // （アプリは以降このセッションで動作し、RLSで自店データのみアクセス可能になる）
 //
-// ★セキュリティ注意（本番投入前に必須）:
-//  - PINブルートフォース対策（試行回数制限/ロックアウト）が未実装。本番前に必ず追加すること。
-//  - 現状はテスト環境(RLS隔離店舗)での機構検証用。
+// ブルートフォース対策: pin_login_attempts(010)で失敗回数を数え、MAX_FAILSでロックする。
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const MAX_FAILS = 5;            // この回数連続で失敗するとロック
+const LOCK_MINUTES = 15;        // ロック時間（分）
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -58,27 +59,47 @@ serve(async (req) => {
     const pinStr = String(pin);
     if (pinStr.length < 1 || pinStr.length > 12) return json({ error: "PIN形式が不正です" }, 400, origin);
 
+    const principalKey = role === "owner" ? `owner.${store_id}` : `cast.${cast_id}.${store_id}`;
+
+    // 0) ロック状態を確認（ブルートフォース対策）
+    const { data: att } = await admin
+      .from("pin_login_attempts").select("fail_count,locked_until")
+      .eq("store_id", store_id).eq("principal", principalKey).maybeSingle();
+    if (att?.locked_until && new Date(att.locked_until) > new Date()) {
+      return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
+    }
+
+    // 失敗時: 回数を加算し、必要ならロック
+    const recordFail = async () => {
+      const next = (att?.fail_count ?? 0) + 1;
+      const locked = next >= MAX_FAILS ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
+      await admin.from("pin_login_attempts").upsert(
+        { store_id, principal: principalKey, fail_count: next, locked_until: locked, updated_at: new Date().toISOString() },
+        { onConflict: "store_id,principal" },
+      );
+    };
+
     // 1) サーバ側でPIN照合
-    let principalKey: string;
     let memberRole: string;
     let memberCastId: number | null = null;
     if (role === "owner") {
       const { data: ss } = await admin
         .from("store_settings").select("owner_pin").eq("store_id", store_id).maybeSingle();
       const ownerPin = ss?.owner_pin ? String(ss.owner_pin) : "";
-      if (!ownerPin || !safeEqual(pinStr, ownerPin)) return json({ error: "PINが違います" }, 401, origin);
-      principalKey = `owner.${store_id}`;
+      if (!ownerPin || !safeEqual(pinStr, ownerPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "owner";
     } else {
       if (!cast_id) return json({ error: "cast_id が必要です" }, 400, origin);
       const { data: c } = await admin
         .from("casts").select("id,pin").eq("id", cast_id).eq("store_id", store_id).maybeSingle();
       const castPin = c?.pin ? String(c.pin) : "";
-      if (!c || !castPin || !safeEqual(pinStr, castPin)) return json({ error: "PINが違います" }, 401, origin);
-      principalKey = `cast.${cast_id}.${store_id}`;
+      if (!c || !castPin || !safeEqual(pinStr, castPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = Number(cast_id);
     }
+
+    // 認証成功 → 失敗カウントをリセット
+    await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
 
     // 2) この主体に対応する内部Authユーザーを用意（決定的email）
     const email = `pin.${principalKey}@shiftlink.internal`;
