@@ -1082,6 +1082,26 @@ if("serviceWorker" in navigator && !_isSaaS){
       </div>
       <button class="btn btn-gold btn-full" onclick="saveBusinessHours()" style="margin-top:.5rem">営業時間を保存</button>
     </div>
+    <!-- カード決済手数料設定 -->
+    <div class="fee-sec">
+      <div class="fee-sec-title">💳 カード決済手数料</div>
+      <div class="fee-row">
+        <div class="fee-lbl">お客様上乗せ率</div>
+        <input type="number" class="fee-input" id="st-card-surcharge" min="0" max="30" step="0.1" style="width:70px">
+        <span class="fee-unit">%</span>
+      </div>
+      <div class="fee-row" style="margin-top:.4rem">
+        <div class="fee-lbl">カード会社手数料率</div>
+        <input type="number" class="fee-input" id="st-card-fee-rate" min="0" max="20" step="0.1" style="width:70px">
+        <span class="fee-unit">%</span>
+      </div>
+      <div class="fee-row" style="margin-top:.4rem">
+        <div class="fee-lbl">1決済あたり固定費</div>
+        <input type="number" class="fee-input" id="st-card-fee-fixed" min="0" max="9999" step="1" style="width:80px">
+        <span class="fee-unit">円</span>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="saveCardFeeSettings()" style="margin-top:.5rem">カード手数料を保存</button>
+    </div>
     <!-- ルーム設定 -->
     <div class="fee-sec">
       <div class="fee-sec-title">🚪 ルーム</div>
@@ -5291,11 +5311,26 @@ async function saveBusinessHours(){
   const openT=document.getElementById('st-open-time')?.value
   const closeT=document.getElementById('st-close-time')?.value
   if(!openT||!closeT){toast('時間を選択してください');return}
-  const{error}=await sb.from('store_settings').update({open_time:openT,close_time:closeT}).eq('id',1)
+  const{error}=await withStoreFilter(sb.from('store_settings').update({open_time:openT,close_time:closeT}))
   if(error){toast('保存失敗');return}
   storeSettings.open_time=openT
   storeSettings.close_time=closeT
   toast('営業時間を保存しました')
+}
+async function saveCardFeeSettings(){
+  const surcharge=parseFloat(document.getElementById('st-card-surcharge')?.value)
+  const feeRate=parseFloat(document.getElementById('st-card-fee-rate')?.value)
+  const feeFixed=parseInt(document.getElementById('st-card-fee-fixed')?.value)
+  if(isNaN(surcharge)||isNaN(feeRate)||isNaN(feeFixed)){toast('数値を入力してください');return}
+  const payload={
+    card_surcharge_rate:Math.round(surcharge*10)/1000,
+    card_fee_rate:Math.round(feeRate*10)/1000,
+    card_fee_fixed:feeFixed
+  }
+  const{error}=await withStoreFilter(sb.from('store_settings').update(payload))
+  if(error){toast('保存失敗');return}
+  Object.assign(storeSettings,payload)
+  toast('カード手数料設定を保存しました')
 }
 async function saveRoom(){
   const btn=document.getElementById('btn-save-room')
@@ -6014,8 +6049,17 @@ function getOptPrice(name){
   return o?o.price||0:0
 }
 
-function calcCardSurcharge(base){ return base>0?Math.round(base*0.1):0 }
-function calcCardFee(base){ return base>0?Math.floor(base*0.06)+80:0 }
+function calcCardSurcharge(base){
+  if(base<=0) return 0
+  const rate=storeSettings.card_surcharge_rate!=null?storeSettings.card_surcharge_rate:0.1
+  return Math.round(base*rate)
+}
+function calcCardFee(base){
+  if(base<=0) return 0
+  const rate=storeSettings.card_fee_rate!=null?storeSettings.card_fee_rate:0.06
+  const fixed=storeSettings.card_fee_fixed!=null?storeSettings.card_fee_fixed:80
+  return Math.floor(base*rate)+fixed
+}
 function workCardBreakdown(w){
   let billed=0,base=0,fee=0
   ;(w.sessions||[]).forEach(s=>{
@@ -6888,6 +6932,13 @@ async function openStoreSettings(){
     if(ctEl) ctEl.innerHTML=buildTimeOptions(ss.close_time||'02:00')
     // ルーム
     renderStoreRoomList()
+    // カード手数料
+    const scEl=document.getElementById('st-card-surcharge')
+    const cfrEl=document.getElementById('st-card-fee-rate')
+    const cffEl=document.getElementById('st-card-fee-fixed')
+    if(scEl) scEl.value=ss.card_surcharge_rate!=null?Math.round(ss.card_surcharge_rate*1000)/10:10
+    if(cfrEl) cfrEl.value=ss.card_fee_rate!=null?Math.round(ss.card_fee_rate*1000)/10:6
+    if(cffEl) cffEl.value=ss.card_fee_fixed!=null?ss.card_fee_fixed:80
   }
   document.getElementById('store-overlay').classList.add('on')
   // DBから最新のPINを取得して表示
