@@ -3327,7 +3327,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   // セクション1: 接客メモ
   const memosHtml = memoVisits.length
     ? memoVisits.map(v=>{
-        const castLabel = (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
+        const castLabel = me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
         return `<div style="padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem">
             <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
@@ -3341,7 +3341,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   // セクション2: 来店履歴
   const visitsHtml = allVisits.length
     ? allVisits.map(v=>{
-        const castLabel = (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
+        const castLabel = me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
         const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
         return `<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
