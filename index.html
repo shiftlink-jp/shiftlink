@@ -5918,9 +5918,10 @@ async function loadGanttModal(){
           const intSPx=timeToPx(r.checkout_time.slice(0,5))
           const intEPx=timeToPx(intEndStrM)
           if(intSPx!==null&&intEPx!==null&&intEPx-intSPx>0){
-            rvBars+=`<div style="position:absolute;left:${intSPx}px;width:${intEPx-intSPx}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(40,40,40,.65),rgba(40,40,40,.65) 2px,rgba(10,10,10,.15) 2px,rgba(10,10,10,.15) 7px);border-radius:0 6px 6px 0;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">
-              <span style="writing-mode:vertical-rl;font-size:.68rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.9);letter-spacing:.1em">インターバル</span>
-            </div>`
+            const intW=intEPx-intSPx
+            // バー幅が十分あれば縦書きテキスト表示、狭ければ文字なし
+            const intLabel=intW>=14?`<span style="writing-mode:vertical-rl;font-size:${Math.min(intW*0.45,11)}px;color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;overflow:hidden;max-height:100%">インターバル</span>`:''
+            rvBars+=`<div style="position:absolute;left:${intSPx}px;width:${intW}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(40,40,40,.65),rgba(40,40,40,.65) 2px,rgba(10,10,10,.15) 2px,rgba(10,10,10,.15) 7px);border-radius:0 6px 6px 0;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
           }
         }
       })
