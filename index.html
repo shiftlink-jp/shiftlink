@@ -5837,41 +5837,14 @@ async function loadGanttModal(){
               <span style="writing-mode:vertical-rl;font-size:.44rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.8);letter-spacing:.05em">ｲﾝﾀｰﾊﾞﾙ</span>
             </div>`
           }
-          // 次予約の直前インターバル（全予約に前インターバルを追加）
-          const nextRvM=sortedRvsM[ri+1]
-          if(nextRvM?.checkin_time){
-            const nextCheckinMinM=timeStrToMinM(nextRvM.checkin_time.slice(0,5))
-            const preIntStartMin=nextCheckinMinM-intervalMinM
-            if(preIntStartMin>intEndMinM){
-              const preIntSPx=timeToPx(minToTimeStrM(preIntStartMin))
-              const preIntEPx=timeToPx(nextRvM.checkin_time.slice(0,5))
-              if(preIntSPx!==null&&preIntEPx!==null&&preIntEPx-preIntSPx>0){
-                rvBars+=`<div style="position:absolute;left:${preIntSPx}px;width:${preIntEPx-preIntSPx}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(50,50,50,.7),rgba(50,50,50,.7) 2px,rgba(10,10,10,.2) 2px,rgba(10,10,10,.2) 7px);border-radius:5px 0 0 5px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">
-                  <span style="writing-mode:vertical-rl;font-size:.44rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.8);letter-spacing:.05em">ｲﾝﾀｰﾊﾞﾙ</span>
-                </div>`
-              }
-            }
-          }
-          // belowBars：純粋空き時間を表示
+          // belowBars：純粋空き時間を表示（インターバルは予約後のみ）
           const nextRvM2=sortedRvsM[ri+1]
           const nextCheckinMinM=nextRvM2?.checkin_time?timeStrToMinM(nextRvM2.checkin_time.slice(0,5)):null
-          const pureGapMinB=nextCheckinMinM!==null?nextCheckinMinM-intervalMinM-intEndMinM:null
+          const pureGapMinB=nextCheckinMinM!==null?nextCheckinMinM-intEndMinM:null
           let belowTextM=`⏱ 最短 ${intEndStrM}〜`
           if(pureGapMinB!==null&&pureGapMinB>0) belowTextM+=`　▷ 純空き ${pureGapMinB}分`
           else if(pureGapMinB!==null&&pureGapMinB<=0) belowTextM+=`　▷ 次予約まで余裕なし`
           belowBarsM+=`<div style="font-size:.6rem;color:var(--text3);padding:.05rem ${PAD}px;white-space:nowrap">${belowTextM}</div>`
-        }
-        // 最初の予約の前インターバル（シフト開始後、最初の予約の前にも表示）
-        if(ri===0&&intervalMinM>0&&r.checkin_time){
-          const firstCheckinMin=timeStrToMinM(r.checkin_time.slice(0,5))
-          const preIntStartMin=firstCheckinMin-intervalMinM
-          const preIntSPx=timeToPx(minToTimeStrM(preIntStartMin))
-          const preIntEPx=timeToPx(r.checkin_time.slice(0,5))
-          if(preIntSPx!==null&&preIntEPx!==null&&preIntEPx-preIntSPx>0){
-            rvBars+=`<div style="position:absolute;left:${preIntSPx}px;width:${preIntEPx-preIntSPx}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(50,50,50,.7),rgba(50,50,50,.7) 2px,rgba(10,10,10,.2) 2px,rgba(10,10,10,.2) 7px);border-radius:5px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">
-              <span style="writing-mode:vertical-rl;font-size:.44rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.8);letter-spacing:.05em">ｲﾝﾀｰﾊﾞﾙ</span>
-            </div>`
-          }
         }
       })
 
@@ -5890,10 +5863,10 @@ async function loadGanttModal(){
           const prevRvForFree=fi>0?sorted[fi-1]:null
           const prevCoMinFree=prevRvForFree?.checkout_time?timeStrToMinM(prevRvForFree.checkout_time.slice(0,5)):null
           const afterIntEndMin=prevCoMinFree!==null?prevCoMinFree+intervalMinM:fSMin
-          // 次の予約の前インターバル開始を除く（次予約がシフト終了でない場合）
+          // インターバルは予約後のみ：次予約前のインターバルは空き時間に含める
           const isLastSlot=(fi===sorted.length) // 番兵（シフト終了）
           const nextCheckinForFree=isLastSlot?null:timeStrToMinM(r.checkin_time?.slice(0,5))
-          const beforeIntStartMin=nextCheckinForFree!==null?nextCheckinForFree-intervalMinM:fEMin
+          const beforeIntStartMin=nextCheckinForFree!==null?nextCheckinForFree:fEMin
           // 今日のみ：現在時刻より前の空きは無視し、現在時刻から計算
           const rawStartMin=afterIntEndMin??fSMin
           const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
