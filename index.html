@@ -2463,6 +2463,7 @@ async function hdrPushBtnClick(){
 async function unregisterPush(){
   const btn = document.getElementById('hdr-push-btn');
   if (!btn) return;
+  if (!confirm('通知を解除しますか？\n解除後は再度「通知設定」から登録し直せます。')) return;
   btn.disabled = true; btn.textContent = '解除中...';
   try {
     const reg = await navigator.serviceWorker.ready;
