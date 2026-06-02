@@ -2389,19 +2389,25 @@ function startApp(){
           if (exists) {
             btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
           } else if (Notification.permission === 'granted') {
-            // ブラウザにsubがあり通知許可済み → pushsubscriptionchange後のオフロード中ログアウトに対応して自動再登録
-            console.log('[CastPush] endpointずれ検出 → 自動再登録');
-            const oldIds = (castSubs||[]).filter(r=>{
-              try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
-            }).map(r=>r.id);
-            if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
-            const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
-            if (!insErr) {
-              btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
-              console.log('[CastPush] 自動再登録完了');
-            } else {
-              btn.textContent = '🔔 通知設定';
-              console.warn('[CastPush] 自動再登録失敗:', insErr);
+            // 他のユーザーがこのendpointを登録済みなら自動再登録しない（端末共有対策）
+            const {data:allSubs}=await sb.from('push_subscriptions').select('id,cast_id,subscription');
+            const ownedByOther=(allSubs||[]).some(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint&&r.cast_id!==castId;}catch{return false;}});
+            if(ownedByOther){ btn.textContent='🔔 通知設定'; }
+            else {
+              // ブラウザにsubがあり通知許可済み → 自動再登録
+              console.log('[CastPush] endpointずれ検出 → 自動再登録');
+              const oldIds = (castSubs||[]).filter(r=>{
+                try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
+              }).map(r=>r.id);
+              if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
+              const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
+              if (!insErr) {
+                btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
+                console.log('[CastPush] 自動再登録完了');
+              } else {
+                btn.textContent = '🔔 通知設定';
+                console.warn('[CastPush] 自動再登録失敗:', insErr);
+              }
             }
           } else {
             btn.textContent = '🔔 通知設定';
@@ -2571,6 +2577,10 @@ async function checkOwnerPushBtn(){
       }
       // ★ ブラウザに新しいsubscriptionがあるがDB未登録 → 自動でDBへ登録（iOS Safariのendpointローテーション対策）
       if (Notification.permission === 'granted') {
+        // 他のユーザー（キャスト等）がこのendpointを登録済みなら自動登録しない（端末共有対策）
+        const {data:allSubsCheck}=await sb.from('push_subscriptions').select('id,cast_id,subscription');
+        const ownedByOther=(allSubsCheck||[]).some(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint&&r.cast_id!==0;}catch{return false;}});
+        if(ownedByOther){ return; }
         try {
           console.log('[OwnerPush] ブラウザのsubscriptionがDB未登録 → 自動登録');
           // 同一端末の古いsubscription（endpoint originが同じ）を削除して重複通知を防ぐ
