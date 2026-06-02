@@ -858,6 +858,11 @@ if("serviceWorker" in navigator && !_isSaaS){
             </div>
           </div>
           <div><div class="fi-lbl">お客様名</div><input class="fi" id="rv-name" placeholder="○○様" oninput="autoKatakana(this)" onblur="autoKatakanaBlur(this)"></div>
+          <!-- 来店履歴ボタン＋本指名バッジ（顧客番号確認後に表示） -->
+          <div id="rv-hist-area" style="display:none">
+            <button onclick="openRvCustHistory()" style="width:100%;padding:.45rem;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text2);font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:.35rem">📋 来店履歴を表示</button>
+            <div id="rv-shimei-hint" style="display:none;font-size:.75rem;padding:.3rem .6rem;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;color:#7a6000;font-weight:600;margin-bottom:.1rem">⭐ 本指名のお客様です（このセラピストで2回以上来店）</div>
+          </div>
           <div><div class="fi-lbl">来店区分</div>
             <select class="fi" id="rv-is-new"><option value="">-- 選択 --</option><option value="false">再訪</option><option value="true">新規</option></select>
           </div>
@@ -4463,35 +4468,60 @@ async function toggleAutoRegister(chk){
   }
 }
 
-function autoFillCustomer(){
+async function autoFillCustomer(){
   const no=parseInt(document.getElementById('rv-cust-id').value)
   const warn=document.getElementById('rv-cust-warn')
+  const histArea=document.getElementById('rv-hist-area')
+  const shimeiHint=document.getElementById('rv-shimei-hint')
   const custIdVal=document.getElementById('rv-cust-id').value.trim()
   if(!custIdVal||!no){
     document.getElementById('rv-cust-name').textContent=''
-    // 空欄の場合も「未入力」として警告表示
+    if(histArea) histArea.style.display='none'
     if(warn){warn.style.display='block';warn.textContent='⚠️ 顧客番号が未入力です。予約後に顧客管理から登録してください。'}
     return
   }
   const c=allCustomers.find(x=>Number(x.customer_no)===no)
   if(c){
     document.getElementById('rv-name').value=c.name.endsWith('様')?c.name:c.name+'様'
-    // 出禁チェック
     const banWarn=checkBanWarning(c)
     if(banWarn){
       document.getElementById('rv-cust-name').textContent='⛔ '+c.name
       document.getElementById('rv-cust-name').style.color='var(--rtx)'
       if(warn){warn.style.display='block';warn.style.color='var(--rtx)';warn.textContent=banWarn}
+      if(histArea) histArea.style.display='none'
     } else {
       document.getElementById('rv-cust-name').textContent='✓ '+c.name
       document.getElementById('rv-cust-name').style.color='var(--green)'
       if(warn) warn.style.display='none'
+      // 来店履歴ボタンを表示
+      if(histArea){
+        histArea.style.display='block'
+        histArea.dataset.custNo=no
+        histArea.dataset.custName=c.name
+        histArea.dataset.custId=c.id||''
+      }
+      // 本指名判定：同セラピストの来店履歴が2件以上なら本指名
+      if(shimeiHint) shimeiHint.style.display='none'
+      if(_rvCastName && c.id){
+        const{data:prevVisits}=await withStoreFilter(sb.from('customer_visits').select('id')).eq('customer_id',c.id).eq('cast_name',_rvCastName)
+        if((prevVisits||[]).length>=2){
+          if(shimeiHint) shimeiHint.style.display='block'
+          const shimeiSel=document.getElementById('rv-shimei')
+          if(shimeiSel&&!shimeiSel.value) shimeiSel.value='本指名'
+        }
+      }
     }
   } else {
     document.getElementById('rv-cust-name').textContent='未登録'
     document.getElementById('rv-cust-name').style.color='var(--rtx)'
     if(warn){warn.style.display='block';warn.style.color='';warn.textContent='⚠️ 顧客番号が未登録です。予約後に顧客管理から登録してください。'}
+    if(histArea) histArea.style.display='none'
   }
+}
+function openRvCustHistory(){
+  const area=document.getElementById('rv-hist-area')
+  if(!area) return
+  castOpenCustHistory(parseInt(area.dataset.custNo),area.dataset.custName,area.dataset.custId?parseInt(area.dataset.custId):null)
 }
 function checkBanWarning(c){
   // 全出禁
