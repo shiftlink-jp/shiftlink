@@ -5783,15 +5783,16 @@ async function loadGanttModal(){
   }
 
   // --- 縦型タイムライン用定数・ヘルパー ---
-  const LABEL_W=44         // 時刻ラベル幅
-  const PAD=10
+  const LABEL_W=38         // 時刻ラベル幅
+  const PAD=6
   const vw=window.innerWidth
   const vh=window.innerHeight
   const totalHours=END_H - START_H
   // 1画面に収まるようHOUR_Hを逆算（HDR:48 + キャストヘッダー:30 + フッター:82 + 余白:10）
   const HOUR_H=Math.floor((vh - 170) / totalHours)
-  // イベントエリア幅：右端まで伸ばす（画面幅 - 時刻ラベル - 左右PAD）
-  const contentW=vw - LABEL_W - PAD*2
+  // チャート全体（時刻ラベル＋バー）を画面右半分サイズに収める
+  const chartAreaW=Math.round(vw * 0.50)
+  const contentW=chartAreaW - LABEL_W - PAD
   const chartH=totalHours*HOUR_H  // チャート総高さ
 
   // 時刻文字列 "HH:MM" → Y座標（px）
