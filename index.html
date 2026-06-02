@@ -4269,6 +4269,10 @@ async function openReservation(shiftId,castName,date){
   document.getElementById('rv-cust-name').textContent=''
   document.getElementById('rv-is-new').value=''
   document.getElementById('rv-shimei').value=''
+  const _histArea=document.getElementById('rv-hist-area')
+  if(_histArea) _histArea.style.display='none'
+  const _shimeiHint=document.getElementById('rv-shimei-hint')
+  if(_shimeiHint) _shimeiHint.style.display='none'
   // フォームopen直後に顧客番号未入力警告を即時表示
   const _warnEl=document.getElementById('rv-cust-warn')
   if(_warnEl){_warnEl.style.display='block';_warnEl.textContent='⚠️ 顧客番号が未入力です。予約後に顧客管理から登録してください。'}
