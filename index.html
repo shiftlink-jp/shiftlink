@@ -5878,6 +5878,8 @@ async function loadGanttModal(){
       let freeBars=''
       const COURSE_LABELS=[[130,'130分'],[100,'100分'],[80,'80分'],[50,'50分']]
       const sorted=[...shiftRvs].filter(r=>r.checkin_time&&r.checkout_time).sort((a,b)=>a.checkin_time.localeCompare(b.checkin_time))
+      // 今日のみ：現在時刻（分）を基準にして空き計算する
+      const nowMinForFree=ganttModalDate===todayStr?now.getHours()*60+now.getMinutes():null
       let prevEnd=s.start_time?.slice(0,5)||''
       ;[...sorted,{checkin_time:s.end_time?.slice(0,5),checkout_time:s.end_time?.slice(0,5)}].forEach((r,fi)=>{
         const fS=timeToPx(prevEnd),fE=timeToPx(r.checkin_time?.slice(0,5))
@@ -5892,14 +5894,17 @@ async function loadGanttModal(){
           const isLastSlot=(fi===sorted.length) // 番兵（シフト終了）
           const nextCheckinForFree=isLastSlot?null:timeStrToMinM(r.checkin_time?.slice(0,5))
           const beforeIntStartMin=nextCheckinForFree!==null?nextCheckinForFree-intervalMinM:fEMin
+          // 今日のみ：現在時刻より前の空きは無視し、現在時刻から計算
+          const rawStartMin=afterIntEndMin??fSMin
+          const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
           // 純粋空き時間（分）
-          const pureGapMin=Math.max(0,(beforeIntStartMin??fEMin)-(afterIntEndMin??fSMin))
+          const pureGapMin=Math.max(0,(beforeIntStartMin??fEMin)-effectiveStartMin)
           const fitCourse=COURSE_LABELS.find(([m])=>pureGapMin>=m)
           const courseLabel=fitCourse?fitCourse[1]+' 可':pureGapMin>0?pureGapMin+'分':''
-          const pureStartPx=timeToPx(minToTimeStrM(afterIntEndMin??fSMin))
+          const effectiveStartPx=timeToPx(minToTimeStrM(effectiveStartMin))
           const pureEndPx=timeToPx(minToTimeStrM(beforeIntStartMin??fEMin))
-          const pureW=(pureStartPx!==null&&pureEndPx!==null)?pureEndPx-pureStartPx:fE-fS
-          const pureLx=pureStartPx??fS
+          const pureW=(effectiveStartPx!==null&&pureEndPx!==null)?pureEndPx-effectiveStartPx:fE-fS
+          const pureLx=effectiveStartPx??fS
           freeBars+=`<div style="position:absolute;left:${fS}px;width:${fE-fS}px;top:3px;bottom:3px;background:rgba(255,255,255,.55);border-radius:3px;border:1.5px dashed rgba(100,160,255,.6);z-index:3;overflow:hidden"></div>`
           if(courseLabel&&pureW>28){freeBars+=`<div style="position:absolute;left:${pureLx}px;width:${pureW}px;top:3px;bottom:3px;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none"><span style="font-size:.46rem;color:#2255cc;font-weight:800;white-space:nowrap;background:rgba(255,255,255,.92);padding:1px 3px;border-radius:3px;border:1px solid rgba(100,160,255,.5)">${courseLabel}</span></div>`}
         }
