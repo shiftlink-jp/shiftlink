@@ -5983,7 +5983,8 @@ async function loadGanttModal(){
   // bodyのスタイルを縦スクロール可能に変更
   area.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column'
 
-  area.innerHTML=`${castHeaderHtml}<div style="position:relative;padding:0 ${PAD}px;overflow-x:hidden;min-height:${chartH}px;flex:1">${gridHtml}${layersHtml}${nowLineHtml}</div>${footer}`
+  const leftOffset=Math.round(vw*0.50)
+  area.innerHTML=`${castHeaderHtml}<div style="display:flex;flex:1;overflow:hidden"><div style="width:${leftOffset}px;flex-shrink:0"></div><div style="position:relative;flex:1;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
 
   // 現在時刻ラインが見えるよう自動スクロール
   if(showNow){
