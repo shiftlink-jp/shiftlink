@@ -4521,6 +4521,7 @@ async function autoFillCustomer(){
 function openRvCustHistory(){
   const area=document.getElementById('rv-hist-area')
   if(!area) return
+  document.activeElement?.blur()
   castOpenCustHistory(parseInt(area.dataset.custNo),area.dataset.custName,area.dataset.custId?parseInt(area.dataset.custId):null)
 }
 function checkBanWarning(c){
