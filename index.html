@@ -4521,7 +4521,14 @@ async function autoFillCustomer(){
 function openRvCustHistory(){
   const area=document.getElementById('rv-hist-area')
   if(!area) return
-  document.activeElement?.blur()
+  // iOS Safari でキーボードを確実に閉じる（readonly input に一瞬フォーカスして即blur）
+  const tmp=document.createElement('input')
+  tmp.setAttribute('readonly','readonly')
+  tmp.style.cssText='position:fixed;top:-100px;opacity:0;height:0;width:0'
+  document.body.appendChild(tmp)
+  tmp.focus()
+  tmp.blur()
+  document.body.removeChild(tmp)
   castOpenCustHistory(parseInt(area.dataset.custNo),area.dataset.custName,area.dataset.custId?parseInt(area.dataset.custId):null)
 }
 function checkBanWarning(c){
