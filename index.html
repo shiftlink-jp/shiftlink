@@ -5796,15 +5796,16 @@ async function loadGanttModal(){
   const HOUR_H=Math.floor((vh - 170) / totalHours)
   // チャート幅（左42%・チャート50%・右8%の配置）
   const contentW=Math.round(vw*0.50) - LABEL_W - PAD
-  const chartH=totalHours*HOUR_H  // チャート総高さ
+  const CHART_PAD=12  // 上下の余白（チャート全体をこの分下げる）
+  const chartH=totalHours*HOUR_H + CHART_PAD*2  // チャート総高さ（上下パッド込み）
 
-  // 時刻文字列 "HH:MM" → Y座標（px）
+  // 時刻文字列 "HH:MM" → Y座標（px）：上下CHART_PAD分オフセット
   const timeToY=t=>{
     if(!t) return null
     let[h,mn]=t.split(':').map(Number)
     if(h<START_H) h+=24
     const total=(h - START_H)*60 + mn
-    return Math.max(0, Math.min(chartH, total/60*HOUR_H))
+    return Math.max(CHART_PAD, Math.min(chartH-CHART_PAD, CHART_PAD + total/60*HOUR_H))
   }
   // 分（深夜考慮）→ 時刻文字列
   const minToTimeStr=n=>{const h=Math.floor(n/60)%24;return String(h).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
@@ -5815,30 +5816,31 @@ async function loadGanttModal(){
   const now=new Date()
   const todayStr=today()
   const nowH=now.getHours()+(now.getHours()<START_H?24:0)
-  const nowY=((nowH-START_H)*60+now.getMinutes())/60*HOUR_H
-  const showNow=ganttModalDate===todayStr&&nowY>=0&&nowY<=chartH
+  const nowY=CHART_PAD+((nowH-START_H)*60+now.getMinutes())/60*HOUR_H
+  const showNow=ganttModalDate===todayStr&&nowY>=CHART_PAD&&nowY<=chartH-CHART_PAD
 
   const CAST_COLORS=['#ff6b00','#2563eb','#059669','#d97706','#dc2626','#ff6b00']
   const COURSE_LABELS=[[130,'130分'],[100,'100分'],[80,'80分'],[50,'50分']]
 
   // --- グリッド（時刻ラベル + 横線）---
-  // H型縦線：左端・時刻列右端（=イベント列左端）・イベント列右端の3本
+  // H型縦線：左端・時刻列右端・イベント列右端の3本
   let gridHtml=`
     <div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>
     <div style="position:absolute;left:${LABEL_W}px;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>
     <div style="position:absolute;right:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>`
-  const TOP_PAD=Math.round(HOUR_H*0.4)  // 11時ラベルを下げるオフセット
+  // 1時間ラベル＋横線（チャート全体をCHART_PADオフセット）
   for(let h=START_H;h<=END_H;h++){
-    const y=(h-START_H)*HOUR_H
+    const y=CHART_PAD+(h-START_H)*HOUR_H
     const lbl=h>=24?(h-24)+'時':h+'時'
-    // 最初のラベルは TOP_PAD 分下げて上端に隠れないようにする
-    const labelY=h===START_H?y+TOP_PAD:y
-    const lblTransform=h===START_H?'':'transform:translateY(-50%)'
-    gridHtml+=`<div style="position:absolute;top:${labelY}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;${lblTransform}">${lbl}</div>`
-    gridHtml+=`<div style="position:absolute;top:${y}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,.12)"></div>`
+    gridHtml+=`<div style="position:absolute;top:${y}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;transform:translateY(-50%)">${lbl}</div>`
+    gridHtml+=`<div style="position:absolute;top:${y}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,.15)"></div>`
+    // 10分刻みの横線（1時間内の10,20,30,40,50分）
     if(h<END_H){
-      const y30=y+HOUR_H/2
-      gridHtml+=`<div style="position:absolute;top:${y30}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,.05)"></div>`
+      for(let m=10;m<60;m+=10){
+        const ym=y+m/60*HOUR_H
+        const is30=m===30
+        gridHtml+=`<div style="position:absolute;top:${ym}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,${is30?'.08':'.04'})"></div>`
+      }
     }
   }
 
