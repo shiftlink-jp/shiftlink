@@ -5822,14 +5822,19 @@ async function loadGanttModal(){
   const COURSE_LABELS=[[130,'130分'],[100,'100分'],[80,'80分'],[50,'50分']]
 
   // --- グリッド（時刻ラベル + 横線）---
-  // 時刻ラベル列を囲む縦線（左端・右端）
-  let gridHtml=`<div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div><div style="position:absolute;left:${LABEL_W}px;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>`
+  // H型縦線：左端・時刻列右端（=イベント列左端）・イベント列右端の3本
+  let gridHtml=`
+    <div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>
+    <div style="position:absolute;left:${LABEL_W}px;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>
+    <div style="position:absolute;right:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>`
+  const TOP_PAD=Math.round(HOUR_H*0.4)  // 11時ラベルを下げるオフセット
   for(let h=START_H;h<=END_H;h++){
     const y=(h-START_H)*HOUR_H
     const lbl=h>=24?(h-24)+'時':h+'時'
-    // 最初のラベル（11時）は上に隠れないよう translateY(-50%) を止めて下から表示
+    // 最初のラベルは TOP_PAD 分下げて上端に隠れないようにする
+    const labelY=h===START_H?y+TOP_PAD:y
     const lblTransform=h===START_H?'':'transform:translateY(-50%)'
-    gridHtml+=`<div style="position:absolute;top:${y}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;${lblTransform}">${lbl}</div>`
+    gridHtml+=`<div style="position:absolute;top:${labelY}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;${lblTransform}">${lbl}</div>`
     gridHtml+=`<div style="position:absolute;top:${y}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,.12)"></div>`
     if(h<END_H){
       const y30=y+HOUR_H/2
@@ -5905,8 +5910,8 @@ async function loadGanttModal(){
           const intEY=timeToY(minToTimeStr(intEndMin))
           if(intSY!==null&&intEY!==null&&intEY-intSY>0){
             const intH=intEY-intSY
-            const intFs=Math.min(intH*0.55, 11)
-            const intLabel=intH>=8?`<span style="font-size:${intFs}px;color:#444;font-weight:700;white-space:nowrap;letter-spacing:.05em">インターバル</span>`:''
+            const intFs=Math.min(intH*0.65, 14)
+            const intLabel=intH>=8?`<span style="font-size:${intFs}px;color:#333;font-weight:800;white-space:nowrap;letter-spacing:.06em">インターバル</span>`:''
             layersHtml+=`<div style="position:absolute;left:${x}px;width:${bW}px;top:${intSY+1}px;height:${Math.max(intH-2,4)}px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:6px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
           }
         }
