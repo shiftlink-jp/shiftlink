@@ -1,18 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { jwtVerify } from "npm:jose@5";
 
 const VAPID_PUBLIC_KEY = "BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET") ?? "";
+// SUPABASE_JWT_SECRET は Supabase Edge Functions に自動注入される組み込みシークレット
+const JWT_SECRET = new TextEncoder().encode(Deno.env.get("SUPABASE_JWT_SECRET") ?? "");
 
-// SUPABASE_ANON_KEY の文字列比較は注入差異で誤動作するため JWT ペイロード確認方式を採用
-function isValidSupabaseJWT(token: string): boolean {
+// JWT 署名を SUPABASE_JWT_SECRET で検証する（ペイロード読み取りのみでは偽造可能なため）
+async function isValidSupabaseJWT(token: string): Promise<boolean> {
+  if (!JWT_SECRET.length) return false;
   try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return payload.iss === "supabase" && typeof payload.role === "string";
+    await jwtVerify(token, JWT_SECRET, { issuer: "supabase" });
+    return true;
   } catch {
     return false;
   }
@@ -25,9 +27,12 @@ const ALLOWED_ORIGINS = [
   "https://www.shiftlink-app.jp",
 ];
 
+// Vercel プレビュー URL は kyoukano プロジェクト配下のみ許可
+const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano[\w-]*\.vercel\.app$/;
+
 function corsHeaders(origin: string | null) {
-  const isVercel = origin ? (() => { try { return new URL(origin).hostname.endsWith(".vercel.app"); } catch { return false; } })() : false;
-  const allowed = (origin && (ALLOWED_ORIGINS.includes(origin) || isVercel)) ? origin : ALLOWED_ORIGINS[0];
+  const isAllowed = origin && (ALLOWED_ORIGINS.includes(origin) || VERCEL_PREVIEW_RE.test(origin));
+  const allowed = isAllowed ? origin! : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Headers": "authorization, content-type, x-internal-secret",
@@ -47,7 +52,7 @@ serve(async (req) => {
   const token = authHeader.replace("Bearer ", "").trim();
 
   const isInternal = INTERNAL_SECRET && internalSecret === INTERNAL_SECRET;
-  const isValidToken = isValidSupabaseJWT(token) || token === SUPABASE_SERVICE_KEY;
+  const isValidToken = await isValidSupabaseJWT(token) || token === SUPABASE_SERVICE_KEY;
 
   if (!isInternal && !isValidToken) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
