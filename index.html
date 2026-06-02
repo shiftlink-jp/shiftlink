@@ -5841,7 +5841,7 @@ async function loadGanttModal(){
           const intEPx=timeToPx(intEndStrM)
           if(intSPx!==null&&intEPx!==null&&intEPx-intSPx>0){
             rvBars+=`<div style="position:absolute;left:${intSPx}px;width:${intEPx-intSPx}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(40,40,40,.65),rgba(40,40,40,.65) 2px,rgba(10,10,10,.15) 2px,rgba(10,10,10,.15) 7px);border-radius:0 6px 6px 0;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">
-              <span style="font-size:.62rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.9);letter-spacing:.12em;white-space:nowrap">インターバル</span>
+              <span style="writing-mode:vertical-rl;font-size:.68rem;color:#fff;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.9);letter-spacing:.1em">インターバル</span>
             </div>`
           }
         }
@@ -5849,7 +5849,11 @@ async function loadGanttModal(){
 
       let freeBars=''
       const COURSE_LABELS=[[130,'130分'],[100,'100分'],[80,'80分'],[50,'50分']]
-      const sorted=[...shiftRvs].filter(r=>r.checkin_time&&r.checkout_time).sort((a,b)=>a.checkin_time.localeCompare(b.checkin_time))
+      // checkout未設定の予約はシフト終了まで塞ぐ（誤った空きラベル表示を防ぐ）
+      const sorted=[...shiftRvs]
+        .filter(r=>r.checkin_time)
+        .map(r=>({...r,checkout_time:r.checkout_time||(s.end_time||r.checkin_time)}))
+        .sort((a,b)=>a.checkin_time.localeCompare(b.checkin_time))
       // 今日のみ：現在時刻（分）を基準にして空き計算する
       const nowMinForFree=ganttModalDate===todayStr?now.getHours()*60+now.getMinutes():null
       let prevEnd=s.start_time?.slice(0,5)||''
@@ -5878,7 +5882,7 @@ async function loadGanttModal(){
           const pureW=(effectiveStartPx!==null&&pureEndPx!==null)?pureEndPx-effectiveStartPx:fE-fS
           const pureLx=effectiveStartPx??fS
           freeBars+=`<div style="position:absolute;left:${fS}px;width:${fE-fS}px;top:3px;bottom:3px;background:rgba(220,235,255,.5);border-radius:4px;border:1.5px dashed rgba(80,140,255,.5);z-index:3;overflow:hidden"></div>`
-          if(courseLabel&&pureW>32){freeBars+=`<div style="position:absolute;left:${pureLx}px;width:${pureW}px;top:3px;bottom:3px;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none"><span style="font-size:.52rem;color:#1a44bb;font-weight:800;white-space:nowrap;background:rgba(255,255,255,.95);padding:2px 5px;border-radius:4px;border:1px solid rgba(80,140,255,.4);box-shadow:0 1px 3px rgba(80,140,255,.15)">${courseLabel}</span></div>`}
+          if(courseLabel&&pureW>32){freeBars+=`<div style="position:absolute;left:${pureLx}px;width:${pureW}px;top:3px;bottom:3px;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden"><span style="font-size:.52rem;color:#1a44bb;font-weight:800;white-space:nowrap;background:rgba(255,255,255,.95);padding:2px 5px;border-radius:4px;border:1px solid rgba(80,140,255,.4);box-shadow:0 1px 3px rgba(80,140,255,.15)">${courseLabel}</span></div>`}
         }
         prevEnd=r.checkout_time?.slice(0,5)||prevEnd
       })
