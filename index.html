@@ -2387,7 +2387,7 @@ function startApp(){
             try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === subJson.endpoint; } catch { return false; }
           });
           if (exists) {
-            btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+            btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
           } else if (Notification.permission === 'granted') {
             // ブラウザにsubがあり通知許可済み → pushsubscriptionchange後のオフロード中ログアウトに対応して自動再登録
             console.log('[CastPush] endpointずれ検出 → 自動再登録');
@@ -2397,7 +2397,7 @@ function startApp(){
             if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
             const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
             if (!insErr) {
-              btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+              btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
               console.log('[CastPush] 自動再登録完了');
             } else {
               btn.textContent = '🔔 通知設定';
@@ -2419,7 +2419,7 @@ function startApp(){
           }).map(r=>r.id);
           if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
           await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: newJson }));
-          btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
           console.log('[CastPush] 自動復元完了');
         } else {
           btn.textContent = '🔔 通知設定';
@@ -2447,10 +2447,41 @@ async function sendPushNotification(castId, title, body) {
 }
 
 async function hdrPushBtnClick(){
+  const btn = document.getElementById('hdr-push-btn');
+  // 設定済み状態なら解除
+  if (btn && btn.dataset.pushState === 'registered') {
+    await unregisterPush();
+    return;
+  }
   if (me && me.is_owner) {
     await registerOwnerPush();
   } else {
     await registerCastPush();
+  }
+}
+
+async function unregisterPush(){
+  const btn = document.getElementById('hdr-push-btn');
+  if (!btn) return;
+  btn.disabled = true; btn.textContent = '解除中...';
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const subJson = sub.toJSON();
+      // DBから削除
+      const castId = me.is_owner ? 0 : me.id;
+      const {data:subs}=await sb.from('push_subscriptions').select('id,subscription').eq('cast_id',castId);
+      const ids=(subs||[]).filter(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint;}catch{return false;}}).map(r=>r.id);
+      if(ids.length>0) await sb.from('push_subscriptions').delete().in('id',ids);
+      await sub.unsubscribe();
+    }
+    btn.textContent='🔔 通知設定'; btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; btn.style.background=''; delete btn.dataset.pushState;
+    toast('通知を解除しました');
+  } catch(e) {
+    console.error('[Push] 解除エラー:', e);
+    btn.disabled=false; btn.textContent='✅ 設定済み'; btn.style.opacity='0.7';
+    toast('解除に失敗しました');
   }
 }
 
@@ -2505,7 +2536,7 @@ async function registerCastPush(){
       alert("登録失敗: " + JSON.stringify(error));
     } else {
       alert("通知登録完了！予約・シフトの通知が届きます。");
-      if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+      if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered'; }
     }
   } catch(e) {
     alert("Pushエラー: " + e.name + " / " + e.message);
@@ -2534,7 +2565,7 @@ async function checkOwnerPushBtn(){
         } catch { return false; }
       });
       if (exists) {
-        btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+        btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
         return;
       }
       // ★ ブラウザに新しいsubscriptionがあるがDB未登録 → 自動でDBへ登録（iOS Safariのendpointローテーション対策）
@@ -2553,7 +2584,7 @@ async function checkOwnerPushBtn(){
           }
           const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: subJson }));
           if (insErr) { console.warn('[OwnerPush] 自動登録失敗:', insErr); return; }
-          btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+          btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
           console.log('[OwnerPush] 自動登録完了');
         } catch(e) { console.warn('[OwnerPush] 自動登録エラー:', e); }
       }
@@ -2573,7 +2604,7 @@ async function checkOwnerPushBtn(){
       }).map(r=>r.id);
       if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
       await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: newJson }));
-      btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default';
+      btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
       console.log('[OwnerPush] 自動復元完了');
     }
   } catch(e) { console.warn('[OwnerPush] チェックエラー:', e); }
@@ -2622,7 +2653,7 @@ async function registerOwnerPush(){
     if (error) { alert('登録失敗: ' + JSON.stringify(error)); return; }
     alert('通知登録完了！予約・シフトの通知が届きます。');
     const btn = document.getElementById('hdr-push-btn');
-    if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+    if (btn) { btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered'; }
   } catch(e) { alert('エラー: ' + e.name + ' / ' + e.message); }
 }
 function doLogout(){
