@@ -5823,7 +5823,9 @@ async function loadGanttModal(){
   for(let h=START_H;h<=END_H;h++){
     const y=(h-START_H)*HOUR_H
     const lbl=h>=24?(h-24)+'時':h+'時'
-    gridHtml+=`<div style="position:absolute;top:${y}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;transform:translateY(-50%)">${lbl}</div>`
+    // 最初のラベル（11時）は上に隠れないよう translateY(-50%) を止めて下から表示
+    const lblTransform=h===START_H?'':'transform:translateY(-50%)'
+    gridHtml+=`<div style="position:absolute;top:${y}px;left:0;width:${LABEL_W}px;font-size:11px;color:#999;font-weight:600;text-align:right;padding-right:6px;line-height:1;${lblTransform}">${lbl}</div>`
     gridHtml+=`<div style="position:absolute;top:${y}px;left:${LABEL_W}px;right:0;height:1px;background:rgba(0,0,0,.12)"></div>`
     if(h<END_H){
       const y30=y+HOUR_H/2
@@ -5967,24 +5969,28 @@ async function loadGanttModal(){
     castHeaderHtml=`<div style="padding:4px ${PAD}px;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:800;color:${color}">${escapeHtml(s.casts?.name||'?')}</span><span style="font-size:11px;color:var(--text3)">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span>${badge}</div>`
   }
 
-  // フッター（凡例 + 予約ボタン）
-  const todayMark=showNow?`<span style="display:flex;align-items:center;gap:.22rem"><span style="display:inline-block;width:2px;height:8px;background:rgba(255,45,45,.9);border-radius:1px"></span>現在</span>`:''
-  const footer=`<div style="padding:8px 12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)">
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:11px;opacity:.8;align-items:center;margin-bottom:6px">
-      <span style="display:flex;align-items:center;gap:.22rem"><span style="display:inline-block;width:10px;height:7px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border-radius:2px"></span>予約</span>
-      <span style="display:flex;align-items:center;gap:.22rem"><span style="display:inline-block;width:10px;height:7px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:2px"></span>インターバル</span>
-      <span style="display:flex;align-items:center;gap:.22rem"><span style="display:inline-block;width:10px;height:7px;background:rgba(220,235,255,.5);border:1.5px dashed rgba(80,140,255,.4);border-radius:2px"></span>空き</span>
-      ${todayMark}
-    </div>
-    <button style="background:linear-gradient(135deg,#4facfe,#0084ff);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;padding:.45rem 1.1rem;cursor:pointer;box-shadow:0 3px 8px rgba(0,130,255,.35);width:100%;letter-spacing:.03em"
-      onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${jsEsc(targetShifts[0].casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">＋ 予約登録</button>
+  // 凡例（フッター下部に小さく）
+  const todayMark=showNow?`<span style="display:flex;align-items:center;gap:.18rem"><span style="display:inline-block;width:2px;height:7px;background:rgba(255,45,45,.9);border-radius:1px"></span>現在</span>`:''
+  const legendHtml=`<div style="display:flex;gap:.4rem;flex-wrap:wrap;font-size:10px;opacity:.75;align-items:center">
+    <span style="display:flex;align-items:center;gap:.18rem"><span style="display:inline-block;width:8px;height:6px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border-radius:2px"></span>予約</span>
+    <span style="display:flex;align-items:center;gap:.18rem"><span style="display:inline-block;width:8px;height:6px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:2px"></span>インターバル</span>
+    <span style="display:flex;align-items:center;gap:.18rem"><span style="display:inline-block;width:8px;height:6px;background:rgba(220,235,255,.5);border:1.5px dashed rgba(80,140,255,.4);border-radius:2px"></span>空き</span>
+    ${todayMark}
   </div>`
+
+  // 予約登録ボタンを左の空きスペースに配置
+  const rvBtnHtml=`<button style="background:linear-gradient(135deg,#4facfe,#0084ff);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;padding:.55rem .7rem;cursor:pointer;box-shadow:0 3px 10px rgba(0,130,255,.4);width:100%;letter-spacing:.03em;margin-bottom:10px"
+    onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${jsEsc(targetShifts[0].casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">＋<br>予約<br>登録</button>`
+
+  const footer=`<div style="padding:6px 10px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)">${legendHtml}</div>`
 
   // bodyのスタイルを縦スクロール可能に変更
   area.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column'
 
   const leftOffset=Math.round(vw*0.50)
-  area.innerHTML=`${castHeaderHtml}<div style="display:flex;flex:1;overflow:hidden"><div style="width:${leftOffset}px;flex-shrink:0"></div><div style="position:relative;flex:1;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
+  // 左の空きスペースに予約登録ボタンを配置
+  const leftPanelHtml=`<div style="width:${leftOffset}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;gap:8px">${rvBtnHtml}${castHeaderHtml}</div>`
+  area.innerHTML=`<div style="display:flex;flex:1;overflow:hidden">${leftPanelHtml}<div style="position:relative;flex:1;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
 
   // 現在時刻ラインが見えるよう自動スクロール
   if(showNow){
