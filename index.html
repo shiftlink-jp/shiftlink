@@ -8640,7 +8640,14 @@ async function loadMonthlySalesForm(){
   const customExpenses=data?.custom_expenses||[]
   const setvN=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=Number(v).toLocaleString()}
   const setvR=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v}
-  setvN('mse-goal-sales',data?.goal_sales);setvR('mse-goal-count',data?.goal_count);setvR('mse-goal-recruit',data?.goal_recruit);setvR('mse-actual-recruit',data?.actual_recruit)
+  // 当月にgoalが未設定なら前月のnext_goal_*をプリフィル
+  let prevGoal={}
+  if(data?.goal_sales==null&&data?.goal_count==null){
+    const pm=m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`
+    const{data:pd}=await withStoreFilter(sb.from('monthly_sales').select('next_goal_sales,next_goal_count,next_goal_recruit')).eq('month',pm).maybeSingle()
+    prevGoal=pd||{}
+  }
+  setvN('mse-goal-sales',data?.goal_sales??prevGoal.next_goal_sales);setvR('mse-goal-count',data?.goal_count??prevGoal.next_goal_count);setvR('mse-goal-recruit',data?.goal_recruit??prevGoal.next_goal_recruit);setvR('mse-actual-recruit',data?.actual_recruit)
   setvN('mse-next-goal-sales',data?.next_goal_sales);setvR('mse-next-goal-count',data?.next_goal_count);setvR('mse-next-goal-recruit',data?.next_goal_recruit)
   setvN('mse-ad-panda',ad.aroma_panda);setvN('mse-ad-estelove',ad.esute_love);setvN('mse-ad-ranking',ad.ranking)
   setvN('mse-ad-bakusai',ad.bakusai);setvN('mse-ad-japan',ad.japan);setvN('mse-ad-estekon',ad.esute_kon);setvN('mse-ad-tax',ad.tax)
@@ -8706,6 +8713,13 @@ async function saveMonthlySales(){
   const {error}=await sb.from('monthly_sales').upsert(payload,{onConflict:'month'})
   btn.disabled=false;btn.textContent='💾 保存'
   if(error){toast('保存失敗: '+error.message);return}
+  // 翌月のgoal_*をnext_goal_*から自動反映
+  const ng_s=parseMoneyInput('mse-next-goal-sales'),ng_c=getvInt('mse-next-goal-count'),ng_r=getvInt('mse-next-goal-recruit')
+  if(ng_s!=null||ng_c!=null||ng_r!=null){
+    const [y2,m2]=monthlyMonth.split('-').map(Number)
+    const nm=m2===12?`${y2+1}-01`:`${y2}-${String(m2+1).padStart(2,'0')}`
+    await sb.from('monthly_sales').upsert(withStoreId({month:nm,goal_sales:ng_s,goal_count:ng_c,goal_recruit:ng_r}),{onConflict:'month'})
+  }
   toast('保存しました')
   closeSheet('monthly-edit')
   monthlyCachedData=null
