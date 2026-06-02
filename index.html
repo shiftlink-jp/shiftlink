@@ -291,6 +291,42 @@ tr:last-child td{border-bottom:none}
 </style>
 <script>
 const SW_VER = 'v15';
+
+// PWAインストール促進（PC＝Windows/Macのみ）
+let _pwaPromptEvent = null;
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const _isAndroid = /Android/.test(navigator.userAgent);
+const _isPC = !_isIOS && !_isAndroid;
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaPromptEvent = e;
+  // ログイン済みでPCかつ未インストールならバナーを表示
+  if (_isPC && !_isStandalone) _showPwaBanner();
+});
+function _showPwaBanner() {
+  if (document.getElementById('pwa-install-banner')) return;
+  if (sessionStorage.getItem('pwa_banner_dismissed')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9998;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;border-radius:14px;padding:.75rem 1rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:340px;width:calc(100% - 2rem)';
+  banner.innerHTML = '<span style="flex:1;line-height:1.45">💻 <b>アプリをインストール</b>すると<br>ブラウザを閉じても通知が届きます</span>'
+    + '<button onclick="_installPwa()" style="background:#fff;color:#1e3a5f;border:none;border-radius:8px;padding:.35rem .7rem;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap">インストール</button>'
+    + '<button onclick="_dismissPwaBanner()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.1rem;cursor:pointer;padding:0 0 0 .2rem;line-height:1">✕</button>';
+  document.body.appendChild(banner);
+}
+function _installPwa() {
+  if (_pwaPromptEvent) {
+    _pwaPromptEvent.prompt();
+    _pwaPromptEvent.userChoice.then(function() { _dismissPwaBanner(); });
+  }
+}
+function _dismissPwaBanner() {
+  sessionStorage.setItem('pwa_banner_dismissed', '1');
+  const b = document.getElementById('pwa-install-banner');
+  if (b) b.remove();
+}
+
 const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp');
 if("serviceWorker" in navigator && !_isSaaS){
   // 古いSWをすべて解除してから新しいSWを登録
