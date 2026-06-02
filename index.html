@@ -5901,8 +5901,9 @@ async function loadGanttModal(){
           const intEY=timeToY(minToTimeStr(intEndMin))
           if(intSY!==null&&intEY!==null&&intEY-intSY>0){
             const intH=intEY-intSY
-            const intLabel=intH>=20?`<span style="font-size:11px;color:#555;font-weight:600">インターバル</span>`:''
-            layersHtml+=`<div style="position:absolute;left:${x}px;width:${bW}px;top:${intSY+2}px;height:${intH-4}px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:8px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
+            const intFs=Math.min(intH*0.55, 11)
+            const intLabel=intH>=8?`<span style="font-size:${intFs}px;color:#444;font-weight:700;white-space:nowrap;letter-spacing:.05em">インターバル</span>`:''
+            layersHtml+=`<div style="position:absolute;left:${x}px;width:${bW}px;top:${intSY+1}px;height:${Math.max(intH-2,4)}px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:6px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
           }
         }
       }
