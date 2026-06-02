@@ -5715,6 +5715,7 @@ function openGanttModal(room){
 
 // 横画面ロック：Screen Orientation API → CSS回転フォールバック
 // PC（768px以上）は回転なしでそのまま表示、スマホ縦画面のみ横向き回転
+let _ganttIsRotated=false
 function _ganttLock(){
   const isPC=window.innerWidth>=768
   const go=()=>{
@@ -5723,10 +5724,12 @@ function _ganttLock(){
     const vw=window.innerWidth, vh=window.innerHeight
     if(vw>=vh||isPC){
       // 横画面 or PC：回転なしでフルスクリーン
+      _ganttIsRotated=false
       ov.style.cssText='display:flex;flex-direction:column;position:fixed;top:0;left:0;width:'+vw+'px;height:'+vh+'px;z-index:9999;background:var(--bg);overflow:hidden;transform:none'
       inner.style.cssText='display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden'
     } else {
       // スマホ縦画面 → CSS回転で横画面表示
+      _ganttIsRotated=true
       const W=vh, H=vw
       const t=(vh-H)/2, l=(vw-W)/2
       ov.style.cssText='display:flex;flex-direction:column;position:fixed;'
@@ -5920,7 +5923,12 @@ async function loadGanttModal(){
           if(intSPx!==null&&intEPx!==null&&intEPx-intSPx>0){
             const intW=intEPx-intSPx
             // バー幅が十分あれば縦書きテキスト表示、狭ければ文字なし
-            const intLabel=intW>=10?`<span style="font-size:${Math.min(intW*0.38,10)}px;color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;letter-spacing:.06em">インターバル</span>`:''
+            // スマホ回転時：コンテナが90°回転しているため縦書きは逆方向になる
+            // → transform:rotate(-90deg)でキャンセルし、視覚的に縦書きを実現
+            const intLabelStyle=_ganttIsRotated
+              ?`transform:rotate(-90deg);font-size:${Math.min(intW*0.55,11)}px;white-space:nowrap`
+              :`writing-mode:vertical-rl;font-size:${Math.min(intW*0.55,11)}px;white-space:nowrap`
+            const intLabel=intW>=10?`<span style="${intLabelStyle};color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.8)">インターバル</span>`:''
             rvBars+=`<div style="position:absolute;left:${intSPx}px;width:${intW}px;top:1px;bottom:1px;background:repeating-linear-gradient(-45deg,rgba(40,40,40,.65),rgba(40,40,40,.65) 2px,rgba(10,10,10,.15) 2px,rgba(10,10,10,.15) 7px);border-radius:0 6px 6px 0;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
           }
         }
