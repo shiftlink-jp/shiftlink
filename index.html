@@ -5783,12 +5783,16 @@ async function loadGanttModal(){
   }
 
   // --- 縦型タイムライン用定数・ヘルパー ---
-  const HOUR_H=68          // 1時間あたりのpx高さ
-  const LABEL_W=46         // 時刻ラベル幅
-  const PAD=12
+  const LABEL_W=40         // 時刻ラベル幅
+  const PAD=8
   const vw=window.innerWidth
-  const contentW=vw - LABEL_W - PAD*2   // イベントエリア幅
-  const chartH=(END_H - START_H)*HOUR_H  // チャート総高さ
+  const vh=window.innerHeight
+  const totalHours=END_H - START_H
+  // 1画面に収まるようHOUR_Hを逆算（HDR:48 + キャストヘッダー:30 + フッター:80 + 余白:8）
+  const HOUR_H=Math.floor((vh - 166) / totalHours)
+  // イベントエリア幅を画面の約半分に（時刻ラベル除く）
+  const contentW=Math.round((vw - LABEL_W - PAD*2) * 0.52)
+  const chartH=totalHours*HOUR_H  // チャート総高さ
 
   // 時刻文字列 "HH:MM" → Y座標（px）
   const timeToY=t=>{
@@ -5976,7 +5980,7 @@ async function loadGanttModal(){
   </div>`
 
   // bodyのスタイルを縦スクロール可能に変更
-  area.style.cssText='flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column'
+  area.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column'
 
   area.innerHTML=`${castHeaderHtml}<div style="position:relative;padding:0 ${PAD}px;overflow-x:hidden;min-height:${chartH}px;flex:1">${gridHtml}${layersHtml}${nowLineHtml}</div>${footer}`
 
