@@ -5978,18 +5978,17 @@ async function loadGanttModal(){
     ${todayMark}
   </div>`
 
-  // 予約登録ボタンを左の空きスペースに配置
-  const rvBtnHtml=`<button style="background:linear-gradient(135deg,#4facfe,#0084ff);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;padding:.55rem .7rem;cursor:pointer;box-shadow:0 3px 10px rgba(0,130,255,.4);width:100%;letter-spacing:.03em;margin-bottom:10px"
-    onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${jsEsc(targetShifts[0].casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">＋<br>予約<br>登録</button>`
+  const footer=''
 
-  const footer=`<div style="padding:6px 10px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)">${legendHtml}</div>`
+  // 予約登録ボタン（小さめ）＋凡例を左の空きスペースに配置
+  const rvBtnHtml=`<button style="background:linear-gradient(135deg,#4facfe,#0084ff);color:#fff;border:none;border-radius:10px;font-size:11px;font-weight:700;padding:.4rem .6rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,130,255,.35);white-space:nowrap"
+    onclick="closeGanttModal();setTimeout(()=>openReservation(${targetShifts[0].id},'${jsEsc(targetShifts[0].casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">＋ 予約登録</button>`
 
   // bodyのスタイルを縦スクロール可能に変更
   area.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column'
 
   const leftOffset=Math.round(vw*0.50)
-  // 左の空きスペースに予約登録ボタンを配置
-  const leftPanelHtml=`<div style="width:${leftOffset}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;gap:8px">${rvBtnHtml}${castHeaderHtml}</div>`
+  const leftPanelHtml=`<div style="width:${leftOffset}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10px;gap:10px">${castHeaderHtml}${rvBtnHtml}${legendHtml}</div>`
   area.innerHTML=`<div style="display:flex;flex:1;overflow:hidden">${leftPanelHtml}<div style="position:relative;flex:1;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
 
   // 現在時刻ラインが見えるよう自動スクロール
