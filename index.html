@@ -8103,7 +8103,13 @@ async function renderMonthlyContent(){
     rvs=rvsRaw||[]
   }
   const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
-  const sd=storeRaw||{}
+  let sd=storeRaw||{}
+  // 当月にgoal未設定なら前月のnext_goal_*を参照して表示
+  if(!sd.goal_sales&&!sd.goal_count){
+    const pm=m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`
+    const{data:prevSd}=await withStoreFilter(sb.from('monthly_sales').select('next_goal_sales,next_goal_count')).eq('month',pm).maybeSingle()
+    if(prevSd?.next_goal_sales||prevSd?.next_goal_count) sd={...sd,goal_sales:prevSd.next_goal_sales,goal_count:prevSd.next_goal_count}
+  }
   const {data:dailyNotesRaw}=await withStoreFilter(sb.from('daily_notes').select('date,inquiry_count')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   const inquiryByDate={};(dailyNotesRaw||[]).forEach(n=>{inquiryByDate[n.date]=n.inquiry_count||0})
   const {data:courseList}=await withStoreFilter(sb.from('courses').select('*'))
@@ -8713,13 +8719,6 @@ async function saveMonthlySales(){
   const {error}=await sb.from('monthly_sales').upsert(payload,{onConflict:'month'})
   btn.disabled=false;btn.textContent='💾 保存'
   if(error){toast('保存失敗: '+error.message);return}
-  // 翌月のgoal_*をnext_goal_*から自動反映
-  const ng_s=parseMoneyInput('mse-next-goal-sales'),ng_c=getvInt('mse-next-goal-count'),ng_r=getvInt('mse-next-goal-recruit')
-  if(ng_s!=null||ng_c!=null||ng_r!=null){
-    const [y2,m2]=monthlyMonth.split('-').map(Number)
-    const nm=m2===12?`${y2+1}-01`:`${y2}-${String(m2+1).padStart(2,'0')}`
-    await sb.from('monthly_sales').upsert(withStoreId({month:nm,goal_sales:ng_s,goal_count:ng_c,goal_recruit:ng_r}),{onConflict:'month'})
-  }
   toast('保存しました')
   closeSheet('monthly-edit')
   monthlyCachedData=null
