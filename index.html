@@ -5794,9 +5794,8 @@ async function loadGanttModal(){
   const totalHours=END_H - START_H
   // 1画面に収まるようHOUR_Hを逆算（HDR:48 + キャストヘッダー:30 + フッター:82 + 余白:10）
   const HOUR_H=Math.floor((vh - 170) / totalHours)
-  // チャート全体（時刻ラベル＋バー）を画面右半分サイズに収める
-  const chartAreaW=Math.round(vw * 0.50)
-  const contentW=chartAreaW - LABEL_W - PAD
+  // チャート幅（左42%・チャート50%・右8%の配置）
+  const contentW=Math.round(vw*0.50) - LABEL_W - PAD
   const chartH=totalHours*HOUR_H  // チャート総高さ
 
   // 時刻文字列 "HH:MM" → Y座標（px）
@@ -5823,7 +5822,8 @@ async function loadGanttModal(){
   const COURSE_LABELS=[[130,'130分'],[100,'100分'],[80,'80分'],[50,'50分']]
 
   // --- グリッド（時刻ラベル + 横線）---
-  let gridHtml=''
+  // 時刻ラベル列を囲む縦線（左端・右端）
+  let gridHtml=`<div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div><div style="position:absolute;left:${LABEL_W}px;top:0;bottom:0;width:1px;background:rgba(0,0,0,.15)"></div>`
   for(let h=START_H;h<=END_H;h++){
     const y=(h-START_H)*HOUR_H
     const lbl=h>=24?(h-24)+'時':h+'時'
@@ -5994,9 +5994,11 @@ async function loadGanttModal(){
   // bodyのスタイルを縦スクロール可能に変更
   area.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column'
 
-  const leftOffset=Math.round(vw*0.50)
+  // チャートを中央寄りに：左42% / チャート50% / 右8%
+  const leftOffset=Math.round(vw*0.42)
+  const chartW=Math.round(vw*0.50)
   const leftPanelHtml=`<div style="width:${leftOffset}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px 10px 0;gap:12px">${rvBtnHtml}${castHeaderHtml}<div style="flex:1"></div>${legendHtml}</div>`
-  area.innerHTML=`<div style="display:flex;flex:1;overflow:hidden">${leftPanelHtml}<div style="position:relative;flex:1;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
+  area.innerHTML=`<div style="display:flex;flex:1;overflow:hidden">${leftPanelHtml}<div style="position:relative;width:${chartW}px;flex-shrink:0;overflow:hidden;min-height:${chartH}px;padding-right:${PAD}px">${gridHtml}${layersHtml}${nowLineHtml}</div></div>${footer}`
 
   // 現在時刻ラインが見えるよう自動スクロール
   if(showNow){
