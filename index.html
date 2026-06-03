@@ -5132,14 +5132,14 @@ async function loadOwnerCal(){
   const days=['月','火','水','木','金','土','日']
   const firstDow2=(first+6)%7
   const cellSize2='calc((100svh - 280px) / 6)'
-  let cal=`<table class="cal-table" style="width:100%;table-layout:fixed"><thead><tr>`
+  let cal=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid var(--border);border-radius:8px;overflow:hidden"><thead><tr>`
   days.forEach((d,i)=>{
     const color=i===6?'color:var(--rtx)':''
     cal+=`<th style="text-align:center;font-size:.55rem;color:var(--text3);font-weight:600;padding:.1rem 0;${color}">${d}</th>`
   })
   cal+='</tr></thead><tbody><tr>'
   let col2=0
-  for(let i=0;i<firstDow2;i++){cal+=`<td style="height:${cellSize2}"></td>`;col2++}
+  for(let i=0;i<firstDow2;i++){cal+=`<td style="height:${cellSize2};border:1px solid var(--border);background:rgba(0,0,0,.02)"></td>`;col2++}
   for(let d=1;d<=last;d++){
     if(col2===7){cal+='</tr><tr>';col2=0}
     const ds=ownerCalMonth+'-'+String(d).padStart(2,'0')
@@ -5159,10 +5159,11 @@ async function loadOwnerCal(){
       ?`<div style="width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
       :`<span style="font-size:1.2rem;font-weight:800;line-height:1.1">${d}</span>`
     const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml2}${statusLabel?`<span style="font-size:.55rem;line-height:1.1;${isToday2?'color:var(--text)':''}">${statusLabel}</span>`:''} ${rvLabel}</div>`
-    cal+=`<td onclick="ownerSelectDay('${ds}')" style="height:${cellSize2};border-radius:5px;color:${color2};background:${bg2};border:${border2||'1.5px solid transparent'};cursor:pointer;padding:0;position:relative">${inner2}</td>`
+    const cellBorder=border2&&border2!=='1.5px solid transparent'?`box-shadow:inset 0 0 0 1.5px ${border2.replace(/.*solid /,'')}`:''
+    cal+=`<td onclick="ownerSelectDay('${ds}')" style="height:${cellSize2};color:${color2};background:${bg2||'var(--bg)'};border:1px solid var(--border);cursor:pointer;padding:0;position:relative;${cellBorder}">${inner2}</td>`
     col2++
   }
-  while(col2<7&&col2>0){cal+=`<td style="height:${cellSize2}"></td>`;col2++}
+  while(col2<7&&col2>0){cal+=`<td style="height:${cellSize2};border:1px solid var(--border);background:rgba(0,0,0,.02)"></td>`;col2++}
   cal+='</tr></tbody></table>'
   document.getElementById('owner-cal-grid').innerHTML=cal
 
