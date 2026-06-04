@@ -5211,6 +5211,7 @@ async function loadOwnerCal(){
   }
   const pd={}; pending.forEach(s=>{if(!pd[s.date])pd[s.date]=[];pd[s.date].push(s)})
   let html=`<div class="sec">承認待ち（${pending.length}件）</div>`
+  html+=`<button class="btn btn-gold btn-xs btn-full" style="margin-bottom:.7rem" onclick="autoAssignRooms(null)">⚡ 一括自動振り分け（全日程）</button>`
   Object.entries(pd).sort().forEach(([date,ss])=>{
     html+=`<div class="card" style="margin-bottom:.6rem">
       <div style="font-size:.88rem;font-weight:700;margin-bottom:.4rem">${jpDate(date)}</div>`
@@ -5261,6 +5262,7 @@ async function ownerSelectDay(ds){
   // 承認待ち
   if(pending.length){
     html+='<div class="sec" style="margin-top:0">承認待ち（'+pending.length+'件）</div>'
+    html+='<button class="btn btn-gold btn-xs btn-full" style="margin-bottom:.5rem" onclick="autoAssignRooms(\''+ds+'\')">⚡ この日を一括自動振り分け</button>'
     pending.forEach(function(s){
       const sid=s.id
       const sname=s._castName||(s.casts&&s.casts.name)||'?'
@@ -5404,6 +5406,56 @@ async function confirmRoomAssign(shiftId){
   if(shift&&shift.date===bizDay()){loadToday()}
   // バックグラウンドでカレンダーも更新（ルーム表には影響しない）
   setTimeout(()=>loadOwnerCal(),2000)
+}
+
+async function autoAssignRooms(dateFilter){
+  const rooms=getROOMS()
+  if(!rooms.length){toast('ルームが登録されていません');return}
+  let pending=(ownerShiftData.pending||[])
+  if(dateFilter) pending=pending.filter(s=>s.date===dateFilter)
+  if(!pending.length){toast('承認待ちのシフトはありません');return}
+  const approved=(ownerShiftData.approved||[]).filter(s=>s.room)
+  const overlaps=(s1,e1,s2,e2)=>{const a1=s1.slice(0,5),b1=e1.slice(0,5),a2=s2.slice(0,5),b2=e2.slice(0,5);return a1<b2&&b1>a2}
+  const sorted=[...pending].sort((a,b)=>{const dc=(a.date||'').localeCompare(b.date||'');return dc!==0?dc:(a.start_time||'').localeCompare(b.start_time||'')})
+  const assignments=[],unassignable=[],batchAssigned=[]
+  for(const shift of sorted){
+    const ss=shift.start_time||'00:00',se=shift.end_time||'23:59',sd=shift.date
+    const occupied=new Set([
+      ...approved.filter(a=>a.date===sd&&overlaps(ss,se,a.start_time||'00:00',a.end_time||'23:59')).map(a=>a.room),
+      ...batchAssigned.filter(a=>a.date===sd&&overlaps(ss,se,a.start_time,a.end_time)).map(a=>a.room)
+    ])
+    const room=rooms.find(r=>!occupied.has(r))
+    if(room){
+      assignments.push({shiftId:shift.id,room,castName:shift.casts?.name||'?',date:sd,cast_id:shift.cast_id})
+      batchAssigned.push({date:sd,room,start_time:ss,end_time:se})
+    } else {
+      unassignable.push(shift)
+    }
+  }
+  if(!assignments.length){toast('ルーム数が足りないため振り分けできません');return}
+  const byDate={}
+  assignments.forEach(a=>{if(!byDate[a.date])byDate[a.date]=[];byDate[a.date].push(a)})
+  let msg=''
+  Object.entries(byDate).sort().forEach(([date,list])=>{
+    msg+=jpDate(date)+'\n'
+    list.forEach(a=>{msg+='  '+a.castName+' → '+a.room+'\n'})
+  })
+  if(unassignable.length){
+    msg+='\n⚠️ ルーム不足で振り分け不可:\n'
+    unassignable.forEach(s=>{msg+='  '+jpDate(s.date)+' '+(s.casts?.name||'?')+'\n'})
+  }
+  if(!confirm('以下のルームに自動振り分けして承認しますか？\n\n'+msg)) return
+  let ok=0
+  for(const a of assignments){
+    const{error}=await withStoreFilter(sb.from('shifts').update({status:'approved',room:a.room})).eq('id',a.shiftId)
+    if(!error){
+      ok++
+      try{ await sendPushNotification(a.cast_id,'シフトが承認されました✅',a.room+'に振り分けられました') }catch(e){console.error('通知エラー',e)}
+    }
+  }
+  toast(ok+'件を自動振り分け・承認しました')
+  loadOwnerCal()
+  if(dateFilter) setTimeout(()=>ownerSelectDay(dateFilter),500)
 }
 
 async function approveShift(id){
