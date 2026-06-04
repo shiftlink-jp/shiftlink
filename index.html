@@ -169,7 +169,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .sal-rv.total{color:var(--text);font-size:.95rem;font-weight:700}
 
 /* CAL TABLE RESET */
-.cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%;border:1px solid var(--border)!important;border-radius:8px;overflow:hidden}
+.cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%}
 .cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important;border-bottom:1px solid var(--border)!important}.cal-table th:not(:last-child){border-right:1px solid var(--border)!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table tbody tr:last-child td{border-bottom:1px solid var(--border)!important}.cal-table td{border-right:1px solid var(--border)!important;padding:0!important}.cal-table td:last-child{border-right:none!important}
 
 /* TABLE */
@@ -2891,7 +2891,7 @@ function renderCal(){
   const firstDow=(first+6)%7
   const cellSize='calc((100vw - 0.8rem) / 7)'
   const cellH='calc((100vw - 0.8rem) / 7 * 1.2)'
-  let html=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
+  let html=`<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden"><table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
     const color=i===6?'color:var(--rtx)':''
     html+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;width:${cellSize};${color}">${d}</th>`
@@ -2929,7 +2929,7 @@ function renderCal(){
     col++
   }
   while(col<7&&col>0){html+=`<td style="width:${cellSize};height:${cellH}"></td>`;col++}
-  html+='</tr></tbody></table>'
+  html+='</tr></tbody></table></div>'
   document.getElementById('cal-grid').innerHTML=html
   renderShiftStatus()
 }
@@ -5125,7 +5125,7 @@ async function loadOwnerCal(){
   const firstDow2=(first+6)%7
   const cellSize2='calc((100vw - 0.8rem) / 7)'
   const cellH2='calc((100vw - 0.8rem) / 7 * 1.2)'
-  let cal=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
+  let cal=`<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden"><table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
     const color=i===6?'color:var(--rtx)':''
     cal+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;${color}">${d}</th>`
@@ -5157,7 +5157,7 @@ async function loadOwnerCal(){
     col2++
   }
   while(col2<7&&col2>0){cal+=`<td style="width:${cellSize2};height:${cellH2}"></td>`;col2++}
-  cal+='</tr></tbody></table>'
+  cal+='</tr></tbody></table></div>'
   document.getElementById('owner-cal-grid').innerHTML=cal
 
   // ── ルーム状況（本日）をシフト管理ページに表示 ──
