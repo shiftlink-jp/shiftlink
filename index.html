@@ -2955,12 +2955,17 @@ function selectDay(ds){
   if(s && s.status!=='rejected'){
     const roomTag=s.room?`<span class="tag tp">${s.room}</span>`:''
     const stTag=s.status==='approved'?'<span class="tag tb">承認済</span>':'<span class="tag tn">申請中</span>'
+    const rvCountDay=myRvByDate[ds]||0
+    const rvBtnHtml=s.status==='approved'&&rvCountDay>0
+      ?`<button class="btn btn-gold btn-sm2" onclick="closeSheet('shift-req');setTimeout(()=>openShiftReservations(${s.id},'${escapeHtml(me.name||'')}'),100)">予約確認（${rvCountDay}件）</button>`
+      :''
     document.getElementById('shift-req-title').textContent=dateStr
     document.getElementById('shift-req-body').innerHTML=`
       <div style="font-size:.92rem;font-weight:600;margin-bottom:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</div>
       ${s.note?`<div style="font-size:.78rem;color:var(--text3);margin-bottom:.4rem">${escapeHtml(s.note)}</div>`:''}
       <div class="tags">${stTag}${roomTag}</div>
-      <div style="margin-top:.75rem">
+      <div style="margin-top:.75rem;display:grid;grid-template-columns:${rvCountDay>0?'1fr 1fr':'1fr'};gap:.6rem">
+        ${rvBtnHtml}
         <button class="btn btn-gray btn-sm2" onclick="closeSheet('shift-req')">閉じる</button>
       </div>`
   } else {
