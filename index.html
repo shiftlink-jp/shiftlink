@@ -169,8 +169,8 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .sal-rv.total{color:var(--text);font-size:.95rem;font-weight:700}
 
 /* CAL TABLE RESET */
-.cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%}
-.cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table td{border:none!important;padding:0!important}
+.cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%;border:1px solid var(--border)!important;border-radius:8px;overflow:hidden}
+.cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important}.cal-table th:not(:last-child){border-right:1px solid var(--border)!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table td{border-right:1px solid var(--border)!important;padding:0!important}.cal-table td:last-child{border-right:none!important}
 
 /* TABLE */
 .tbl{background:var(--surface);border-radius:var(--r);overflow:hidden;margin-bottom:.75rem;box-shadow:var(--sh)}
@@ -2922,9 +2922,9 @@ function renderCal(){
       ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
       :isSelected
       ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent-f);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:700;color:var(--accent);line-height:1">${d}</span></div>`
-      :`<span style="font-size:1.5rem;font-weight:700;line-height:1.1;color:${numColor}">${d}</span>`
+      :`<span style="font-size:1.5rem;font-weight:300;line-height:1.1;color:${numColor}">${d}</span>`
     const dotHtml=dotColor?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor};margin-top:1px;flex-shrink:0"></div>`:""
-    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml}${dotHtml}${statusText?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">${statusText}</span>`:''}</div>`
+    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml}${statusText?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusText}</span>`:''}</div>`
     html+=`<td onclick="selectDay('${ds}')" style="width:${cellSize};height:${cellH};text-align:center;vertical-align:middle;opacity:${opacity||1};cursor:pointer;position:relative;padding:0">${inner}</td>`
     col++
   }
@@ -5147,12 +5147,12 @@ async function loadOwnerCal(){
     if(hasPending)dotColor2='var(--bbd)'
     else if(hasApproved)dotColor2='var(--accent)'
     const statusLabel=totalShifts>0?('出勤'+totalShifts):''
-    const rvLabel=rvCount>0?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">予約${rvCount}</span>`:''
+    const rvLabel=rvCount>0?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:1px">予約${rvCount}</span>`:''
     const numHtml2=isToday2
       ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
-      :`<span style="font-size:1.5rem;font-weight:700;line-height:1.1;color:${numColor2}">${d}</span>`
+      :`<span style="font-size:1.5rem;font-weight:300;line-height:1.1;color:${numColor2}">${d}</span>`
     const dotHtml2=dotColor2?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor2};margin-top:1px;flex-shrink:0"></div>`:""
-    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml2}${dotHtml2}${statusLabel?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">${statusLabel}</span>`:''} ${rvLabel}</div>`
+    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml2}${statusLabel?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusLabel}</span>`:''} ${rvLabel}</div>`
     cal+=`<td onclick="ownerSelectDay('${ds}')" style="width:${cellSize2};height:${cellH2};text-align:center;vertical-align:middle;cursor:pointer;padding:0;position:relative">${inner2}</td>`
     col2++
   }
