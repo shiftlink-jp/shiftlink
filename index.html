@@ -82,19 +82,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;fon
 .panel.on{display:block;min-height:0}
 
 /* CALENDAR */
-.cal-nav{display:flex;align-items:center;margin-bottom:.2rem}
-.cal-nav-btn{background:var(--surface2);border:none;border-radius:8px;color:var(--text2);padding:.35rem .65rem;font-size:1rem;cursor:pointer;font-family:inherit;line-height:1}
-.cal-title{font-size:.95rem;font-weight:700;color:var(--text);flex:1;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:calc((100vw - 0.8rem - 12px) / 7);gap:1px;margin-bottom:.2rem;width:100%;background:var(--border);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.cal-nav{display:flex;align-items:center;margin-bottom:.5rem}
+.cal-nav-btn{background:none;border:none;color:var(--text2);padding:.3rem .6rem;font-size:1.5rem;cursor:pointer;font-family:inherit;line-height:1}
+.cal-title{font-size:1.05rem;font-weight:700;color:var(--text);flex:1;text-align:center}
+.cal-grid{margin-bottom:.2rem;width:100%}
 .cal-hdr{font-size:.55rem;text-align:center;color:var(--text3);font-weight:600;display:flex;align-items:center;justify-content:center}
-.cal-cell{border-radius:0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;font-size:.68rem;font-weight:500;color:var(--text2);position:relative;background:var(--bg)}
-.cal-cell.empty{background:rgba(0,0,0,.025);cursor:default}.cal-cell.past{opacity:.4;cursor:default}
-.cal-cell.today{box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent);font-weight:700}
-.cal-cell.requested{background:var(--bbg);box-shadow:inset 0 0 0 1.5px var(--bbd);color:var(--btx)}
-.cal-cell.approved{background:var(--gbg);box-shadow:inset 0 0 0 1.5px var(--gbd);color:var(--gtx)}
-.cal-cell.rejected{background:var(--rbg);box-shadow:inset 0 0 0 1.5px var(--rbd);color:var(--rtx);opacity:.6}
-.cal-cell.selected{background:var(--accent-f);box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent);font-weight:700}
-.cal-dot{width:3px;height:3px;border-radius:50%;background:currentColor;position:absolute;bottom:2px}
+.cal-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;font-size:1.5rem;font-weight:700;color:var(--text);position:relative;background:transparent}
+.cal-cell.empty{cursor:default}.cal-cell.past{opacity:.3;cursor:default}
+.cal-cell.today{color:var(--accent);font-weight:700}
+.cal-cell.selected{color:var(--accent);font-weight:700}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:currentColor;margin-top:1px}
 .cal-legend{display:flex;flex-wrap:wrap;gap:.2rem;margin-bottom:.2rem}
 .leg{display:flex;align-items:center;gap:.2rem;font-size:.6rem;color:var(--text3)}
 .leg-dot{width:6px;height:6px;border-radius:50%}
@@ -172,8 +169,8 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .sal-rv.total{color:var(--text);font-size:.95rem;font-weight:700}
 
 /* CAL TABLE RESET */
-.cal-table{border-collapse:separate!important;border-spacing:2px!important}
-.cal-table th{border:none!important;background:none!important;padding:.1rem 0!important;color:var(--text3)!important}.cal-table td{border:none!important;padding:0!important}
+.cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%}
+.cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table td{border:none!important;padding:0!important}
 
 /* TABLE */
 .tbl{background:var(--surface);border-radius:var(--r);overflow:hidden;margin-bottom:.75rem;box-shadow:var(--sh)}
@@ -250,8 +247,7 @@ tr:last-child td{border-bottom:none}
   .tbar{max-width:680px;left:50%;transform:translateX(-50%)}
   .overlay,.sheet-overlay{align-items:center;justify-content:center}
   .sheet{max-width:520px;border-radius:20px;margin-bottom:1rem}
-  .cal-grid{grid-auto-rows:68px}
-  .cal-cell{font-size:.78rem}
+  .cal-cell{font-size:1.5rem}
   .room-grid{grid-template-columns:repeat(3,1fr)}
   .tbar-btn{font-size:.68rem;padding:.9rem .2rem .75rem}
   .tbar-icon{font-size:1.6rem}
@@ -271,7 +267,6 @@ tr:last-child td{border-bottom:none}
   .app-hdr{max-width:780px}
   .tbar{max-width:780px}
   .sheet{max-width:580px}
-  .cal-grid{grid-auto-rows:78px}
   .room-grid{grid-template-columns:repeat(4,1fr)}
   .kpi-row{gap:.65rem}
   .kpi{padding:.85rem .6rem}
@@ -2894,18 +2889,17 @@ function renderCal(){
   const sm={}; myShifts.forEach(s=>sm[s.date]=s)
   const days=['月','火','水','木','金','土','日']
   const firstDow=(first+6)%7
-  const cellSize='calc((100vw - 0.8rem - 12px) / 7)'  // 画面幅基準で正方形
-  // テーブル方式で描画（間隔問題を根本解決）
-  let html=`<table class="cal-table" style="width:100%;table-layout:fixed"><thead><tr>`
+  const cellSize='calc((100vw - 0.8rem) / 7)'
+  const cellH='calc((100vw - 0.8rem) / 7 * 1.2)'
+  let html=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
-    const color=i===6?'color:var(--rtx)':''
-    html+=`<th style="text-align:center;font-size:.55rem;color:var(--text3);font-weight:600;padding:.1rem 0;width:${cellSize};${color}">${d}</th>`
+    const color=i===6?'color:var(--rtx)':i===5?'color:var(--accent)':''
+    html+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;width:${cellSize};${color}">${d}</th>`
   })
   html+='</tr></thead><tbody><tr>'
   let col=0
-  // 空白セル
   for(let i=0;i<firstDow;i++){
-    html+=`<td style="width:${cellSize};height:${cellSize}"></td>`
+    html+=`<td style="width:${cellSize};height:${cellH}"></td>`
     col++
   }
   for(let d=1;d<=last;d++){
@@ -2913,30 +2907,28 @@ function renderCal(){
     const ds=calMonth+'-'+String(d).padStart(2,'0')
     const s=sm[ds]; const isPast=ds<td
     const dow=new Date(ds).getDay()
-    let bg='',border='',color='',fontWeight='500',isToday=false
-    if(!isPast){
-      if(s){
-        if(s.status==='requested'){bg='var(--bbg)';border='1.5px solid var(--bbd)';color='var(--btx)'}
-        else if(s.status==='approved'){bg='';border='1.5px solid var(--accent)';color=''}
-        else{bg='var(--rbg)';border='1.5px solid var(--rbd)';color='var(--rtx)';fontWeight='400'}
-      }
-      if(ds===selectedDate){bg='var(--accent-f)';border='1.5px solid var(--accent)';color='var(--accent)';fontWeight='700'}
-      else if(ds===td){border='1.5px solid transparent';color='#fff';fontWeight='800';isToday=true}
+    const isToday=ds===td
+    const isSelected=ds===selectedDate
+    const numColor=isToday||isSelected?'':dow===0?'var(--rtx)':dow===6?'var(--accent)':'var(--text)'
+    const opacity=isPast?'0.25':''
+    let dotColor=''
+    if(!isPast&&s){
+      if(s.status==='requested')dotColor='var(--bbd)'
+      else if(s.status==='approved')dotColor='var(--accent)'
+      else dotColor='var(--rbd)'
     }
-    if(!color&&!s){color=dow===0?'var(--rtx)':'var(--text2)'}
-    const opacity=isPast?'0.3':''
-    const cursor='pointer'
-    const onclick='selectDay(\''+ds+'\')'
-    const statusText=s?(s.status==='requested'?'申請中':s.status==='approved'?'出勤':'却下'):''
+    const statusText=s&&!isPast?(s.status==='requested'?'申請中':s.status==='approved'?'出勤':'却下'):''
     const numHtml=isToday
-      ?`<div style="width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
-      :`<span style="font-size:1.2rem;font-weight:800;line-height:1.1">${d}</span>`
-    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml}${statusText?`<span style="font-size:.55rem;line-height:1.1;${isToday?'color:var(--text)':''}">${statusText}</span>`:''}</div>`
-    html+=`<td onclick="${onclick}" style="width:${cellSize};height:${cellSize};text-align:center;vertical-align:middle;border-radius:5px;font-weight:${fontWeight};color:${color};background:${bg};border:${border||'1.5px solid transparent'};opacity:${opacity||1};cursor:${cursor};position:relative;padding:0">${inner}</td>`
+      ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
+      :isSelected
+      ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent-f);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:700;color:var(--accent);line-height:1">${d}</span></div>`
+      :`<span style="font-size:1.5rem;font-weight:700;line-height:1.1;color:${numColor}">${d}</span>`
+    const dotHtml=dotColor?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor};margin-top:1px;flex-shrink:0"></div>`:""
+    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml}${dotHtml}${statusText?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">${statusText}</span>`:''}</div>`
+    html+=`<td onclick="selectDay('${ds}')" style="width:${cellSize};height:${cellH};text-align:center;vertical-align:middle;opacity:${opacity||1};cursor:pointer;position:relative;padding:0">${inner}</td>`
     col++
   }
-  // 残りの空白
-  while(col<7&&col>0){html+=`<td style="width:${cellSize};height:${cellSize}"></td>`;col++}
+  while(col<7&&col>0){html+=`<td style="width:${cellSize};height:${cellH}"></td>`;col++}
   html+='</tr></tbody></table>'
   document.getElementById('cal-grid').innerHTML=html
   renderShiftStatus()
@@ -5131,39 +5123,40 @@ async function loadOwnerCal(){
   const approvedDates={}; (approved||[]).forEach(s=>{if(!approvedDates[s.date])approvedDates[s.date]=0;approvedDates[s.date]++})
   const days=['月','火','水','木','金','土','日']
   const firstDow2=(first+6)%7
-  const cellSize2='calc((100svh - 280px) / 6)'
-  let cal=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse;border:1px solid var(--border);border-radius:8px;overflow:hidden"><thead><tr>`
+  const cellSize2='calc((100vw - 0.8rem) / 7)'
+  const cellH2='calc((100vw - 0.8rem) / 7 * 1.2)'
+  let cal=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
-    const color=i===6?'color:var(--rtx)':''
-    cal+=`<th style="text-align:center;font-size:.55rem;color:var(--text3);font-weight:600;padding:.1rem 0;${color}">${d}</th>`
+    const color=i===6?'color:var(--rtx)':i===5?'color:var(--accent)':''
+    cal+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;${color}">${d}</th>`
   })
   cal+='</tr></thead><tbody><tr>'
   let col2=0
-  for(let i=0;i<firstDow2;i++){cal+=`<td style="height:${cellSize2};border:1px solid var(--border);background:rgba(0,0,0,.02)"></td>`;col2++}
+  for(let i=0;i<firstDow2;i++){cal+=`<td style="width:${cellSize2};height:${cellH2}"></td>`;col2++}
   for(let d=1;d<=last;d++){
     if(col2===7){cal+='</tr><tr>';col2=0}
     const ds=ownerCalMonth+'-'+String(d).padStart(2,'0')
     const hasPending=pendingDates[ds]>0
     const hasApproved=approvedDates[ds]>0
     const dow2=new Date(ds).getDay()
-    let bg2='',border2='',color2='',isToday2=false
-    if(ds===td){border2='1.5px solid transparent';color2='#fff';isToday2=true}
-    else if(hasPending){bg2='var(--bbg)';border2='1.5px solid var(--bbd)';color2='var(--btx)'}
-    else if(hasApproved){bg2='';border2='1.5px solid var(--accent)';color2=''}
-    if(!color2){color2=dow2===0?'var(--rtx)':'var(--text2)'}
+    const isToday2=ds===td
+    const numColor2=isToday2?'':dow2===0?'var(--rtx)':dow2===6?'var(--accent)':'var(--text)'
     const totalShifts=(pendingDates[ds]||0)+(approvedDates[ds]||0)
     const rvCount=reservationByDate[ds]||0
+    let dotColor2=''
+    if(hasPending)dotColor2='var(--bbd)'
+    else if(hasApproved)dotColor2='var(--accent)'
     const statusLabel=totalShifts>0?('出勤'+totalShifts):''
-    const rvLabel=rvCount>0?`<span style="font-size:.6rem;line-height:1.2;color:${isToday2?'#fff':'var(--text3)'}">予約${rvCount}</span>`:''
+    const rvLabel=rvCount>0?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">予約${rvCount}</span>`:''
     const numHtml2=isToday2
-      ?`<div style="width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
-      :`<span style="font-size:1.2rem;font-weight:800;line-height:1.1">${d}</span>`
-    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.05rem">${numHtml2}${statusLabel?`<span style="font-size:.55rem;line-height:1.1;${isToday2?'color:var(--text)':''}">${statusLabel}</span>`:''} ${rvLabel}</div>`
-    const cellBorder=border2&&border2!=='1.5px solid transparent'?`box-shadow:inset 0 0 0 1.5px ${border2.replace(/.*solid /,'')}`:''
-    cal+=`<td onclick="ownerSelectDay('${ds}')" style="height:${cellSize2};color:${color2};background:${bg2||'var(--bg)'};border:1px solid var(--border);cursor:pointer;padding:0;position:relative;${cellBorder}">${inner2}</td>`
+      ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
+      :`<span style="font-size:1.5rem;font-weight:700;line-height:1.1;color:${numColor2}">${d}</span>`
+    const dotHtml2=dotColor2?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor2};margin-top:1px;flex-shrink:0"></div>`:""
+    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml2}${dotHtml2}${statusLabel?`<span style="font-size:.5rem;line-height:1.4;color:var(--text3)">${statusLabel}</span>`:''} ${rvLabel}</div>`
+    cal+=`<td onclick="ownerSelectDay('${ds}')" style="width:${cellSize2};height:${cellH2};text-align:center;vertical-align:middle;cursor:pointer;padding:0;position:relative">${inner2}</td>`
     col2++
   }
-  while(col2<7&&col2>0){cal+=`<td style="height:${cellSize2};border:1px solid var(--border);background:rgba(0,0,0,.02)"></td>`;col2++}
+  while(col2<7&&col2>0){cal+=`<td style="width:${cellSize2};height:${cellH2}"></td>`;col2++}
   cal+='</tr></tbody></table>'
   document.getElementById('owner-cal-grid').innerHTML=cal
 
