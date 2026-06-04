@@ -699,6 +699,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         <div id="owner-shift-room-grid" class="room-grid"></div>
         <div id="owner-room-auto-btn"></div>
       </div>
+      <button class="btn btn-gold btn-xs btn-full" style="margin-bottom:.5rem" onclick="autoAssignRooms(null)">⚡ 全日程まとめて自動振り分け</button>
       <div id="owner-shift-area" style="margin-top:.25rem"><div class="spin">読み込み中...</div></div>
 
     </div>
@@ -5264,6 +5265,16 @@ async function ownerSelectDay(ds){
   document.getElementById('owner-shift-detail-title').textContent=parseInt(m)+'月'+parseInt(d)+'日（'+dn+'）'
   let html=''
 
+  // ルーム自動振り分けボタン（承認済みシフトがある場合に表示）
+  if(approved.length){
+    const unroomedCnt=approved.filter(s=>!s.room).length
+    const btnLabel=unroomedCnt>0
+      ? '⚡ ルームを自動振り分け（'+unroomedCnt+'件未設定）'
+      : '✅ 全員振り分け済み'
+    const btnStyle=unroomedCnt>0?'':'opacity:.55;pointer-events:none'
+    html+='<button class="btn btn-gold btn-xs btn-full" style="margin-bottom:.6rem;'+btnStyle+'" onclick="autoAssignRooms(\''+ds+'\')">'+btnLabel+'</button>'
+  }
+
   // 承認待ち
   if(pending.length){
     html+='<div class="sec" style="margin-top:0">承認待ち（'+pending.length+'件）</div>'
@@ -5293,8 +5304,6 @@ async function ownerSelectDay(ds){
   // 承認済み（ルームごとにまとめる）
   if(approved.length){
     html+='<div class="sec">承認済み（'+approved.length+'件）</div>'
-    const unroomedCnt=approved.filter(s=>!s.room).length
-    if(unroomedCnt) html+='<button class="btn btn-gold btn-xs btn-full" style="margin-bottom:.5rem" onclick="autoAssignRooms(\''+ds+'\')">⚡ ルームを自動振り分け（'+unroomedCnt+'件未設定）</button>'
     const rooms={}
     approved.forEach(function(s){ const r=s.room||'ルーム未定'; if(!rooms[r])rooms[r]=[]; rooms[r].push(s) })
     Object.entries(rooms).forEach(function([room,ss]){
