@@ -170,7 +170,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 
 /* CAL TABLE RESET */
 .cal-table{border-collapse:collapse!important;border-spacing:0!important;width:100%;border:1px solid var(--border)!important;border-radius:8px;overflow:hidden}
-.cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important}.cal-table th:not(:last-child){border-right:1px solid var(--border)!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table td{border-right:1px solid var(--border)!important;padding:0!important}.cal-table td:last-child{border-right:none!important}
+.cal-table th{border:none!important;background:none!important;padding:.35rem 0!important;color:var(--text3)!important;font-size:.65rem!important;font-weight:600!important;border-bottom:1px solid var(--border)!important}.cal-table th:not(:last-child){border-right:1px solid var(--border)!important}.cal-table tbody tr{border-top:1px solid var(--border)!important}.cal-table tbody tr:last-child td{border-bottom:1px solid var(--border)!important}.cal-table td{border-right:1px solid var(--border)!important;padding:0!important}.cal-table td:last-child{border-right:none!important}
 
 /* TABLE */
 .tbl{background:var(--surface);border-radius:var(--r);overflow:hidden;margin-bottom:.75rem;box-shadow:var(--sh)}
@@ -2893,7 +2893,7 @@ function renderCal(){
   const cellH='calc((100vw - 0.8rem) / 7 * 1.2)'
   let html=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
-    const color=i===6?'color:var(--rtx)':i===5?'color:var(--accent)':''
+    const color=i===6?'color:var(--rtx)':''
     html+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;width:${cellSize};${color}">${d}</th>`
   })
   html+='</tr></thead><tbody><tr>'
@@ -2909,7 +2909,7 @@ function renderCal(){
     const dow=new Date(ds).getDay()
     const isToday=ds===td
     const isSelected=ds===selectedDate
-    const numColor=isToday||isSelected?'':dow===0?'var(--rtx)':dow===6?'var(--accent)':'var(--text)'
+    const numColor=isToday||isSelected?'':dow===0?'var(--rtx)':'var(--text)'
     const opacity=isPast?'0.25':''
     let dotColor=''
     if(!isPast&&s){
@@ -5127,7 +5127,7 @@ async function loadOwnerCal(){
   const cellH2='calc((100vw - 0.8rem) / 7 * 1.2)'
   let cal=`<table class="cal-table" style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>`
   days.forEach((d,i)=>{
-    const color=i===6?'color:var(--rtx)':i===5?'color:var(--accent)':''
+    const color=i===6?'color:var(--rtx)':''
     cal+=`<th style="text-align:center;font-size:.65rem;color:var(--text3);font-weight:600;padding:.35rem 0;${color}">${d}</th>`
   })
   cal+='</tr></thead><tbody><tr>'
@@ -5140,7 +5140,7 @@ async function loadOwnerCal(){
     const hasApproved=approvedDates[ds]>0
     const dow2=new Date(ds).getDay()
     const isToday2=ds===td
-    const numColor2=isToday2?'':dow2===0?'var(--rtx)':dow2===6?'var(--accent)':'var(--text)'
+    const numColor2=isToday2?'':dow2===0?'var(--rtx)':'var(--text)'
     const totalShifts=(pendingDates[ds]||0)+(approvedDates[ds]||0)
     const rvCount=reservationByDate[ds]||0
     let dotColor2=''
