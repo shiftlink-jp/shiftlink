@@ -2924,7 +2924,7 @@ function renderCal(){
       ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent-f);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:700;color:var(--accent);line-height:1">${d}</span></div>`
       :`<span style="font-size:1.5rem;font-weight:300;line-height:1.1;color:${numColor}">${d}</span>`
     const dotHtml=dotColor?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor};margin-top:1px;flex-shrink:0"></div>`:""
-    const inner=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml}${statusText?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusText}</span>`:''}</div>`
+    const inner=`<div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%;padding:.25rem 0 0 .3rem">${numHtml}${statusText?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusText}</span>`:''}</div>`
     html+=`<td onclick="selectDay('${ds}')" style="width:${cellSize};height:${cellH};text-align:center;vertical-align:middle;opacity:${opacity||1};cursor:pointer;position:relative;padding:0">${inner}</td>`
     col++
   }
@@ -5152,7 +5152,7 @@ async function loadOwnerCal(){
       ?`<div style="width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1">${d}</span></div>`
       :`<span style="font-size:1.5rem;font-weight:300;line-height:1.1;color:${numColor2}">${d}</span>`
     const dotHtml2=dotColor2?`<div style="width:5px;height:5px;border-radius:50%;background:${dotColor2};margin-top:1px;flex-shrink:0"></div>`:""
-    const inner2=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">${numHtml2}${statusLabel?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusLabel}</span>`:''} ${rvLabel}</div>`
+    const inner2=`<div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%;padding:.25rem 0 0 .3rem">${numHtml2}${statusLabel?`<span style="font-size:.5rem;line-height:1.2;background:var(--accent);color:#fff;border-radius:3px;padding:1px 4px;margin-top:2px">${statusLabel}</span>`:''} ${rvLabel}</div>`
     cal+=`<td onclick="ownerSelectDay('${ds}')" style="width:${cellSize2};height:${cellH2};text-align:center;vertical-align:middle;cursor:pointer;padding:0;position:relative">${inner2}</td>`
     col2++
   }
