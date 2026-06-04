@@ -1539,7 +1539,7 @@ function buildTimeOptions(selectedVal=''){
 let me=null, courses=[], opts=[], storeSettings={}
 let calMonth=ym(new Date()), salMonth=ym(new Date())
 let ownerCalMonth=ym(new Date()), ownerSalMonth=ym(new Date()), ownerSalDate=null
-let selectedDate=null, myShifts=[]
+let selectedDate=null, myShifts=[], myRvByDate={}
 let sheetCastId=null, sheetCastName='', sheetDate='', sheetFee={...DEFAULT_FEE}, sheetDiscs=[], trialWorkDays=0
 let roomShiftId=null, feeCastId=null, discCastId=null, editShiftId=null
 
@@ -2879,7 +2879,19 @@ async function loadCal(){
   const[y,m]=calMonth.split('-').map(Number)
   document.getElementById('cal-title').textContent=y+'年'+m+'月'
   const{data:shifts}=await withStoreFilter(sb.from('shifts').select('*').eq('cast_id',me.id).gte('date',calMonth+'-01').lt('date',nextYM(calMonth)+'-01'))
-  myShifts=shifts||[]; renderCal(); renderInlineShiftList()
+  myShifts=shifts||[]
+  // 承認済みシフトの予約件数を取得
+  myRvByDate={}
+  const approvedShifts=(myShifts).filter(s=>s.status==='approved')
+  if(approvedShifts.length){
+    const ids=approvedShifts.map(s=>s.id)
+    const{data:rvs}=await withStoreFilter(sb.from('reservations').select('shift_id').in('shift_id',ids))
+    if(rvs){
+      const shiftDateMap={}; approvedShifts.forEach(s=>{shiftDateMap[s.id]=s.date})
+      rvs.forEach(r=>{const d=shiftDateMap[r.shift_id];if(d){myRvByDate[d]=(myRvByDate[d]||0)+1}})
+    }
+  }
+  renderCal(); renderInlineShiftList()
 }
 function renderCal(){
   const[y,m]=calMonth.split('-').map(Number)
@@ -2921,8 +2933,9 @@ function renderCal(){
     const numHtml=isSelected
       ?`<div style="width:1.4rem;height:1.4rem;border-radius:50%;background:var(--accent-f);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:.75rem;font-weight:700;color:var(--accent);line-height:1">${d}</span></div>`
       :`<span style="font-size:.85rem;font-weight:500;line-height:1.1;color:${isToday?'var(--accent)':numColor}">${d}</span>`
-    const timeText=s&&!isPast&&s.start_time?`${s.start_time.slice(0,5)}〜${s.end_time?s.end_time.slice(0,5):''}`:''
-    const inner=`<div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%;padding:.25rem 0 0 .3rem">${numHtml}${statusText?`<span style="font-size:.65rem;font-weight:600;line-height:1.3;background:var(--accent);color:#fff;border-radius:4px;padding:2px 5px;margin-top:3px;display:block;text-align:center">${statusText}</span>`:''} ${timeText?`<span style="font-size:.6rem;line-height:1.3;color:var(--text3);margin-top:1px;display:block">${timeText}</span>`:''}</div>`
+    const timeText=s&&!isPast&&s.start_time?`${s.start_time.slice(0,5)}〜${s.end_time?s.end_time.slice(0,5):''}`:''    
+    const rvCount=myRvByDate[ds]||0
+    const inner=`<div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%;padding:.25rem 0 0 .3rem">${numHtml}${statusText?`<span style="font-size:.65rem;font-weight:600;line-height:1.3;background:var(--accent);color:#fff;border-radius:4px;padding:2px 5px;margin-top:3px;display:block;text-align:center">${statusText}</span>`:''} ${timeText?`<span style="font-size:.6rem;line-height:1.3;color:var(--text3);margin-top:1px;display:block">${timeText}</span>`:''} ${rvCount?`<span style="font-size:.65rem;font-weight:600;line-height:1.3;background:#e8f4fd;color:#1a73e8;border-radius:4px;padding:2px 5px;margin-top:2px;display:block;text-align:center">予約${rvCount}件</span>`:''}</div>`
     const todayStyle=isToday?'box-shadow:inset 0 0 0 2.5px var(--accent);':''
     html+=`<td onclick="selectDay('${ds}')" style="width:${cellSize};height:${cellH};text-align:center;vertical-align:middle;opacity:${opacity||1};cursor:pointer;position:relative;padding:0;${todayStyle}">${inner}</td>`
     col++
