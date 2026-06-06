@@ -2495,8 +2495,8 @@ async function sendPushNotification(castId, title, body) {
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
       body:JSON.stringify({cast_id:castId, title, body, store_id:storeId})
     });
-    if (!res.ok) console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>''));
-  } catch(e) { console.error('[Push] 通知送信エラー:', e); }
+    if (!res.ok) { console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>'')); _pushRecentKeys.delete(key); }
+  } catch(e) { console.error('[Push] 通知送信エラー:', e); _pushRecentKeys.delete(key); }
 }
 
 async function hdrPushBtnClick(){
@@ -3555,26 +3555,33 @@ async function castAddOption(rvId, custName) {
     this.textContent = '送信中...';
     const checked = [...sheet.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value);
     if (checked.length === 0) { this.disabled = false; this.textContent = '追加して通知'; alert('オプションを選んでください'); return; }
+    const btn = this;
+    try {
+      // DB更新：既存optionsに追加 + 支払い方法
+      const { data: rv } = await withStoreFilter(sb.from('reservations').select('options, payment').eq('id', rvId)).maybeSingle();
+      const existing = rv?.options ? rv.options.split(',').filter(Boolean) : [];
+      const newOpts = [...new Set([...existing, ...checked])];
+      let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
+      if (!pj.optPay) pj.optPay = {};
+      checked.forEach(name => {
+        const sel = sheet.querySelector(`.opt-pay-sel[data-opt="${name}"]`);
+        if (sel) pj.optPay[name] = sel.value;
+      });
+      // optPay内にカードがあればoption全体もカードに
+      pj.option = Object.values(pj.optPay).includes('カード') ? 'カード' : '現金';
+      await withStoreFilter(sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) })).eq('id', rvId);
 
-    // DB更新：既存optionsに追加 + 支払い方法
-    const { data: rv } = await withStoreFilter(sb.from('reservations').select('options, payment').eq('id', rvId)).maybeSingle();
-    const existing = rv?.options ? rv.options.split(',').filter(Boolean) : [];
-    const newOpts = [...new Set([...existing, ...checked])];
-    let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
-    if (!pj.optPay) pj.optPay = {};
-    checked.forEach(name => {
-      const sel = sheet.querySelector(`.opt-pay-sel[data-opt="${name}"]`);
-      if (sel) pj.optPay[name] = sel.value;
-    });
-    // optPay内にカードがあればoption全体もカードに
-    pj.option = Object.values(pj.optPay).includes('カード') ? 'カード' : '現金';
-    await withStoreFilter(sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) })).eq('id', rvId);
-
-    // オーナーに通知
-    await sendPushNotification(0, '追加OP🟣', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
-    sheet.remove();
-    toast('追加OP通知を送りました');
-    loadCastToday();
+      // オーナーに通知
+      await sendPushNotification(0, '追加OP🟣', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
+      sheet.remove();
+      toast('追加OP通知を送りました');
+      loadCastToday();
+    } catch(e) {
+      console.error('[castAddOption]', e);
+      btn.disabled = false;
+      btn.textContent = '追加して通知';
+      alert('エラーが発生しました。もう一度お試しください');
+    }
   };
 }
 
@@ -3614,23 +3621,30 @@ async function castExtend(rvId, custName) {
     this.textContent = '送信中...';
     const extMin = parseInt(sheet.querySelector('#ext-minutes').value);
     if (!extMin || isNaN(extMin) || extMin <= 0) { this.disabled = false; this.textContent = '延長して通知'; alert('延長時間を正しく入力してください'); return; }
+    const btn = this;
+    try {
+      const [h, m] = rv.checkout_time.slice(0,5).split(':').map(Number);
+      const newMin = h * 60 + m + extMin;
+      const newTime = String(Math.floor(newMin/60)).padStart(2,'0') + ':' + String(newMin%60).padStart(2,'0') + ':00';
+      const newExtCount = (rv.extension_count || 0) + 1;
 
-    const [h, m] = rv.checkout_time.slice(0,5).split(':').map(Number);
-    const newMin = h * 60 + m + extMin;
-    const newTime = String(Math.floor(newMin/60)).padStart(2,'0') + ':' + String(newMin%60).padStart(2,'0') + ':00';
-    const newExtCount = (rv.extension_count || 0) + 1;
+      const extPay = sheet.querySelector('#ext-pay').value;
+      let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
+      pj.ext = extPay;
 
-    const extPay = sheet.querySelector('#ext-pay').value;
-    let pj = {}; try { pj = JSON.parse(rv?.payment || '{}'); } catch(e) {}
-    pj.ext = extPay;
+      await withStoreFilter(sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) })).eq('id', rvId);
 
-    await withStoreFilter(sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) })).eq('id', rvId);
-
-    // オーナーに通知
-    await sendPushNotification(0, '延長⏱', me.name + ' / ' + custName + 'さんが' + extMin + '分延長（〜' + newTime.slice(0,5) + '）');
-    sheet.remove();
-    toast('延長通知を送りました');
-    loadCastToday();
+      // オーナーに通知
+      await sendPushNotification(0, '延長⏱', me.name + ' / ' + custName + 'さんが' + extMin + '分延長（〜' + newTime.slice(0,5) + '）');
+      sheet.remove();
+      toast('延長通知を送りました');
+      loadCastToday();
+    } catch(e) {
+      console.error('[castExtend]', e);
+      btn.disabled = false;
+      btn.textContent = '延長して通知';
+      alert('エラーが発生しました。もう一度お試しください');
+    }
   };
 }
 
