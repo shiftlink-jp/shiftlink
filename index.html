@@ -3897,8 +3897,9 @@ async function loadMySalary(){
       const courseBack=s.course_back||0
       const shimeiBack=s.shimei_back||0
       const optBack=s.opt_back||0
-      const extBackTotal=(s.extensions||[]).reduce((sum,e)=>sum+(e.back||0),0)
-      const sessionNet=courseBack+shimeiBack+optBack+extBackTotal
+      const extBackTotal=s.ext_back!=null?s.ext_back:(s.extensions||[]).reduce((sum,e)=>sum+(e.back||0),0)
+      const discFromBack=(s.discounts||[]).filter(d=>d.disc_type&&d.disc_type!=='shop').reduce((sum,d)=>sum+(d.amount||0),0)
+      const sessionNet=courseBack+shimeiBack+optBack+extBackTotal-discFromBack
       const hasShimei=s.shimei_type&&s.shimei_type!=='フリー'
       const sOptNames=(s.options||[]).map(o=>o.name).filter(Boolean)
       const exts=(s.extensions||[])
@@ -4025,7 +4026,10 @@ async function loadMySalary(){
     const shimeiBack=(w.sessions||[]).reduce((s,ss)=>s+(ss.shimei_back||0),0)
     const optBackTotal=(w.sessions||[]).reduce((s,ss)=>s+(ss.opt_back||0),0)
     const courseBackTotal=(w.sessions||[]).reduce((s,ss)=>s+(ss.course_back||0),0)
-    const extBackTotal2=(w.sessions||[]).reduce((s,ss)=>s+((ss.extensions||[]).reduce((a,e)=>a+(e.back||0),0)),0)
+    const extBackTotal2=(w.sessions||[]).reduce((s,ss)=>{
+      const extB=ss.ext_back!=null?ss.ext_back:(ss.extensions||[]).reduce((a,e)=>a+(e.back||0),0)
+      return s+extB
+    },0)
     const backBreakdown=`<div style="display:flex;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)">
       <div style="flex:1;text-align:center">
         <div style="font-size:.62rem;color:var(--rtx)">指名バック</div>
@@ -6773,7 +6777,7 @@ async function saveWork(){
     const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
     const sesCash=sessionSalesBase-sesCardBase
     const ovKeys=Object.keys(ov)
-    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(ovKeys.length?{overrides:ov}:{})})
+    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,ext_back:extBackTotalEff,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(ovKeys.length?{overrides:ov}:{})})
     totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
   })
   const hoshoSave=parseInt(document.getElementById('w-hosho')?.value)||0
