@@ -2473,7 +2473,21 @@ function startApp(){
 }
 
 // (D) send-push共通ヘルパー（レスポンスチェック付き）
+const _pushRecentKeys = new Map();
+const _castRoomProcessing = new Set();
+
 async function sendPushNotification(castId, title, body) {
+  // 3秒以内の同一通知を重複送信しない
+  const key = `${castId}|${title}|${body}`;
+  const now = Date.now();
+  const last = _pushRecentKeys.get(key);
+  if (last && now - last < 3000) return;
+  _pushRecentKeys.set(key, now);
+  if (_pushRecentKeys.size > 30) {
+    for (const [k, t] of _pushRecentKeys) {
+      if (now - t > 10000) _pushRecentKeys.delete(k);
+    }
+  }
   try {
     const storeId = SAAS_MODE && storeSettings.store_id ? storeSettings.store_id : null
     const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
@@ -3476,22 +3490,34 @@ function castOpenMemoFromHist(custName){
 }
 
 async function castRoomIn(rvId, custName, time) {
-  if (!confirm(custName + 'さんが入室しますか？')) return;
-  // DBに入室時刻を保存
-  await withStoreFilter(sb.from('reservations').update({ room_in_at: new Date().toISOString() })).eq('id', rvId);
-  // オーナーに通知
-  await sendPushNotification(0, 'お客様入室🚪', me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）');
-  toast('入室通知を送りました');
-  loadCastToday();
+  if (_castRoomProcessing.has('in:'+rvId)) return;
+  _castRoomProcessing.add('in:'+rvId);
+  try {
+    if (!confirm(custName + 'さんが入室しますか？')) return;
+    // DBに入室時刻を保存
+    await withStoreFilter(sb.from('reservations').update({ room_in_at: new Date().toISOString() })).eq('id', rvId);
+    // オーナーに通知
+    await sendPushNotification(0, 'お客様入室🚪', me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）');
+    toast('入室通知を送りました');
+    loadCastToday();
+  } finally {
+    _castRoomProcessing.delete('in:'+rvId);
+  }
 }
 
 async function castRoomOut(rvId, custName, time) {
-  if (!confirm(custName + 'さんが退室しますか？')) return;
-  // DBに退室時刻を保存
-  await withStoreFilter(sb.from('reservations').update({ room_out_at: new Date().toISOString() })).eq('id', rvId);
-  await sendPushNotification(0, 'お客様退室🚶', me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）');
-  toast('退室通知を送りました');
-  loadCastToday();
+  if (_castRoomProcessing.has('out:'+rvId)) return;
+  _castRoomProcessing.add('out:'+rvId);
+  try {
+    if (!confirm(custName + 'さんが退室しますか？')) return;
+    // DBに退室時刻を保存
+    await withStoreFilter(sb.from('reservations').update({ room_out_at: new Date().toISOString() })).eq('id', rvId);
+    await sendPushNotification(0, 'お客様退室🚶', me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）');
+    toast('退室通知を送りました');
+    loadCastToday();
+  } finally {
+    _castRoomProcessing.delete('out:'+rvId);
+  }
 }
 
 async function castAddOption(rvId, custName) {
@@ -3524,8 +3550,11 @@ async function castAddOption(rvId, custName) {
   document.body.appendChild(sheet);
 
   sheet.querySelector('#add-opt-confirm').onclick = async function() {
+    if (this.disabled) return;
+    this.disabled = true;
+    this.textContent = '送信中...';
     const checked = [...sheet.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value);
-    if (checked.length === 0) { alert('オプションを選んでください'); return; }
+    if (checked.length === 0) { this.disabled = false; this.textContent = '追加して通知'; alert('オプションを選んでください'); return; }
 
     // DB更新：既存optionsに追加 + 支払い方法
     const { data: rv } = await withStoreFilter(sb.from('reservations').select('options, payment').eq('id', rvId)).maybeSingle();
@@ -3580,8 +3609,11 @@ async function castExtend(rvId, custName) {
   document.body.appendChild(sheet);
 
   sheet.querySelector('#ext-confirm').onclick = async function() {
+    if (this.disabled) return;
+    this.disabled = true;
+    this.textContent = '送信中...';
     const extMin = parseInt(sheet.querySelector('#ext-minutes').value);
-    if (!extMin || isNaN(extMin) || extMin <= 0) { alert('延長時間を正しく入力してください'); return; }
+    if (!extMin || isNaN(extMin) || extMin <= 0) { this.disabled = false; this.textContent = '延長して通知'; alert('延長時間を正しく入力してください'); return; }
 
     const [h, m] = rv.checkout_time.slice(0,5).split(':').map(Number);
     const newMin = h * 60 + m + extMin;
