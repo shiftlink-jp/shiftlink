@@ -8689,7 +8689,8 @@ function renderMonthlyDaily(area,dailyRows,tot){
   </div>`
 
   // max-height でスクロールコンテナを作り、thead の sticky を有効化
-  area.innerHTML=legend+`<div style="overflow:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);max-height:70vh">
+  // 210px = 月ナビ+タブ切替+凡例の高さ + 下タブバー → 外側スクロールをなくして二重スクロール解消
+  area.innerHTML=legend+`<div style="overflow:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);max-height:calc(100dvh - 210px)">
     <table style="width:100%;border-collapse:collapse;min-width:680px">${thead}<tbody>${dailyRows.map(makeRow).join('')}${totRow}</tbody></table></div>`
 }
 
