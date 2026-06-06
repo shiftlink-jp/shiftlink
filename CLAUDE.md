@@ -29,6 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **作業は必ずstagingブランチで行い、確認後にmainへマージする**（mainへの直接pushは緊急時のみ）
 - 管理画面への直接ログインは禁止（Claudeがデータ取得・分析のために使わない）
 - 複雑な問題・重要な設計判断・セキュリティ関連の場合は、**必ず**Opusへの切り替えを提案すること
+- **開発部が修正・実装を完了したら、必ずテスト部（@qa）がテストを実施してからユーザーに報告する**（開発完了＝報告ではなく、テスト完了＝報告）
 
 ## アーキテクチャ
 

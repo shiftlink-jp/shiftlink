@@ -3924,7 +3924,7 @@ async function loadMySalary(){
         }
         sRows.push({cat:'オプション',name:o.name,sale:opSale,back:o.back||0,pay:payLbl(o.pay||s.pay_option)})
       })
-      ;(s.extensions||[]).forEach((e,ei)=>{const extCourse=courses.find(c=>c.name&&c.name.includes('延長'));sRows.push({cat:'延長',name:exts.length>1?`${ei+1}回目（30分）`:'30分',sale:extCourse?.price||storeSettings.shop_ext30||3000,back:e.back||0,pay:payLbl(e.pay)})})
+      ;(s.extensions||[]).forEach((e,ei)=>{const extCourse=courses.find(c=>c.name&&c.name.includes('延長'));const perExtBack=s.ext_back!=null&&exts.length>0?Math.round(s.ext_back/exts.length):e.back||0;sRows.push({cat:'延長',name:exts.length>1?`${ei+1}回目（30分）`:'30分',sale:extCourse?.price||storeSettings.shop_ext30||3000,back:perExtBack,pay:payLbl(e.pay)})})
       ;(s.discounts||[]).forEach(d=>{sRows.push({cat:'割引',name:d.name,sale:-(d.amount||0),back:0,pay:''})})
       if(w.misc&&sessions.indexOf(s)===sessions.length-1){sRows.push({cat:'雑費',name:'雑費',sale:-w.misc,back:-w.misc,pay:''})}
       const totalSale=sRows.reduce((a,r)=>a+r.sale,0)
