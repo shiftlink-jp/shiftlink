@@ -318,6 +318,13 @@ tr:last-child td{border-bottom:none}
     width:auto!important;
     padding:.06rem .04rem!important;
   }
+  /* 日付列（▾付き）が折り返して行の高さがまだらになるのを防ぐ：1行固定で揃える */
+  #daily-print-table td:first-child, #daily-print-table th:first-child{
+    white-space:nowrap!important;
+  }
+  #daily-print-table td:first-child > div, #daily-print-table th:first-child > div{
+    white-space:nowrap!important;
+  }
   /* セル内の装飾div（背景・角丸・最小幅）が列幅を圧迫し重なるため解除 */
   #daily-print-table th > div, #daily-print-table td > div{
     min-width:0!important;
