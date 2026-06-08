@@ -4062,6 +4062,7 @@ async function loadMySalary(){
   // worksは日付昇順。古い順表示、今日分はtodayAreaで表示済みなのでスキップ
   let dailyHtml=''
   works.forEach((w,idx)=>{
+    if(w.date===todayStr) return // 今日分はtodayAreaで表示済みなのでdailyAreaには出さない（二重表示防止）
     const dn=['日','月','火','水','木','金','土'][new Date(w.date).getDay()]
     const dateLabel=jpDate(w.date)+'（'+dn+'）'
     const cardId='sal-day-'+w.date.replace(/-/g,'')
