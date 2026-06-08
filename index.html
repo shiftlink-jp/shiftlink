@@ -3771,8 +3771,33 @@ async function loadMySalary(){
     }
     // 今日のシフトを取得
     const{data:todayShifts}=await withStoreFilter(sb.from('shifts').select('id')).eq('cast_id',me.id).eq('date',todayStr).eq('status','approved')
+    // 店舗側で当日の委託金が確定保存済みの場合は、その保存データ（手入力修正を含む）を優先して表示する
+    const{data:todaySavedWork}=await withStoreFilter(sb.from('works').select('*')).eq('cast_id',me.id).eq('date',todayStr).maybeSingle()
     let todayHtml=''
-    if(todayShifts&&todayShifts.length){
+    if(todaySavedWork&&todaySavedWork.sessions&&todaySavedWork.sessions.length){
+      const wCardBaseT=(todaySavedWork.sessions||[]).reduce((s,ss)=>s+(ss.card_base||0),0)
+      const wCardSalesT=wCardBaseT>0?Math.round(wCardBaseT*1.1):0
+      const wCashSalesT=(todaySavedWork.sales||0)-wCardSalesT
+      const wProfitT=(todaySavedWork.sales||0)-(todaySavedWork.net||todaySavedWork.back||0)
+      const cellT=(label,val,accent=false)=>{
+        const backLabels=['バック','委託金'];
+        const profitLabels=['店舗利益','純利益','粗利益','利益'];
+        const isBack=backLabels.some(l=>label.includes(l));
+        const isProfit=profitLabels.some(l=>label.includes(l));
+        const valColor=isBack?'color:var(--rtx)':isProfit?'color:var(--btx)':accent?'color:var(--text3)':'';
+        const lblColor=isBack?'color:var(--rtx)':isProfit?'color:var(--btx)':'color:var(--text3)';
+        return `<div style="background:var(--surface);border-radius:10px;padding:.55rem .4rem;text-align:center;border:1px solid var(--border)"><div style="font-size:.58rem;${lblColor};margin-bottom:.1rem">${label}</div><div style="font-size:.82rem;font-weight:700;${valColor}">${val}</div></div>`
+      }
+      todayHtml=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-bottom:.75rem">
+        ${cellT('本数',(todaySavedWork.count||0)+'本')}
+        ${cellT('現金',fmt(wCashSalesT))}
+        ${cellT('カード',fmt(wCardSalesT))}
+        ${cellT('バック',fmt(todaySavedWork.net||todaySavedWork.back||0),true)}
+        ${cellT('雑費',todaySavedWork.misc?fmt(todaySavedWork.misc):'¥0')}
+        ${cellT('店舗利益',fmt(wProfitT))}
+      </div>`
+      todayHtml+=buildSessionLines(todaySavedWork)
+    } else if(todayShifts&&todayShifts.length){
       const sids=todayShifts.map(s=>s.id)
       const{data:todayRvs_raw}=await withStoreFilter(sb.from('reservations').select('*').in('shift_id',sids).order('checkin_time'))
       const todayRvs=sortRvsByTime(todayRvs_raw)
