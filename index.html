@@ -336,8 +336,8 @@ tr:last-child td{border-bottom:none}
     background:#fff!important;
     border-bottom:1px solid #999!important;
   }
-  /* キャスト内訳行：折りたたみ状態に関わらず印刷時は常に展開して全データを出力 */
-  #daily-print-table .cast-sub{display:table-row!important}
+  /* キャスト内訳行は印刷時は出さない（日付・合計金額などの行のみ印刷） */
+  #daily-print-table .cast-sub{display:none!important}
   /* 改ページ時に行の途中で切れないように */
   #daily-print-table tr{page-break-inside:avoid}
   #daily-print-table thead{display:table-header-group}
