@@ -307,12 +307,25 @@ tr:last-child td{border-bottom:none}
   #daily-print-table{
     width:100%!important;
     min-width:0!important;
-    table-layout:fixed!important;
-    font-size:.55rem!important;
+    table-layout:auto!important;
+    font-size:.5rem!important;
+    border-collapse:collapse!important;
   }
   #daily-print-table th, #daily-print-table td{
     white-space:normal!important;
     word-break:break-word!important;
+    min-width:0!important;
+    width:auto!important;
+    padding:.06rem .04rem!important;
+  }
+  /* セル内の装飾div（背景・角丸・最小幅）が列幅を圧迫し重なるため解除 */
+  #daily-print-table th > div, #daily-print-table td > div{
+    min-width:0!important;
+    width:auto!important;
+    background:transparent!important;
+    border-radius:0!important;
+    padding:.04rem!important;
+    font-size:inherit!important;
   }
   /* sticky位置指定は印刷では不要かつレイアウト崩れの原因になるため解除 */
   #daily-print-table th, #daily-print-table td,
