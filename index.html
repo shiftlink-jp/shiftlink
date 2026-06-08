@@ -3311,6 +3311,10 @@ function renderCastTodayCards(rvs) {
       cardStyle += 'background:white;border-color:#e8dcc8;';
     }
 
+    const newLabel = r.is_new===true||r.is_new==='true'
+      ? '<span style="font-size:.65rem;background:#4CAF50;color:#fff;padding:1px 7px;border-radius:99px;margin-left:.4rem">新規</span>'
+      : '<span style="font-size:.65rem;background:var(--surface2);color:var(--text3);padding:1px 7px;border-radius:99px;margin-left:.4rem;border:1px solid var(--border)">再訪</span>'
+
     const hasRoomIn = !!r.room_in_at;
     const hasRoomOut = !!r.room_out_at;
     const btnBase = 'padding:.6rem 0;border:none;border-radius:10px;font-weight:700;font-size:.8rem;cursor:pointer;';
@@ -3336,7 +3340,7 @@ function renderCastTodayCards(rvs) {
       ${histBtn}`;
     html += `<div style="${cardStyle}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-        <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${escapeHtml(r.customer_name || '（名前なし）')}${badge}</div>
+        <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${escapeHtml(r.customer_name || '（名前なし）')}${newLabel}${badge}</div>
         <div style="font-size:.9rem;font-weight:700;color:var(--text);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
       <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--text);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
