@@ -295,7 +295,11 @@ tr:last-child td{border-bottom:none}
   /* .screenはdisplay:flexだが、印刷時にflexコンテナのままだとページをまたぐ内容が
      2ページ目に流れず途中で切り捨てられてしまう（フレックスは改ページ分割に非対応）。
      通常のブロック要素として積み上げることで全行を複数ページに正しく印刷する */
-  .screen{display:block!important;max-width:none!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
+  /* 非アクティブ画面（ログイン選択・LP・オンボーディング等）はdisplay:noneのまま維持し、
+     現在表示中の画面(.screen.on)だけをブロック化する（.screenに一括適用すると
+     display:noneが!importantで上書きされ、隠れているはずの画面まで印刷されてしまう） */
+  .screen:not(.on){display:none!important}
+  .screen.on{display:block!important;max-width:none!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
   /* .app-bodyはflex:1+overflow-y:autoで画面の残り高さに固定されたスクロール領域のため、
      印刷時もこのままだと1ページ分の高さで内容が切り捨てられる。通常のブロックに戻して
      全内容が複数ページに正しく流れるようにする */
