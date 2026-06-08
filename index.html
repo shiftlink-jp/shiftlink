@@ -3311,9 +3311,11 @@ function renderCastTodayCards(rvs) {
       cardStyle += 'background:white;border-color:#e8dcc8;';
     }
 
+    // 再訪バッジは var(--surface2)/var(--text3) だと低コントラストで視認しづらいため、
+    // カード背景（白・クリーム・薄青等）どれでもはっきり見える配色を使用
     const newLabel = r.is_new===true||r.is_new==='true'
-      ? '<span style="font-size:.65rem;background:#4CAF50;color:#fff;padding:1px 7px;border-radius:99px;margin-left:.4rem">新規</span>'
-      : '<span style="font-size:.65rem;background:var(--surface2);color:var(--text3);padding:1px 7px;border-radius:99px;margin-left:.4rem;border:1px solid var(--border)">再訪</span>'
+      ? '<span style="font-size:.65rem;background:#4CAF50;color:#fff;padding:1px 7px;border-radius:99px;margin-left:.4rem;font-weight:600">新規</span>'
+      : '<span style="font-size:.65rem;background:#dde6f0;color:#3d5878;padding:1px 7px;border-radius:99px;margin-left:.4rem;font-weight:600;border:1px solid #b8cbe0">再訪</span>'
 
     const hasRoomIn = !!r.room_in_at;
     const hasRoomOut = !!r.room_out_at;
