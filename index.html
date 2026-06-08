@@ -323,6 +323,8 @@ tr:last-child td{border-bottom:none}
     background:#fff!important;
     border-bottom:1px solid #999!important;
   }
+  /* キャスト内訳行：折りたたみ状態に関わらず印刷時は常に展開して全データを出力 */
+  #daily-print-table .cast-sub{display:table-row!important}
   /* 改ページ時に行の途中で切れないように */
   #daily-print-table tr{page-break-inside:avoid}
   #daily-print-table thead{display:table-header-group}
