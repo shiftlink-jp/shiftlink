@@ -2732,7 +2732,7 @@ async function checkOwnerPushBtn(){
         applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
       });
       const newJson = newSub.toJSON();
-      // 古い登録を全削除して新しいのを入れる
+      // 同一endpointの古い登録のみ削除して新しいのを追加する
       const oldIds = (allSubs||[]).filter(r=>{
         try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newJson.endpoint; } catch { return false; }
       }).map(r=>r.id);
