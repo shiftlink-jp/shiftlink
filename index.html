@@ -439,7 +439,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[OwnerPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newSub.endpoint).origin; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
@@ -459,7 +459,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[CastPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newSub.endpoint).origin; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
@@ -2504,7 +2504,7 @@ function startApp(){
               // ブラウザにsubがあり通知許可済み → 自動再登録
               console.log('[CastPush] endpointずれ検出 → 自動再登録');
               const oldIds = (castSubs||[]).filter(r=>{
-                try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin; } catch { return false; }
+                try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === subJson.endpoint; } catch { return false; }
               }).map(r=>r.id);
               if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
               const { error: insErr } = await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: subJson }));
@@ -2528,7 +2528,7 @@ function startApp(){
           });
           const newJson = newSub.toJSON();
           const oldIds = (castSubs||[]).filter(r=>{
-            try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newJson.endpoint).origin; } catch { return false; }
+            try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newJson.endpoint; } catch { return false; }
           }).map(r=>r.id);
           if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
           await sb.from('push_subscriptions').insert(withStoreId({ cast_id: castId, subscription: newJson }));
@@ -2648,12 +2648,14 @@ async function registerCastPush(){
     if (endpointDups.length > 0) {
       await sb.from('push_subscriptions').delete().in('id', endpointDups.map(r=>r.id));
     }
-    // (A) 同一cast_idの同一endpoint origin（古い登録）だけ削除（他端末は残す）
+    // (A) 同一cast_idで完全に同じendpointの古い登録だけ削除（他端末は残す）
+    // ※origin比較だとiOS端末は全機が web.push.apple.com になるため、他端末の登録も
+    //   削除されてしまう。endpointの完全一致に限定することで複数台登録を正しく維持する。
     const { data: castSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
     const staleIds = (castSubs||[]).filter(r=>{
       try {
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
-        return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+        return s.endpoint === subJson.endpoint;
       } catch { return false; }
     }).map(r=>r.id);
     if (staleIds.length > 0) {
@@ -2708,7 +2710,7 @@ async function checkOwnerPushBtn(){
           const staleIds = (allSubs||[]).filter(r=>{
             try {
               const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
-              return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+              return s.endpoint === subJson.endpoint;
             } catch { return false; }
           }).map(r=>r.id);
           if (staleIds.length > 0) {
@@ -2732,7 +2734,7 @@ async function checkOwnerPushBtn(){
       const newJson = newSub.toJSON();
       // 古い登録を全削除して新しいのを入れる
       const oldIds = (allSubs||[]).filter(r=>{
-        try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return new URL(s.endpoint).origin === new URL(newJson.endpoint).origin; } catch { return false; }
+        try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newJson.endpoint; } catch { return false; }
       }).map(r=>r.id);
       if (oldIds.length > 0) await sb.from('push_subscriptions').delete().in('id', oldIds);
       await sb.from('push_subscriptions').insert(withStoreId({ cast_id: 0, subscription: newJson }));
@@ -2771,11 +2773,11 @@ async function registerOwnerPush(){
       } catch { return false; }
     });
     if (alreadyExists) { alert('この端末は既に通知登録済みです！'); return; }
-    // ★ 同一端末の古いsubscription（endpoint originが同じ）を削除して重複通知を防ぐ
+    // 同一endpointの古い登録だけ削除（origin比較だとiOS複数台が全削除されるため完全一致に限定）
     const staleIds = (allSubs||[]).filter(r=>{
       try {
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
-        return new URL(s.endpoint).origin === new URL(subJson.endpoint).origin;
+        return s.endpoint === subJson.endpoint;
       } catch { return false; }
     }).map(r=>r.id);
     if (staleIds.length > 0) {
