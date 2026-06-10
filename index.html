@@ -432,7 +432,7 @@ if("serviceWorker" in navigator && !_isSaaS){
           try {
             if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
               const newSub = e.data.subscription;
-              sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0).then(function(res){
+              withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0)).then(function(res){
                 const allSubs = res.data || [];
                 const exists = allSubs.some(function(r){
                   try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
@@ -452,7 +452,7 @@ if("serviceWorker" in navigator && !_isSaaS){
             } else if (typeof me !== 'undefined' && me && !me.is_owner && me.id && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
               const newSub = e.data.subscription;
               const castId = me.id;
-              sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId).then(function(res){
+              withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId)).then(function(res){
                 const allSubs = res.data || [];
                 const exists = allSubs.some(function(r){
                   try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
@@ -2489,7 +2489,7 @@ function startApp(){
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) { btn.style.display=''; return; }
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
-        const { data: castSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
+        const { data: castSubs } = await withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId));
         if (sub) {
           const subJson = sub.toJSON();
           const exists = (castSubs||[]).some(r=>{
@@ -2499,7 +2499,7 @@ function startApp(){
             btn.textContent = '✅ 設定済み'; btn.disabled = false; btn.style.opacity = '0.75'; btn.style.cursor = 'pointer'; btn.dataset.pushState = 'registered';
           } else if (Notification.permission === 'granted') {
             // 他のユーザーがこのendpointを登録済みなら自動再登録しない（端末共有対策）
-            const {data:allSubs}=await sb.from('push_subscriptions').select('id,cast_id,subscription');
+            const {data:allSubs}=await withStoreFilter(sb.from('push_subscriptions').select('id,cast_id,subscription'));
             const ownedByOther=(allSubs||[]).some(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint&&r.cast_id!==castId;}catch{return false;}});
             if(ownedByOther){ btn.textContent='🔔 通知設定'; }
             else {
@@ -2601,7 +2601,7 @@ async function unregisterPush(){
       const subJson = sub.toJSON();
       // DBから削除
       const castId = me.is_owner ? 0 : me.id;
-      const {data:subs}=await sb.from('push_subscriptions').select('id,subscription').eq('cast_id',castId);
+      const {data:subs}=await withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id',castId));
       const ids=(subs||[]).filter(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint;}catch{return false;}}).map(r=>r.id);
       if(ids.length>0) await sb.from('push_subscriptions').delete().in('id',ids);
       await sub.unsubscribe();
@@ -2653,7 +2653,7 @@ async function registerCastPush(){
     // (A) 同一cast_idで完全に同じendpointの古い登録だけ削除（他端末は残す）
     // ※origin比較だとiOS端末は全機が web.push.apple.com になるため、他端末の登録も
     //   削除されてしまう。endpointの完全一致に限定することで複数台登録を正しく維持する。
-    const { data: castSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId);
+    const { data: castSubs } = await withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', castId));
     const staleIds = (castSubs||[]).filter(r=>{
       try {
         const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription;
@@ -2687,7 +2687,7 @@ async function checkOwnerPushBtn(){
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    const { data: allSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0);
+    const { data: allSubs } = await withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0));
     if (sub) {
       const subJson = sub.toJSON();
       const exists = (allSubs||[]).some(r=>{
@@ -2703,7 +2703,7 @@ async function checkOwnerPushBtn(){
       // ★ ブラウザに新しいsubscriptionがあるがDB未登録 → 自動でDBへ登録（iOS Safariのendpointローテーション対策）
       if (Notification.permission === 'granted') {
         // 他のユーザー（キャスト等）がこのendpointを登録済みなら自動登録しない（端末共有対策）
-        const {data:allSubsCheck}=await sb.from('push_subscriptions').select('id,cast_id,subscription');
+        const {data:allSubsCheck}=await withStoreFilter(sb.from('push_subscriptions').select('id,cast_id,subscription'));
         const ownedByOther=(allSubsCheck||[]).some(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint&&r.cast_id!==0;}catch{return false;}});
         if(ownedByOther){ return; }
         try {
@@ -2766,7 +2766,7 @@ async function registerOwnerPush(){
       applicationServerKey: urlBase64ToUint8Array('BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E')
     });
     const subJson = sub.toJSON();
-    const { data: allSubs } = await sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0);
+    const { data: allSubs } = await withStoreFilter(sb.from('push_subscriptions').select('id,subscription').eq('cast_id', 0));
     // 同じendpointが既に登録済みか確認
     const alreadyExists = (allSubs||[]).some(r=>{
       try {
