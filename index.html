@@ -1771,7 +1771,9 @@ async function init(){
   const{data:cs}=await withStoreFilter(sb.from('courses').select('*').order('price'))
   const{data:op}=await withStoreFilter(sb.from('options').select('*').order('id'))
   const{data:ss}=await withStoreFilter(sb.from('store_settings').select('*')).maybeSingle()
-  const{data:rm}=await sb.from('rooms').select('*').is('store_id',null).order('sort_order')
+  let _roomQ=sb.from('rooms').select('*').order('sort_order')
+  _roomQ = currentStoreId ? _roomQ.eq('store_id',currentStoreId) : _roomQ.is('store_id',null)
+  const{data:rm}=await _roomQ
   courses=cs||[]; opts=op||[]; storeSettings=ss||{}; roomList=rm||[]
   // DBにowner_pinがあればそれを使う、なければlocalStorageにフォールバック
   if(ss&&ss.owner_pin) OWNER_PIN = String(ss.owner_pin)
@@ -5875,7 +5877,7 @@ function renderStoreRoomList(){
 async function reloadRoomList(){
   // SaaSモードでは current store_id でフィルタ、非SaaSモードでは store_id IS NULL でフィルタ
   let q=sb.from('rooms').select('*').order('sort_order')
-  if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+  if(currentStoreId) q=q.eq('store_id',currentStoreId)
   else q=q.is('store_id',null)
   const{data:rm}=await q
   roomList=rm||[]
