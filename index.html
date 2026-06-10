@@ -2565,7 +2565,7 @@ async function sendPushNotification(castId, title, body) {
     }
   }
   try {
-    const storeId = SAAS_MODE && storeSettings.store_id ? storeSettings.store_id : null
+    const storeId = currentStoreId || null
     const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
@@ -2639,7 +2639,7 @@ async function registerCastPush(){
     // (C) このendpointが他のcast_idで登録済みなら削除（端末の使い回し対策）
     // SaaSモードではstore_idでスコープを限定し、他テナントのendpoint情報を取得しない
     let endpointQuery = sb.from('push_subscriptions').select('id,cast_id,subscription');
-    if (SAAS_MODE && currentStoreId) endpointQuery = endpointQuery.eq('store_id', currentStoreId);
+    if (currentStoreId) endpointQuery = endpointQuery.eq('store_id', currentStoreId);
     const { data: allEndpointSubs } = await endpointQuery;
     const endpointDups = (allEndpointSubs||[]).filter(r=>{
       try {
@@ -4469,7 +4469,7 @@ async function saveNewCustomer(){
     if(!no || (!isManualNo && attempt>0)){
       // DBから最新の最大値を取得（同時登録対策）
       let q=sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
-      if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+      if(currentStoreId) q=q.eq('store_id',currentStoreId)
       const{data:last}=await q
       no=((last||[])[0]?.customer_no||0)+1
     }
@@ -4868,7 +4868,7 @@ async function saveReservation(){
     for(let attempt=0;attempt<5;attempt++){
       // DBから最新の最大値を取得（同時登録対策）: 衝突時は毎回最大値を取り直すため番号が飛ばない
       let q=sb.from('customers').select('customer_no').order('customer_no',{ascending:false}).limit(1)
-      if(SAAS_MODE && currentStoreId) q=q.eq('store_id',currentStoreId)
+      if(currentStoreId) q=q.eq('store_id',currentStoreId)
       const{data:last}=await q
       nextNo=((last||[])[0]?.customer_no||0)+1
       const r=await sb.from('customers').insert(withStoreId({
