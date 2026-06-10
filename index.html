@@ -4483,7 +4483,7 @@ async function saveNewCustomer(){
   }
   if(insertErr){toast('エラー: '+insertErr.message);return}
   toast('登録しました（No.'+no+'）')
-  closeSheet('customer-edit-overlay')
+  closeSheet('customer-edit')
   loadCustomers()
 }
 
