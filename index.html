@@ -1755,7 +1755,7 @@ async function init(){
   // ── 従来モード：PINログイン ──
   const{data:casts}=await withStoreFilter(sb.from('casts').select('id,name').eq('active',true).order('sort_order',{ascending:true}))
   // hidden select（互換用）
-  const html='<option value="">選んでください</option>'+(casts||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
+  const html='<option value="">選んでください</option>'+(casts||[]).map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
   document.getElementById('cast-sel').innerHTML=html
   // カードUI描画
   const cardList=document.getElementById('cast-card-list')
@@ -1765,7 +1765,7 @@ async function init(){
         style="background:rgba(255,255,255,0.82);border:1.5px solid var(--border);border-radius:14px;padding:.7rem .5rem;font-size:.88rem;font-weight:700;color:var(--text);cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .18s;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.07)"
         onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-        ${c.name}
+        ${escapeHtml(c.name)}
       </button>`).join('')
   }
   const{data:cs}=await withStoreFilter(sb.from('courses').select('*').order('price'))
@@ -3045,7 +3045,7 @@ function selectDay(ds){
   const dateStr=parseInt(m)+'月'+parseInt(d)+'日（'+dn+'）'
 
   if(s && s.status!=='rejected'){
-    const roomTag=s.room?`<span class="tag tp">${s.room}</span>`:''
+    const roomTag=s.room?`<span class="tag tp">${escapeHtml(s.room)}</span>`:''
     const stTag=s.status==='approved'?'<span class="tag tb">承認済</span>':'<span class="tag tn">申請中</span>'
     document.getElementById('shift-req-title').textContent=dateStr
     document.getElementById('shift-req-body').innerHTML=`
@@ -3162,12 +3162,12 @@ async function renderInlineShiftList(){
     if (!list.length) return '<div style="font-size:.8rem;color:var(--text3);padding:.5rem 0 .25rem;text-align:center">なし</div>'
     return list.map(s=>{
       const rc=getRoomColor(s.room)
-      const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${s.room}</span>`:''
+      const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${escapeHtml(s.room)}</span>`:''
       const rvCount=rvByShift[s.id]||0
       const isToday=s.date===td
       const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">${isToday?'予約':'事前予約'}${rvCount}件</span>`:''
-      const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${me.name||''}')">予約確認</button>`:''
-      const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${s.note||''}')">訂正・取消</button>`:''
+      const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${escapeHtml(jsEsc(me.name||''))}')">予約確認</button>`:''
+      const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${escapeHtml(jsEsc(s.note||''))}')">訂正・取消</button>`:''
       return `<div style="display:flex;align-items:flex-start;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
@@ -3295,7 +3295,7 @@ function renderCastTodayCards(rvs) {
     const rvOpts = r.options ? r.options.split(',').filter(Boolean) : [];
     const optNames = rvOpts.map(o => {
       const found = opts.find(op => op.name === o || String(op.id) === o);
-      return found ? found.name : o;
+      return escapeHtml(found ? found.name : o);
     }).join('、');
 
     let cardStyle = 'border-radius:14px;padding:1rem;margin-bottom:.85rem;border:2px solid transparent;';
@@ -3347,7 +3347,7 @@ function renderCastTodayCards(rvs) {
         <div style="font-size:1rem;font-weight:700;display:flex;align-items:center">${escapeHtml(r.customer_name || '（名前なし）')}${newLabel}${badge}</div>
         <div style="font-size:.9rem;font-weight:700;color:var(--text);white-space:nowrap">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
-      <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${r.course||''}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--text);font-weight:600">'+r.shimei_type+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+r.note:''}</div>
+      <div style="font-size:.8rem;color:var(--text3);line-height:1.7">${escapeHtml(r.course||'')}${r.shimei_type&&r.shimei_type!=='なし'?'　<span style="color:var(--text);font-weight:600">'+escapeHtml(r.shimei_type)+'</span>':''}${optNames?'　OP：'+optNames:''}${r.note?'<br>メモ：'+escapeHtml(r.note):''}</div>
       ${actionBtns}
     </div>`;
   });
@@ -3456,7 +3456,7 @@ async function castOpenPayment(rvId) {
     <div style="border-top:1px solid var(--border);padding-top:.5rem">
       ${coursePrice?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">コース（${r.course||'-'}）</span><span style="color:${payCourse==='カード'?'var(--btx)':'var(--text)'}">${fmt2(coursePrice)}　${payCourse==='カード'?'💳':'💴'}</span></div>`:''}
       ${shimeiPrice?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">指名料（${r.shimei_type||'-'}）</span><span style="color:${payShimei==='カード'?'var(--btx)':'var(--text)'}">${fmt2(shimeiPrice)}　${payShimei==='カード'?'💳':'💴'}</span></div>`:''}
-      ${optNames2.map(n => { const o=(optList||[]).find(x=>x.name===n); const p=o?.price||0; const pm=optPayMap[n]||payOpt; return `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">OP（${n}）</span><span style="color:${pm==='カード'?'var(--btx)':'var(--text)'}">${fmt2(p)}　${pm==='カード'?'💳':'💴'}</span></div>`; }).join('')}
+      ${optNames2.map(n => { const o=(optList||[]).find(x=>x.name===n); const p=o?.price||0; const pm=optPayMap[n]||payOpt; return `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">OP（${escapeHtml(n)}）</span><span style="color:${pm==='カード'?'var(--btx)':'var(--text)'}">${fmt2(p)}　${pm==='カード'?'💳':'💴'}</span></div>`; }).join('')}
       ${extTotal?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">延長×${extCount}回</span><span style="color:${payExt==='カード'?'var(--btx)':'var(--text)'}">${fmt2(extTotal)}　${payExt==='カード'?'💳':'💴'}</span></div>`:''}
       ${discTotal?`<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.25rem 0"><span style="color:var(--text3)">割引</span><span style="color:var(--rtx)">-${fmt2(discTotal)}</span></div>`:''}
     </div>`;
@@ -3519,7 +3519,7 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   // セクション1: 接客メモ
   const memosHtml = memoVisits.length
     ? memoVisits.map(v=>{
-        const castLabel = me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
+        const castLabel = escapeHtml(me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト')
         return `<div style="padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem">
             <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
@@ -3533,14 +3533,14 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
   // セクション2: 来店履歴
   const visitsHtml = allVisits.length
     ? allVisits.map(v=>{
-        const castLabel = me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト'
-        const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
+        const castLabel = escapeHtml(me.is_owner ? (v.cast_name||'不明') : (v.cast_name && v.cast_name===me.name) ? me.name : '他セラピスト')
+        const opts=v.options?escapeHtml(v.options.split(',').filter(Boolean).join('・')):''
         return `<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
             <span style="font-weight:600;color:var(--text)">${v.visit_date||''}</span>
             <span style="color:var(--text2);font-size:.72rem">${castLabel}</span>
           </div>
-          <div style="color:var(--text3);font-size:.76rem">${v.course||''}${v.shimei_type&&v.shimei_type!=='なし'?' / '+v.shimei_type:''}${opts?' / OP:'+opts:''}</div>
+          <div style="color:var(--text3);font-size:.76rem">${escapeHtml(v.course||'')}${v.shimei_type&&v.shimei_type!=='なし'?' / '+escapeHtml(v.shimei_type):''}${opts?' / OP:'+opts:''}</div>
         </div>`
       }).join('')
     : '<div style="color:var(--text3);padding:.5rem 0;text-align:center;font-size:.78rem">来店記録がありません</div>'
@@ -3609,7 +3609,7 @@ async function castAddOption(rvId, custName) {
       <label style="display:flex;align-items:center;gap:.5rem;flex:1">
         <input type="checkbox" value="${o.name}" style="width:18px;height:18px"> ${o.name}（¥${o.price?.toLocaleString()||0}）
       </label>
-      <select data-opt="${o.name}" class="opt-pay-sel" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px">
+      <select data-opt="${escapeHtml(o.name)}" class="opt-pay-sel" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px">
         <option value="現金">💴現金</option>
         <option value="カード">💳カード</option>
       </select>
@@ -3965,8 +3965,8 @@ async function loadMySalary(){
           const totalSale2=rows.reduce((a,r)=>a+r.sale,0)
           const mkCardRow=(row)=>`<div style="display:flex;align-items:center;padding:.6rem 1rem;border-bottom:.5px solid var(--border);gap:.5rem">
             <div style="flex:1;min-width:0">
-              <div style="font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${row.name}</div>
-              <div style="font-size:.68rem;color:var(--text3);margin-top:.1rem">${row.cat}</div>
+              <div style="font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(row.name)}</div>
+              <div style="font-size:.68rem;color:var(--text3);margin-top:.1rem">${escapeHtml(row.cat)}</div>
             </div>
             <div style="display:flex;gap:0;align-items:center;flex-shrink:0">
               <div style="text-align:right;min-width:4.2rem">
@@ -3988,7 +3988,7 @@ async function loadMySalary(){
             <div style="display:flex;align-items:center;padding:.65rem 1rem;border-bottom:1px solid var(--border);gap:.5rem">
               <span style="font-size:.85rem;font-weight:700;white-space:nowrap">${i+1}本目</span>
               ${timeStr?`<span style="font-size:.72rem;color:var(--text3);white-space:nowrap">${timeStr}</span>`:''}
-              <span style="font-size:.85rem;font-weight:700;white-space:nowrap">${custName} 様</span>
+              <span style="font-size:.85rem;font-weight:700;white-space:nowrap">${escapeHtml(custName)} 様</span>
             </div>
             ${rows.map(mkCardRow).join('')}
             <div style="display:flex;align-items:center;padding:.6rem 1rem;background:var(--surface2);gap:.5rem">
@@ -4033,7 +4033,7 @@ async function loadMySalary(){
   const count=works.reduce((s,w)=>s+(w.count||0),0)
   const shopDrop=totalSales-totalNet
   if(totalArea) totalArea.innerHTML=`<div class="sal-hero">
-    <div class="sal-lbl">${me.name} — ${parseInt(m)}月の委託金</div>
+    <div class="sal-lbl">${escapeHtml(me.name)} — ${parseInt(m)}月の委託金</div>
     <div class="sal-amt">${fmt(totalNet)}</div>
     <div class="sal-row"><span class="sal-rl">お客様総支払額</span><span class="sal-rv">${fmt(totalSales)}</span></div>
     <div class="sal-row"><span class="sal-rl" style="color:var(--rtx)">委託金合計</span><span class="sal-rv" style="color:var(--rtx)">${fmt(totalBack)}</span></div>
@@ -4083,7 +4083,7 @@ async function loadMySalary(){
       const totalSale=sRows.reduce((a,r)=>a+r.sale,0)
       const sTblRows=sRows.map(r=>`<tr style="border-top:1px solid rgba(0,0,0,.06)">
         <td style="padding:.4rem .3rem;font-size:.7rem;color:var(--text3);white-space:nowrap">${r.cat}</td>
-        <td style="padding:.4rem .3rem;font-size:.73rem;color:var(--text);white-space:nowrap">${r.name}</td>
+        <td style="padding:.4rem .3rem;font-size:.73rem;color:var(--text);white-space:nowrap">${escapeHtml(r.name)}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:500;text-align:center">${r.sale?fmt(r.sale):'-'}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:700;text-align:center;color:var(--rtx)">${r.back?fmt(r.back):'-'}</td>
         <td style="padding:.4rem .3rem;font-size:.73rem;font-weight:500;text-align:center;color:var(--text3)">${(r.sale&&r.back!=null)?fmt(r.sale-r.back):'-'}</td>
@@ -4093,12 +4093,12 @@ async function loadMySalary(){
         <div style="display:flex;align-items:center;padding:.65rem 1rem;border-bottom:1px solid var(--border);gap:.5rem">
           <span style="font-size:.85rem;font-weight:700;white-space:nowrap">${i+1}本目</span>
           ${timeStr?`<span style="font-size:.72rem;color:var(--text3);white-space:nowrap">${timeStr}</span>`:''}
-          ${custN?`<span style="font-size:.85rem;font-weight:700;white-space:nowrap">${custN} 様</span>`:''}
+          ${custN?`<span style="font-size:.85rem;font-weight:700;white-space:nowrap">${escapeHtml(custN)} 様</span>`:''}
         </div>
         ${sRows.map(r=>`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:.6rem 1rem;border-bottom:.5px solid var(--border);gap:.5rem">
           <div style="flex:1;min-width:0">
-            <div style="font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
-            <div style="font-size:.68rem;color:var(--text3);margin-top:.1rem">${r.cat}</div>
+            <div style="font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</div>
+            <div style="font-size:.68rem;color:var(--text3);margin-top:.1rem">${escapeHtml(r.cat)}</div>
           </div>
           <div style="display:flex;gap:0;align-items:center;flex-shrink:0">
             <div style="text-align:right;min-width:4.2rem">
@@ -4137,7 +4137,7 @@ async function loadMySalary(){
       </div>`
     })
     if(!sessions.length){
-      sessionLines=(w.details||[]).map(x=>`<div style="font-size:.78rem;padding:.15rem 0;border-bottom:1px solid var(--border)">${x.name}${x.count>1?'×'+x.count:''}</div>`).join('')
+      sessionLines=(w.details||[]).map(x=>`<div style="font-size:.78rem;padding:.15rem 0;border-bottom:1px solid var(--border)">${escapeHtml(x.name)}${x.count>1?'×'+x.count:''}</div>`).join('')
     }
     return sessionLines
   }
@@ -4275,7 +4275,7 @@ async function openCustomerDetail(id){
   // キャスト一覧取得（NGプルダウン用）
   const{data:allCastsData}=await withStoreFilter(sb.from('casts').select('id,name')).eq('active',true).order('sort_order')
   const ngSelected=(c.ng_casts||'').split(/[,、]/).map(x=>x.trim()).filter(Boolean)
-  const ngOptions=(allCastsData||[]).map(cast=>`<option value="${cast.name}" ${ngSelected.includes(cast.name)?'selected':''}>${cast.name}</option>`).join('')
+  const ngOptions=(allCastsData||[]).map(cast=>`<option value="${escapeHtml(cast.name)}" ${ngSelected.includes(cast.name)?'selected':''}>${escapeHtml(cast.name)}</option>`).join('')
   
   let html=`
     <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
@@ -4564,10 +4564,10 @@ async function openReservation(shiftId,castName,date){
   if(opts&&opts.length){
       optsList.innerHTML=opts.map(o=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .2rem;border-bottom:1px solid var(--border)">
         <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1">
-          <input type="checkbox" class="rv-opt-chk" value="${o.name}" style="width:18px;height:18px;accent-color:var(--accent)" onchange="updateOptPay(this)">
+          <input type="checkbox" class="rv-opt-chk" value="${escapeHtml(o.name)}" style="width:18px;height:18px;accent-color:var(--accent)" onchange="updateOptPay(this)">
           <div><div style="font-size:.88rem;font-weight:600">${o.name}</div><div style="font-size:.75rem;color:var(--text3)">¥${(o.price||0).toLocaleString()}</div></div>
         </label>
-        <select class="rv-opt-pay pay-sel" data-opt="${o.name}" style="font-size:.82rem;padding:.3rem .5rem;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text3);opacity:.4;pointer-events:none;font-weight:600;min-width:68px" disabled>
+        <select class="rv-opt-pay pay-sel" data-opt="${escapeHtml(o.name)}" style="font-size:.82rem;padding:.3rem .5rem;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text3);opacity:.4;pointer-events:none;font-weight:600;min-width:68px" disabled>
           <option value="現金">💴 現金</option><option value="カード">💳 カード</option>
         </select>
       </div>`).join('')
@@ -5054,7 +5054,7 @@ async function loadGantt(){
       const rEnd=timeToPos(r.checkout_time?.slice(0,5))
       if(rStart===null||rEnd===null||rEnd-rStart<=0) return
       const nameStr=r.customer_name?.replace('様','')||''
-      const courseStr=r.course||''
+      const courseStr=escapeHtml(r.course||'')
       const timeStr=(r.checkin_time?.slice(0,5)||'')+'〜'+(r.checkout_time?.slice(0,5)||'')
       rvBars+=`<div title="${escapeHtml(r.customer_name||'')}\n${r.checkin_time?.slice(0,5)||''}-${r.checkout_time?.slice(0,5)||''}\n${r.course||''}" style="position:absolute;left:${rStart}%;width:${rEnd-rStart}%;top:2px;bottom:2px;background:rgba(255,149,0,.85);border-radius:3px;z-index:5;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3px">
         <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nameStr)}</span>
@@ -5098,7 +5098,7 @@ async function loadGantt(){
     })
     rows+=`<div style="margin-bottom:.5rem">
       <div style="display:flex;align-items:center;gap:.4rem">
-        <div style="width:60px;min-width:60px;font-size:.72rem;font-weight:700;color:${color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.casts?.name||'?'}</div>
+        <div style="width:60px;min-width:60px;font-size:.72rem;font-weight:700;color:${color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.casts?.name||'?')}</div>
         <div style="flex:1;position:relative;height:36px;background:var(--surface2);border-radius:4px;overflow:visible">
           ${hourLines.join('')}
           <div style="position:absolute;left:${startPos}%;width:${shiftW}%;top:0;bottom:0;background:${color}22;border:1.5px solid ${color}55;border-radius:3px;z-index:2"></div>
@@ -5204,7 +5204,7 @@ async function renderGanttInto(area, date, filterShifts=null){
       if(rStart===null||rEnd===null||rEnd-rStart<=0) return
       // 予約ブロック（名前・コース・時刻）
       const nameStr=r.customer_name?.replace('様','')||''
-      const courseStr=r.course||''
+      const courseStr=escapeHtml(r.course||'')
       const timeStr=(r.checkin_time?.slice(0,5)||'')+'〜'+(r.checkout_time?.slice(0,5)||'')
       rvBars+=`<div title="${escapeHtml(r.customer_name||'')}\n${r.checkin_time?.slice(0,5)||''}-${r.checkout_time?.slice(0,5)||''}\n${r.course||''}" style="position:absolute;left:${rStart}%;width:${rEnd-rStart}%;top:2px;bottom:2px;background:rgba(255,149,0,.9);border-radius:3px;z-index:5;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3px">
         <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nameStr)}</span>
@@ -5249,7 +5249,7 @@ async function renderGanttInto(area, date, filterShifts=null){
     })
     rows+=`<div style="margin-bottom:.55rem">
       <div style="display:flex;align-items:center;gap:.4rem">
-        <div style="width:54px;min-width:54px;font-size:.7rem;font-weight:700;color:${color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2">${s.casts?.name||'?'}<br><span style="font-size:.55rem;font-weight:400;color:var(--text3)">${s.start_time?.slice(0,5)||''}-${s.end_time?.slice(0,5)||''}</span></div>
+        <div style="width:54px;min-width:54px;font-size:.7rem;font-weight:700;color:${color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2">${escapeHtml(s.casts?.name||'?')}<br><span style="font-size:.55rem;font-weight:400;color:var(--text3)">${s.start_time?.slice(0,5)||''}-${s.end_time?.slice(0,5)||''}</span></div>
         <div style="flex:1;position:relative;height:36px;background:var(--surface2);border-radius:4px;overflow:visible">
           ${hourLines.join('')}
           <div style="position:absolute;left:${startPos}%;width:${endPos-startPos}%;top:0;bottom:0;background:${color}22;border:1.5px solid ${color}66;border-radius:3px;z-index:2"></div>
@@ -5775,7 +5775,7 @@ async function loadToday(){
   shifts.forEach(s=>{
     const workDone=!!worksBycast[s.cast_id]
     const rc2=getRoomColor(s.room)
-    const rt=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc2.bg};color:${rc2.tx};border-color:${rc2.bd}">${s.room}</span>`:`<span class="tag tr2">ルーム未指定</span>`
+    const rt=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc2.bg};color:${rc2.tx};border-color:${rc2.bd}">${escapeHtml(s.room)}</span>`:`<span class="tag tr2">ルーム未指定</span>`
     const shiftRvs=rvByShift2[s.id]||[]
     const rvBadge=shiftRvs.length>0?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">事前予約${shiftRvs.length}件</span>`:''
     // インターバル計算（intervalHtmlは後段のintervalDisplayに統合）
@@ -5786,8 +5786,8 @@ async function loadToday(){
     if(shiftRvs.length>0){
       rvListHtml=`<div style="margin-top:.4rem;border-top:1px solid var(--border);padding-top:.4rem">`
       shiftRvs.forEach(r=>{
-        const opts=r.options?r.options.split(',').filter(Boolean).join('・'):''
-        const discs=r.discount?r.discount.split(',').filter(Boolean).join('・'):''
+        const opts=r.options?escapeHtml(r.options.split(',').filter(Boolean).join('・')):''
+        const discs=r.discount?escapeHtml(r.discount.split(',').filter(Boolean).join('・')):''
         const checkin=r.checkin_time?.slice(0,5)||''
         const checkout=r.checkout_time?.slice(0,5)||''
         const timeStr=checkin?(checkout?checkin+'〜'+checkout:checkin+'〜'):''
@@ -5796,7 +5796,7 @@ async function loadToday(){
         rvListHtml+=`<div style="font-size:.78rem;padding:.2rem 0;border-bottom:1px dashed var(--border)">
           <span style="font-weight:600;color:var(--text)">${timeStr}</span>
           <span style="margin-left:.4rem;font-weight:600">${escapeHtml(r.customer_name||'')}${noCustBadge}</span>
-          <span style="font-size:.7rem;color:var(--text3);margin-left:.4rem">${r.course||''}${opts?' / '+opts:''}${discs?' / 割引:'+discs:''}</span>
+          <span style="font-size:.7rem;color:var(--text3);margin-left:.4rem">${escapeHtml(r.course||'')}${opts?' / '+opts:''}${discs?' / 割引:'+discs:''}</span>
         </div>`
       })
       rvListHtml+=`</div>`
@@ -5828,18 +5828,18 @@ async function loadToday(){
     }
     html+=`<div class="item" style="flex-direction:column;align-items:stretch;gap:.55rem">
       <div class="ib">
-        <div class="it">${s.casts?.name||'?'}${intervalDisplay}</div>
+        <div class="it">${escapeHtml(s.casts?.name||'?')}${intervalDisplay}</div>
         <div class="is">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}${s.note?' ／ '+escapeHtml(s.note):''}</div>
         <div class="tags">${rt}${rvBadge}</div>
         ${rvListHtml}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-        <button class="btn btn-purple btn-sm2" onclick="openRoom(${s.id},'${s.casts?.name||'?'}','${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}','${s.room||''}')">ルーム指定</button>
-        <button class="btn btn-blue btn-sm2" onclick="openReservation(${s.id},'${s.casts?.name||'?'}','${td}')">予約登録</button>
-        <button class="btn btn-gold btn-sm2" onclick="openShiftReservations(${s.id},'${s.casts?.name||'?'}')">予約確認</button>
+        <button class="btn btn-purple btn-sm2" onclick="openRoom(${s.id},'${escapeHtml(jsEsc(s.casts?.name||'?'))}','${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}','${escapeHtml(jsEsc(s.room||''))}')">ルーム指定</button>
+        <button class="btn btn-blue btn-sm2" onclick="openReservation(${s.id},'${escapeHtml(jsEsc(s.casts?.name||'?'))}','${td}')">予約登録</button>
+        <button class="btn btn-gold btn-sm2" onclick="openShiftReservations(${s.id},'${escapeHtml(jsEsc(s.casts?.name||'?'))}')">予約確認</button>
         ${workDone?
-          `<button class="btn btn-green btn-sm2" onclick="openWorkSheet(${s.id},'${s.casts?.name||'?'}','${td}',${s.cast_id})" style="background:var(--gbg);color:var(--gtx);border:1.5px solid var(--gbd)">✅ 入力済み（修正）</button>`
-          :`<button class="btn btn-gray btn-sm2" onclick="openWorkSheet(${s.id},'${s.casts?.name||'?'}','${td}',${s.cast_id})">委託金入力</button>`
+          `<button class="btn btn-green btn-sm2" onclick="openWorkSheet(${s.id},'${escapeHtml(jsEsc(s.casts?.name||'?'))}','${td}',${s.cast_id})" style="background:var(--gbg);color:var(--gtx);border:1.5px solid var(--gbd)">✅ 入力済み（修正）</button>`
+          :`<button class="btn btn-gray btn-sm2" onclick="openWorkSheet(${s.id},'${escapeHtml(jsEsc(s.casts?.name||'?'))}','${td}',${s.cast_id})">委託金入力</button>`
         }
       </div>
     </div>`
@@ -5868,7 +5868,7 @@ function renderStoreRoomList(){
   if(!rooms.length){el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.3rem 0">ルームが登録されていません</div>';return}
   el.innerHTML=rooms.map(r=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:.88rem">${r.name}</span>
+      <span style="font-size:.88rem">${escapeHtml(r.name)}</span>
       <button onclick="deleteStoreRoom(${r.id})" style="padding:.2rem .7rem;border:none;border-radius:6px;background:var(--red);color:white;font-size:.7rem;cursor:pointer">削除</button>
     </div>`).join('')
 }
@@ -6088,7 +6088,7 @@ async function loadGanttModal(){
   // --- 出勤なし ---
   if(!targetShifts.length){
     const toH=s=>[...s].map(c=>c+'('+c.charCodeAt(0).toString(16).toUpperCase()+')').join('')
-    const dbg=(allShifts||[]).map(s=>`${s.casts?.name||'?'}:「${s.room||'未設定'}」`).join(' / ')
+    const dbg=(allShifts||[]).map(s=>`${escapeHtml(s.casts?.name||'?')}:「${escapeHtml(s.room||'未設定')}」`).join(' / ')
     area.innerHTML=`<div style="padding:1rem;font-size:.7rem;color:var(--text2)"><b style="color:var(--rtx)">出勤なし</b><br>検索：「${ganttModalRoom}」[${toH(ganttModalRoom)}]<br>取得：${(allShifts||[]).length}件 ${dbg||''}${shiftErr?'<br>エラー：'+shiftErr.message:''}</div>`
     return
   }
@@ -6182,7 +6182,7 @@ async function loadGanttModal(){
       const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
       const pureGapMin=Math.max(0,(beforeIntStartMin??fEMin)-effectiveStartMin)
       const fitCourse=COURSE_LABELS.find(([mc])=>pureGapMin>=mc)
-      const courseLabel=fitCourse?fitCourse[1]+' 可':pureGapMin>0?pureGapMin+'分':''
+      const courseLabel=fitCourse?escapeHtml(fitCourse[1])+' 可':pureGapMin>0?pureGapMin+'分':''
       const fSY=timeToY(prevEnd)
       const fEY=timeToY(r.checkin_time?.slice(0,5))
       if(fSY!==null&&fEY!==null&&fEY-fSY>6){
@@ -6371,7 +6371,7 @@ function addSession(data=null){
   div.className='session-block'
   div.id='session-'+idx
   div._overrides=data?.overrides||{}
-  const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${c.name}</option>`).join('')
+  const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')
   const shimeiTypes=['フリー','ネット指名','本指名']
   const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
   // オプション一覧はDBから取得済みのoptsを使用
@@ -6383,8 +6383,8 @@ function addSession(data=null){
     const optPay=optPaysData[o.name]||data?.pay_option||'現金'
     const disStyle=checked?'opacity:1;pointer-events:auto':'opacity:.4;pointer-events:none'
     return `<div class="op-row" style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
-      <label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;flex:1"><input type="checkbox" class="op-check" data-name="${o.name}" ${checked} onchange="toggleOptPayW(this);calcTotal2()" style="width:18px;height:18px;accent-color:var(--accent)"> ${o.name}</label>
-      <select class="s-opt-pay" data-opt="${o.name}" onchange="calcTotal2()" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px;${disStyle}" ${checked?'':'disabled'}>
+      <label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;flex:1"><input type="checkbox" class="op-check" data-name="${escapeHtml(o.name)}" ${checked} onchange="toggleOptPayW(this);calcTotal2()" style="width:18px;height:18px;accent-color:var(--accent)"> ${escapeHtml(o.name)}</label>
+      <select class="s-opt-pay" data-opt="${escapeHtml(o.name)}" onchange="calcTotal2()" style="padding:.25rem .4rem;font-size:.75rem;border:1.5px solid var(--border);border-radius:6px;${disStyle}" ${checked?'':'disabled'}>
         <option value="現金" ${optPay==='現金'?'selected':''}>現金</option>
         <option value="カード" ${optPay==='カード'?'selected':''}>カード</option>
       </select>
@@ -6809,7 +6809,7 @@ function calcTotal2(){
       const isShop=cb.dataset.dtype==='shop'
       const typeLabel=isShop?'店落ち':'委託金'
       brows+=`<div style="display:flex;align-items:center;padding:.45rem .75rem;border-bottom:.5px solid var(--border)">
-        <div style="flex:1;min-width:0"><div style="font-size:.8rem;color:var(--rtx)">${cb.dataset.name}</div><div style="font-size:.65rem;color:var(--text3)">割引（${typeLabel}）</div></div>
+        <div style="flex:1;min-width:0"><div style="font-size:.8rem;color:var(--rtx)">${escapeHtml(cb.dataset.name)}</div><div style="font-size:.65rem;color:var(--text3)">割引（${typeLabel}）</div></div>
         <div style="text-align:right;width:4rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--rtx)">-${fmt(amt)}</div></div>
         <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--rtx)">${isShop?'-':'-'+fmt(amt)}</div></div>
         <div style="text-align:right;width:3.8rem;flex-shrink:0"><div style="font-size:.72rem;color:var(--rtx)">${isShop?'-'+fmt(amt):'-'}</div></div>
@@ -7119,7 +7119,7 @@ async function openFeeSheet(castId,name){
       const key = 'op_'+o.id
       const legacyVal = o.name==='極液'?f.op_gokueki:o.name==='衣装チェンジ①'?f.op_isho:o.name==='衣装チェンジ②'?f.op_isho2:null
       const val = extraOp[key]??legacyVal??0
-      return `<div class="fee-row"><div class="fee-lbl">${o.name}バック</div><input type="number" class="fee-input fee-op-back" data-key="${key}" data-opid="${o.id}" value="${val}" min="0" step="100"><span class="fee-unit">円</span></div>`
+      return `<div class="fee-row"><div class="fee-lbl">${escapeHtml(o.name)}バック</div><input type="number" class="fee-input fee-op-back" data-key="${key}" data-opid="${o.id}" value="${val}" min="0" step="100"><span class="fee-unit">円</span></div>`
     }).join('')
   }
 
@@ -7129,7 +7129,7 @@ async function openFeeSheet(castId,name){
     trialRows.innerHTML = courses.map(c=>{
       const key = 'trial_course_'+c.id
       const val = (f.extra_course_backs||{})[key]??0
-      return `<div class="fee-row"><div class="fee-lbl">${c.name}</div><input type="number" class="fee-input fee-trial-course-back" data-key="${key}" value="${val}" min="0" step="100"><span class="fee-unit">円</span></div>`
+      return `<div class="fee-row"><div class="fee-lbl">${escapeHtml(c.name)}</div><input type="number" class="fee-input fee-trial-course-back" data-key="${key}" value="${val}" min="0" step="100"><span class="fee-unit">円</span></div>`
     }).join('')
   }
 
@@ -7184,7 +7184,7 @@ async function openFeeSheet(castId,name){
       if(val==null && o.name==='極液') val=f.trial_op_gokueki
       if(val==null && o.name==='衣装チェンジ①') val=f.trial_op_isho
       if(val==null && o.name==='衣装チェンジ②') val=f.trial_op_isho2
-      return `<div class="fee-row"><div class="fee-lbl">${o.name}バック</div><input type="number" class="fee-input fee-trial-op-back" data-key="${key}" min="0" step="100" value="${val!=null?val:''}" placeholder="通常と同じ"><span class="fee-unit">円</span></div>`
+      return `<div class="fee-row"><div class="fee-lbl">${escapeHtml(o.name)}バック</div><input type="number" class="fee-input fee-trial-op-back" data-key="${key}" min="0" step="100" value="${val!=null?val:''}" placeholder="通常と同じ"><span class="fee-unit">円</span></div>`
     }).join('')
   }
   document.getElementById('fee-overlay').classList.add('on')
@@ -7206,7 +7206,7 @@ async function renderFeeDiscList(){
     const dtype=discTypes[d.name]||'back'
     return `<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
       <span style="flex:1;font-size:.82rem">${d.name}（-${fmt(d.amount)}）</span>
-      <select class="fi2 disc-type-sel" data-disc-name="${d.name}" style="width:90px;font-size:.78rem;padding:.3rem .4rem">
+      <select class="fi2 disc-type-sel" data-disc-name="${escapeHtml(d.name)}" style="width:90px;font-size:.78rem;padding:.3rem .4rem">
         <option value="back" ${dtype==='back'?'selected':''}>委託金から</option>
         <option value="shop" ${dtype==='shop'?'selected':''}>店落ちから</option>
       </select>
@@ -7335,7 +7335,7 @@ async function renderDiscList(){
   if(!area)return
   area.innerHTML=(discs||[]).map(d=>`
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
-      <span style="flex:1;font-size:.88rem">${d.name}</span>
+      <span style="flex:1;font-size:.88rem">${escapeHtml(d.name)}</span>
       <span style="font-size:.75rem;color:${d.disc_type==='shop'?'var(--btx)':'var(--rtx)'}">-${fmt(d.amount)} (${d.disc_type==='shop'?'店落ち':'委託金'})</span>
       <button class="btn btn-red btn-xs" onclick="deleteDisc(${d.id})">削除</button>
     </div>`).join('')||'<div style="font-size:.76rem;color:var(--text3)">割引なし</div>'
@@ -7452,15 +7452,15 @@ async function loadOwnerSalary(){
       const shimei=s.shimei||s.shimei_type||''
       // optionは文字列またはオブジェクト配列どちらも対応
       const optArr=Array.isArray(s.options)?s.options:(s.option?[s.option]:[])
-      const optStr=optArr.map(o=>typeof o==='string'?o:(o.name||'')).filter(Boolean).map(o=>'：'+o).join('')
+      const optStr=optArr.map(o=>typeof o==='string'?o:(o.name||'')).filter(Boolean).map(o=>'：'+escapeHtml(o)).join('')
       // 割引
       const discArr=s.discounts||[]
-      const discStr=discArr.length?'　割引：'+discArr.map(dd=>dd.name+'('+fmt(dd.amount)+')').join('、'):''
+      const discStr=discArr.length?'　割引：'+discArr.map(dd=>escapeHtml(dd.name)+'('+fmt(dd.amount)+')').join('、'):''
       // 支払方法
       const pay=s.payment||''
       return `<div style="font-size:.76rem;color:var(--text3);padding:.2rem 0;border-bottom:1px dotted var(--border)">`
         +`<span style="font-weight:600;color:var(--text2)">${i+1}本目</span>　`
-        +`${s.course_name||''}${shimei?'　'+shimei:''}${optStr}${pay?'　'+pay:''}${discStr}`
+        +`${escapeHtml(s.course_name||'')}${shimei?'　'+escapeHtml(shimei):''}${optStr}${pay?'　'+escapeHtml(pay):''}${discStr}`
         +`</div>`
     }).join(''):''
     return `<div class="card">
@@ -7516,7 +7516,7 @@ function refreshCourseOptSelects(){
     if(!area) return
     area.innerHTML = opts.map(o=>`
       <label style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--border)">
-        <input type="checkbox" class="rv-opt-chk" value="${o.name}"> ${o.name}（¥${o.price?.toLocaleString()}）
+        <input type="checkbox" class="rv-opt-chk" value="${escapeHtml(o.name)}"> ${o.name}（¥${o.price?.toLocaleString()}）
       </label>`).join('')
   })
 }
@@ -7563,7 +7563,7 @@ async function renderStoreCourseList(){
   const rowHtml=c=>`
     <div style="padding:.45rem 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:.35rem;align-items:center;margin-bottom:.3rem">
-        <input type="text" class="fee-input" style="flex:1;font-size:.8rem;min-width:0" value="${c.name}" id="cn-${c.id}">
+        <input type="text" class="fee-input" style="flex:1;font-size:.8rem;min-width:0" value="${escapeHtml(c.name)}" id="cn-${c.id}">
         <input type="number" class="fee-input" style="width:74px" value="${c.price}" id="cp-${c.id}" min="0" step="100">
         <span class="fee-unit">円</span>
         <input type="number" class="fee-input" style="width:52px" value="${c.duration||''}" id="cd-${c.id}" min="0" step="10" placeholder="分">
@@ -7587,7 +7587,7 @@ async function renderStoreOptionList(){
   el.innerHTML=ops.map(o=>`
     <div style="padding:.45rem 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:.35rem;align-items:center;margin-bottom:.3rem">
-        <input type="text" class="fee-input" style="flex:1;font-size:.8rem;min-width:0" value="${o.name}" id="on-${o.id}">
+        <input type="text" class="fee-input" style="flex:1;font-size:.8rem;min-width:0" value="${escapeHtml(o.name)}" id="on-${o.id}">
         <input type="number" class="fee-input" style="width:90px" value="${o.price}" id="op-${o.id}" min="0" step="100">
         <span class="fee-unit">円</span>
       </div>
@@ -7716,7 +7716,7 @@ async function loadStoreDiscList(){
   if(!discs||!discs.length){area.innerHTML='<div style="font-size:.78rem;color:var(--text3);margin-bottom:.4rem">割引なし</div>';return}
   area.innerHTML=discs.map(d=>`
     <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;padding:.35rem;background:var(--surface2);border-radius:8px">
-      <span style="flex:1;font-size:.83rem">${d.name}</span>
+      <span style="flex:1;font-size:.83rem">${escapeHtml(d.name)}</span>
       <span style="font-size:.75rem;color:var(--rtx)">-${fmt(d.amount||0)}円</span>
       <button class="btn btn-red btn-xs" onclick="deleteStoreDisc(${d.id})">削除</button>
     </div>`).join('')
@@ -7794,7 +7794,7 @@ async function openShiftReservations(shiftId, castName){
         ${r.customer_no?`<span style="font-size:.65rem;color:var(--text3)">No.${r.customer_no}</span>`:''}
       </div>
       ${r.checkin_time||r.checkout_time?`<div style="font-size:.8rem;color:var(--text2);font-weight:600">⏱ ${r.checkin_time?.slice(0,5)||'?'} 〜 ${r.checkout_time?.slice(0,5)||'?'}</div>`:''}
-      <div style="font-size:.8rem;color:var(--text2)">${[r.shimei_type,r.course,opts.join('・'),extCount>0?('延長×'+extCount):''].filter(Boolean).join(' / ')}</div>
+      <div style="font-size:.8rem;color:var(--text2)">${[r.shimei_type,r.course,opts.join('・'),extCount>0?('延長×'+extCount):''].filter(Boolean).map(escapeHtml).join(' / ')}</div>
       ${discs.length?`<div style="font-size:.75rem;color:var(--rtx)">割引: ${discs.join('・')}</div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;margin-top:.2rem">
         <div style="background:var(--surface2);border-radius:8px;padding:.3rem .5rem;text-align:center">
@@ -7818,7 +7818,7 @@ async function openShiftReservations(shiftId, castName){
           <div><div style="font-size:.58rem;color:#555">手数料(6%+80円)</div><div style="font-size:.78rem;font-weight:700;color:var(--rtx)">-${fmt(Math.floor(cardAmt*0.06)+80)}</div></div>
         </div>
       </div>`:''}
-      ${r.note?`<div style="font-size:.75rem;color:var(--text3)">📝 ${r.note}</div>`:''}
+      ${r.note?`<div style="font-size:.75rem;color:var(--text3)">📝 ${escapeHtml(r.note)}</div>`:''}
       <div style="font-size:.7rem;color:var(--text3);text-align:right">タップで詳細・修正 ›</div>
     </div>`
   }).join('')
@@ -7894,7 +7894,7 @@ async function openRvDetail(rvId, shiftId, castName){
         memoHtml += `<div style="font-size:.75rem;font-weight:700;color:var(--text2);margin:.4rem 0 .2rem">💬 接客メモ</div>`
         memoHtml += memos.map(m=>`<div style="background:var(--surface2);border-radius:8px;padding:.4rem .7rem;font-size:.8rem;margin-bottom:.25rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
-            <span style="font-size:.65rem;color:var(--text2);font-weight:600">${me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）')}</span>
+            <span style="font-size:.65rem;color:var(--text2);font-weight:600">${escapeHtml(me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）'))}</span>
             <span style="font-size:.62rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</span>
           </div>
           <div style="white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
@@ -8216,7 +8216,7 @@ async function renderMyCastMemoLog(){
               return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border)">
                 <div>
                   <div style="font-size:.85rem;font-weight:600">${escapeHtml(r.customer_name||'氏名未設定')}</div>
-                  <div style="font-size:.72rem;color:var(--text3)">${r.checkin_time?.slice(0,5)||''}〜${r.checkout_time?.slice(0,5)||''}　${r.course||''}</div>
+                  <div style="font-size:.72rem;color:var(--text3)">${r.checkin_time?.slice(0,5)||''}〜${r.checkout_time?.slice(0,5)||''}　${escapeHtml(r.course||'')}</div>
                 </div>
                 ${hasCust
                   ? `<button class="btn btn-purple btn-xs" onclick="openCastMemoForReservation(${r.customer_no},'${jsEsc(r.customer_name)}')">メモ確認</button>`
@@ -8250,7 +8250,7 @@ async function loadCastMemoPage(){
       <div style="font-size:.88rem;font-weight:600">${escapeHtml(r.customer_name||'氏名未設定')}</div>
       ${r.checkin_time?`<span style="font-size:.72rem;color:var(--text3)">${r.checkin_time.slice(0,5)}-${r.checkout_time?.slice(0,5)||'?'}</span>`:''}
     </div>
-    <div style="font-size:.75rem;color:var(--text3)">${[r.shimei_type,r.course,r.options].filter(Boolean).join(' / ')}</div>
+    <div style="font-size:.75rem;color:var(--text3)">${[r.shimei_type,r.course,r.options].filter(Boolean).map(escapeHtml).join(' / ')}</div>
     ${r.customer_no
       ? `<button class="btn btn-purple btn-xs" style="align-self:flex-start;margin-top:.2rem" onclick="openCastMemoForReservation(${r.customer_no},'${jsEsc(r.customer_name)}')">メモを書く</button>`
       : '<span style="font-size:.7rem;color:var(--text3)">顧客番号未登録</span>'
@@ -8329,7 +8329,7 @@ function filterMemos(){
   area.innerHTML = filtered.map(c=>`
     <div class="item" style="justify-content:space-between;align-items:center;cursor:pointer" onclick="castOpenCustHistory(${c.customer_no},'${jsEsc(c.name)}',${c.id})">
       <div>
-        <div style="font-size:.88rem;font-weight:600">No.${c.customer_no}　${c.name}</div>
+        <div style="font-size:.88rem;font-weight:600">No.${c.customer_no}　${escapeHtml(c.name)}</div>
         <div style="font-size:.72rem;color:var(--text3)">タップして来店履歴を確認</div>
       </div>
       <span style="font-size:.75rem;color:var(--text3);flex-shrink:0">›</span>
@@ -8404,7 +8404,7 @@ async function renderCastMemoLog(){
     const ci = custMap[m.customer_id]
     return `<div class="card" style="margin-bottom:.4rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
-        <div style="font-size:.78rem;font-weight:600">${ci?`No.${ci.no} ${ci.name}`:'顧客不明'}</div>
+        <div style="font-size:.78rem;font-weight:600">${ci?`No.${ci.no} ${escapeHtml(ci.name)}`:'顧客不明'}</div>
         <div style="font-size:.68rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</div>
       </div>
       <div style="font-size:.83rem;white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
@@ -8841,7 +8841,7 @@ function renderMonthlyCast(area,castStats,fmt2){
       </tr></thead>
       <tbody>
         ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:.25rem .35rem;position:sticky;left:0;background:#ffffff;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${r.name}</td>
+          <td style="padding:.25rem .35rem;position:sticky;left:0;background:#ffffff;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</td>
           ${CB2(r.total,true)}${CB2(r.free)}${CB2(r.net_shimei)}${CB2(r.hon_shimei)}
           ${cell('¥'+(r.sales+r.disc).toLocaleString(),true)}
           ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'var(--rtx)'):''}
