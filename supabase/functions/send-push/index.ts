@@ -75,9 +75,13 @@ serve(async (req) => {
       });
     }
 
+    // KYOUKANO本番はPhase1バックフィルでpush_subscriptions.store_idがUUID化済みだが、
+    // クライアント(currentStoreId=null)からはstore_id:nullで送られてくる(ステップ2デプロイまでの間)。
+    // RLSのcompat shimと同様、NULL/KYOUKANO_UUIDの両方を許可して通知欠落を防ぐ。
+    const KYOUKANO_STORE_ID = "4cb3383a-31e5-408a-9f75-60a25943ac4d";
     let url = `${SUPABASE_URL}/rest/v1/push_subscriptions?cast_id=eq.${cast_id}`;
     if (store_id) url += `&store_id=eq.${store_id}`;
-    else url += `&store_id=is.null`;
+    else url += `&or=(store_id.is.null,store_id.eq.${KYOUKANO_STORE_ID})`;
 
     const res = await fetch(url, {
       headers: {
