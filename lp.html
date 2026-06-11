@@ -560,6 +560,15 @@ nav a.nav-link:hover { color: var(--white); }
 }
 .phone-wrap:hover .iphone { transform: translateY(-6px) rotate(-1deg); }
 
+/* 実機写真フレーム入りスクリーンショット（CSSモックアップに代わる本物のiPhone画像） */
+.phone-shot {
+  width: 230px;
+  display: block;
+  filter: drop-shadow(0 32px 80px rgba(0,0,0,0.45)) drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+  transition: transform 0.35s cubic-bezier(.22,.68,0,1.2);
+}
+.phone-wrap:hover .phone-shot { transform: translateY(-6px) rotate(-1deg); }
+
 /* Left side buttons */
 .iphone::before {
   content: '';
@@ -1292,6 +1301,7 @@ footer {
   nav a.nav-link { display: none; }
   .iphone { width: 170px; }
   .iphone-screen-outer { height: 340px; }
+  .phone-shot { width: 170px; }
   .hero-visual { display: none; }
   .stats-inner { gap: 24px; }
   .stat-num { font-size: 22px; }
@@ -1359,16 +1369,7 @@ footer {
           <div>自動計算 完了</div>
         </div>
       </div>
-      <div class="iphone">
-        <div class="iphone-silent"></div>
-        <div class="iphone-screen-outer">
-          <div class="iphone-dynamic-island"></div>
-          <div class="phone-screen">
-            <img src="screenshots/lp-app-today.png" alt="ShiftLink 本日画面（ルーム状況・シフト）" class="mock-screenshot">
-          </div>
-          <div class="iphone-home-bar"></div>
-        </div>
-      </div>
+      <img src="screenshots/lp-app-today.png" alt="ShiftLink 本日画面（ルーム状況・シフト）" class="phone-shot">
       <div class="hero-float-card fc-bottom">
         <div class="fc-icon">📲</div>
         <div>
@@ -1485,16 +1486,7 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <div class="iphone">
-            <div class="iphone-silent"></div>
-            <div class="iphone-screen-outer">
-              <div class="iphone-dynamic-island"></div>
-              <div class="phone-screen">
-                <img src="screenshots/lp-app-fees.png" alt="ShiftLink 委託金・粗利益の自動計算画面" class="mock-screenshot">
-              </div>
-              <div class="iphone-home-bar"></div>
-            </div>
-          </div>
+          <img src="screenshots/lp-app-fees.png" alt="ShiftLink 委託金・粗利益の自動計算画面" class="phone-shot">
         </div>
       </div>
 
@@ -1511,16 +1503,7 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <div class="iphone">
-            <div class="iphone-silent"></div>
-            <div class="iphone-screen-outer">
-              <div class="iphone-dynamic-island"></div>
-              <div class="phone-screen">
-                <img src="screenshots/lp-app-shift.png" alt="ShiftLink シフトカレンダー画面" class="mock-screenshot">
-              </div>
-              <div class="iphone-home-bar"></div>
-            </div>
-          </div>
+          <img src="screenshots/lp-app-shift.png" alt="ShiftLink シフトカレンダー画面" class="phone-shot">
         </div>
       </div>
 
@@ -1612,16 +1595,7 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <div class="iphone">
-            <div class="iphone-silent"></div>
-            <div class="iphone-screen-outer">
-              <div class="iphone-dynamic-island"></div>
-              <div class="phone-screen">
-                <img src="screenshots/lp-app-sales.png" alt="ShiftLink 月次売上・日別集計画面" class="mock-screenshot">
-              </div>
-              <div class="iphone-home-bar"></div>
-            </div>
-          </div>
+          <img src="screenshots/lp-app-sales.png" alt="ShiftLink 月次売上・日別集計画面" class="phone-shot">
         </div>
       </div>
 
@@ -1674,69 +1648,6 @@ footer {
                   <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
                   <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
                   <div class="mock-tab active"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
-              </div>
-              <div class="iphone-home-bar"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 06: Push通知 -->
-      <div class="feature-row rev">
-        <div class="feature-text">
-          <div class="feature-number">06</div>
-          <h3 class="feature-title">Push通知で<br>取りこぼしゼロ</h3>
-          <p class="feature-desc">予約が入ったとき・シフトが変わったとき・リマインドが必要なときに自動でPush通知。担当者への連絡漏れをなくし、スムーズな運営を支えます。</p>
-          <div class="feature-tags">
-            <span class="tag">予約通知</span>
-            <span class="tag">シフトリマインド</span>
-            <span class="tag">スマホ通知</span>
-          </div>
-        </div>
-        <div class="phone-wrap">
-          <div class="iphone">
-            <div class="iphone-silent"></div>
-            <div class="iphone-screen-outer">
-              <div class="iphone-dynamic-island"></div>
-              <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div class="mock-nav-badge">🔔 通知</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div class="mock-push-header">通知センター</div>
-                  <div class="mock-notif">
-                    <div class="mock-notif-icon"><span class="material-icons">event</span></div>
-                    <div class="mock-notif-body">
-                      <div class="mock-notif-title">新規予約が入りました</div>
-                      <div class="mock-notif-msg">No.3301 佐藤様 / 14:00〜 / 90min<br>担当: あおい</div>
-                      <div class="mock-notif-time">5分前</div>
-                    </div>
-                  </div>
-                  <div class="mock-notif">
-                    <div class="mock-notif-icon"><span class="material-icons">schedule</span></div>
-                    <div class="mock-notif-body">
-                      <div class="mock-notif-title">シフトリマインド</div>
-                      <div class="mock-notif-msg">明日のシフト: さくら 12:00〜 / みく 15:00〜</div>
-                      <div class="mock-notif-time">1時間前</div>
-                    </div>
-                  </div>
-                  <div class="mock-notif">
-                    <div class="mock-notif-icon"><span class="material-icons">edit_calendar</span></div>
-                    <div class="mock-notif-body">
-                      <div class="mock-notif-title">予約変更</div>
-                      <div class="mock-notif-msg">No.1042 田中様 / 15:00→16:00 に変更</div>
-                      <div class="mock-notif-time">30分前</div>
-                    </div>
-                  </div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
                 </div>
               </div>
               <div class="iphone-home-bar"></div>
