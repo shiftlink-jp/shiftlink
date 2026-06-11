@@ -1888,6 +1888,10 @@ async function passkeyLogin(){
 
 // PINログイン後に生体認証登録を促す
 async function offerPasskeyRegistration(castId, castName){
+  // Option B: PIN認証モードではpasskeyログイン未対応（ログインはpin-login経由で認証セッションを
+  // 発行する設計）。使えない機能の登録を案内しないよう抑止。passkeyのサーバ側セッション発行は
+  // 後日Edge Function方式で再実装予定（docs/phase2-3-cutover-audit-20260611.md 参照）。
+  if(PIN_AUTH_MODE) return
   if(!window.PublicKeyCredential) return
   // localStorage でこの端末の登録状態を確認
   const localKey = 'passkey_registered_' + castId
