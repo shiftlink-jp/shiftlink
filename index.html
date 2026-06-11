@@ -1411,13 +1411,17 @@ const SUPABASE_KEY = SAAS_MODE
 let OWNER_PIN = '' // DBまたはlocalStorageからロードされるまで認証不可
 // SaaS用グローバル変数
 let currentStoreId = null // ログイン後にセットされる
-// ── Phase2: PIN認証モード ──
-// ?pinauth=<store_id> で有効化（テスト用）。本番切替時は定数で設定する。
-// ONのとき、PINログインを pin-login 関数経由の認証セッションにする（anon遮断の前提）。
-// OFF（既定）は従来のanon方式（現行KYOUKANO本番）。
+// ── Phase2/ステップ2: PIN認証モード ──
+// ?pinauth=<store_id> でテスト店舗を明示指定（最優先）。
+// 本番KYOUKANO（非SaaS）は ?pinauth 無しでもPIN認証を既定にする（anon遮断の前提）。
+//   …コードにkyoukano.vercel.app等のホスト名直書きを避けるため「非SaaS＝KYOUKANO」で判定。
+//   将来の貸出先はSaaS版(app.shiftlink.jp系)で別経路のため干渉しない。
+// ONのとき、PINログインを pin-login 関数経由の認証セッションにする。
+// SaaS（app.shiftlink.jp系）は従来通りSupabase Auth（この設計の対象外）。
 const _pinAuthParam = new URLSearchParams(location.search).get('pinauth')
-const PIN_AUTH_MODE = !!_pinAuthParam
-let PIN_STORE_ID = _pinAuthParam || null
+const KYOUKANO_STORE_ID = '4cb3383a-31e5-408a-9f75-60a25943ac4d' // 本番KYOUKANO（Phase1で全データにstore_id付与済 2026-06-11）
+const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE
+let PIN_STORE_ID = _pinAuthParam || (SAAS_MODE ? null : KYOUKANO_STORE_ID)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
