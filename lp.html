@@ -5,10 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShiftLink｜メンズエステ専用 シフト・予約・売上管理アプリ</title>
 <meta name="description" content="メンズエステ店舗向けの業務管理PWA。委託金自動計算・シフト・予約・売上をブラウザで完結。14日間無料トライアル実施中。">
+<link rel="canonical" href="https://app.shiftlink.jp/">
 <meta property="og:title" content="ShiftLink｜メンズエステ専用 業務管理アプリ">
 <meta property="og:description" content="委託金計算、もう電卓いらない。シフト・予約・売上を一元管理。14日間無料・クレジットカード不要。">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://app.shiftlink.jp">
+<meta property="og:url" content="https://app.shiftlink.jp/">
+<meta property="og:site_name" content="ShiftLink">
+<meta property="og:image" content="https://app.shiftlink.jp/logo.png">
+<meta property="og:image:alt" content="ShiftLink ロゴ">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ShiftLink｜メンズエステ専用 業務管理アプリ">
+<meta name="twitter:description" content="委託金計算、もう電卓いらない。シフト・予約・売上を一元管理。14日間無料・クレジットカード不要。">
+<meta name="twitter:image" content="https://app.shiftlink.jp/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -559,15 +568,6 @@ nav a.nav-link:hover { color: var(--white); }
   transition: transform 0.35s cubic-bezier(.22,.68,0,1.2);
 }
 .phone-wrap:hover .iphone { transform: translateY(-6px) rotate(-1deg); }
-
-/* 実機写真フレーム入りスクリーンショット（CSSモックアップに代わる本物のiPhone画像） */
-.phone-shot {
-  width: 230px;
-  display: block;
-  filter: drop-shadow(0 32px 80px rgba(0,0,0,0.45)) drop-shadow(0 8px 24px rgba(0,0,0,0.25));
-  transition: transform 0.35s cubic-bezier(.22,.68,0,1.2);
-}
-.phone-wrap:hover .phone-shot { transform: translateY(-6px) rotate(-1deg); }
 
 /* Left side buttons */
 .iphone::before {
@@ -1301,7 +1301,6 @@ footer {
   nav a.nav-link { display: none; }
   .iphone { width: 170px; }
   .iphone-screen-outer { height: 340px; }
-  .phone-shot { width: 170px; }
   .hero-visual { display: none; }
   .stats-inner { gap: 24px; }
   .stat-num { font-size: 22px; }
@@ -1369,12 +1368,21 @@ footer {
           <div>自動計算 完了</div>
         </div>
       </div>
-      <img src="screenshots/lp-app-today.png" alt="ShiftLink 本日画面（ルーム状況・シフト）" class="phone-shot">
+      <div class="iphone">
+        <div class="iphone-silent"></div>
+        <div class="iphone-screen-outer">
+          <div class="iphone-dynamic-island"></div>
+          <div class="phone-screen">
+            <img src="screenshots/lp-app-today.png" alt="ShiftLink 本日画面（ルーム状況・シフト）" class="mock-screenshot">
+          </div>
+          <div class="iphone-home-bar"></div>
+        </div>
+      </div>
       <div class="hero-float-card fc-bottom">
         <div class="fc-icon">📲</div>
         <div>
           <div style="font-size:10px;color:var(--sub);font-weight:500">Push通知</div>
-          <div>あやかに予約通知 送信済</div>
+          <div>新規予約 通知済み</div>
         </div>
       </div>
     </div>
@@ -1486,7 +1494,16 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <img src="screenshots/lp-app-fees.png" alt="ShiftLink 委託金・粗利益の自動計算画面" class="phone-shot">
+          <div class="iphone">
+            <div class="iphone-silent"></div>
+            <div class="iphone-screen-outer">
+              <div class="iphone-dynamic-island"></div>
+              <div class="phone-screen">
+                <img src="screenshots/lp-app-fees.png" alt="ShiftLink 委託金・粗利益の自動計算画面" class="mock-screenshot">
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1503,7 +1520,16 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <img src="screenshots/lp-app-shift.png" alt="ShiftLink シフトカレンダー画面" class="phone-shot">
+          <div class="iphone">
+            <div class="iphone-silent"></div>
+            <div class="iphone-screen-outer">
+              <div class="iphone-dynamic-island"></div>
+              <div class="phone-screen">
+                <img src="screenshots/lp-app-shift.png" alt="ShiftLink シフトカレンダー画面" class="mock-screenshot">
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1525,56 +1551,7 @@ footer {
             <div class="iphone-screen-outer">
               <div class="iphone-dynamic-island"></div>
               <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div class="mock-nav-badge">👑 店舗</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div class="mock-booking-header">予約ボード — 本日</div>
-                  <div class="mock-timeline">
-                    <div class="mock-tl-item">
-                      <span class="mock-tl-time">12:00</span>
-                      <div class="mock-tl-card">
-                        <div class="mock-tl-title">No.1042 田中様</div>
-                        <div class="mock-tl-sub">90min / あおい</div>
-                      </div>
-                    </div>
-                    <div class="mock-tl-item">
-                      <span class="mock-tl-time">13:30</span>
-                      <div class="mock-tl-card">
-                        <div class="mock-tl-title">No.0831 鈴木様</div>
-                        <div class="mock-tl-sub">60min / さくら</div>
-                      </div>
-                    </div>
-                    <div class="mock-tl-item">
-                      <span class="mock-tl-time">14:00</span>
-                      <div class="mock-tl-card empty">
-                        <div class="mock-tl-title">空き</div>
-                      </div>
-                    </div>
-                    <div class="mock-tl-item">
-                      <span class="mock-tl-time">15:00</span>
-                      <div class="mock-tl-card">
-                        <div class="mock-tl-title">No.2201 山田様</div>
-                        <div class="mock-tl-sub">90min / みく</div>
-                      </div>
-                    </div>
-                    <div class="mock-tl-item">
-                      <span class="mock-tl-time">16:30</span>
-                      <div class="mock-tl-card">
-                        <div class="mock-tl-title">No.1188 伊藤様</div>
-                        <div class="mock-tl-sub">60min / あおい</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab active"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
+                <img src="screenshots/lp-app-today.png" alt="ShiftLink 予約タイムライン（本日のルーム状況）画面" class="mock-screenshot">
               </div>
               <div class="iphone-home-bar"></div>
             </div>
@@ -1595,7 +1572,16 @@ footer {
           </div>
         </div>
         <div class="phone-wrap">
-          <img src="screenshots/lp-app-sales.png" alt="ShiftLink 月次売上・日別集計画面" class="phone-shot">
+          <div class="iphone">
+            <div class="iphone-silent"></div>
+            <div class="iphone-screen-outer">
+              <div class="iphone-dynamic-island"></div>
+              <div class="phone-screen">
+                <img src="screenshots/lp-app-sales.png" alt="ShiftLink 月次売上・日別集計画面" class="mock-screenshot">
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1617,38 +1603,7 @@ footer {
             <div class="iphone-screen-outer">
               <div class="iphone-dynamic-island"></div>
               <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div class="mock-nav-badge">👑 店舗</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div class="mock-karte-header">顧客カルテ</div>
-                  <div class="mock-karte-card">
-                    <div class="mock-karte-id">No.1042</div>
-                    <div class="mock-karte-name">田中 ○○ 様</div>
-                    <span class="mock-karte-ng">NGなし</span>
-                    <div class="mock-karte-hist">来店回数: 14回 / 最終: 5/20</div>
-                  </div>
-                  <div class="mock-karte-card">
-                    <div class="mock-karte-id">No.0831</div>
-                    <div class="mock-karte-name">鈴木 ○○ 様</div>
-                    <span class="mock-karte-ng ng-red">NG: みく・りな</span>
-                    <div class="mock-karte-hist">来店回数: 6回 / 最終: 5/18</div>
-                  </div>
-                  <div class="mock-karte-card">
-                    <div class="mock-karte-id">No.2201</div>
-                    <div class="mock-karte-name">山田 ○○ 様</div>
-                    <span class="mock-karte-ng">NGなし</span>
-                    <div class="mock-karte-hist">来店回数: 3回 / 最終: 5/22</div>
-                  </div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab active"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
+                <img src="screenshots/lp-app-customer.png" alt="ShiftLink 顧客カルテ・NG管理画面" class="mock-screenshot">
               </div>
               <div class="iphone-home-bar"></div>
             </div>
@@ -1660,49 +1615,7 @@ footer {
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="section-testimonials">
-  <div class="inner">
-    <p class="section-label">Voice</p>
-    <h2 class="section-title">導入店舗の声</h2>
-    <p class="section-desc">実際にShiftLinkを使っているオーナーからの声です。</p>
-    <div class="testimonial-grid">
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">毎月の委託金計算が本当に楽になりました。以前は<strong>1〜2時間かかっていた作業が10分以内</strong>に終わるようになって、その時間を別のことに使えています。</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">A</div>
-          <div>
-            <div class="testimonial-name">愛知県 Aオーナー</div>
-            <div class="testimonial-role">メンズエステ店舗 / セラピスト8名</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">シフトのLINE管理をやめてこちらに移行しました。<strong>セラピスト自身がスマホから申請してくれるので</strong>、私が調整する手間がほぼゼロになりました。</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">K</div>
-          <div>
-            <div class="testimonial-name">大阪府 Kオーナー</div>
-            <div class="testimonial-role">メンズエステ店舗 / セラピスト12名</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">NG情報の伝え漏れが完全になくなりました。<strong>お客様ごとに情報が一元管理</strong>されているので、どのセラピストが対応しても安心です。</p>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar">S</div>
-          <div>
-            <div class="testimonial-name">東京都 Sオーナー</div>
-            <div class="testimonial-role">メンズエステ店舗 / セラピスト5名</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- TESTIMONIALS: 実在の口コミが用意でき次第ここに掲載する（架空サンプルは景表法・ステマ規制リスクのため削除済み 2026-06-12） -->
 
 <!-- MID CTA (features → pricing) -->
 <div class="section-mid-cta">
@@ -1766,7 +1679,7 @@ footer {
       </div>
       <div class="faq-item">
         <button class="faq-q">複数のセラピストに使わせることはできますか？<span class="material-icons">expand_more</span></button>
-        <div class="faq-a">できます。セラピストをアカウントに追加することで、シフト確認・予約確認をセラピスト自身のスマホで行えます。プランによって登録可能人数が異なります。</div>
+        <div class="faq-a">できます。セラピストをアカウントに追加することで、シフト確認・予約確認をセラピスト自身のスマホで行えます。登録できる人数に制限はなく、何名でも追加いただけます。</div>
       </div>
       <div class="faq-item">
         <button class="faq-q">スマートフォン以外でも使えますか？<span class="material-icons">expand_more</span></button>
@@ -1777,8 +1690,8 @@ footer {
         <div class="faq-a">解約後もデータは保持されます。再登録いただければいつでも引き続きご利用いただけます。</div>
       </div>
       <div class="faq-item">
-        <button class="faq-q">プランの途中変更は可能ですか？<span class="material-icons">expand_more</span></button>
-        <div class="faq-a">可能です。店舗の規模に合わせていつでもプランをアップグレード・ダウングレードできます。変更は次回更新日から適用されます。</div>
+        <button class="faq-q">料金はいくらですか？追加費用はかかりますか？<span class="material-icons">expand_more</span></button>
+        <div class="faq-a">月額¥14,800（税込）の1プランのみで、すべての機能をご利用いただけます。セラピストの登録人数は無制限で、人数による追加費用はかかりません。初期費用も不要です。</div>
       </div>
       <div class="faq-item">
         <button class="faq-q">メンズエステ以外の業種でも使えますか？<span class="material-icons">expand_more</span></button>
