@@ -74,3 +74,41 @@
 ## 7. 進め方の推奨
 重い設計判断を含むため、着手時は **Opusで設計**。Phaseごとにユーザー承認を取り、
 テスト環境で予行→staging→本番の順。1回の作業で全部やらない。
+
+---
+
+## 8. 進捗update（2026-06-10）
+
+### 完了
+- ✅ **Phase 0**: `pin-login` Edge Function 実装・本番デプロイ済み。`010_pin_login_attempts` でブルートフォース対策（5回/15分ロック・定数時間比較・使い捨てパスワード）。テスト店舗で正PIN/誤PIN401/5回429を実証。
+- ✅ **Phase 2（実装の大半）**: アプリにPIN認証モードを追加（`?pinauth=<store_id>` でON・**既定OFF＝本番KYOUKANOは従来anon方式のまま不変**）。`pinLoginViaServer`/`loadStoreDataForPin`/`initPinAuth` 実装、`withStoreFilter`/`withStoreId` を `currentStoreId` 基準に一般化。テスト店舗でオーナー/キャスト両ログイン実証済み。
+- ✅ **暫定緩和**: `notify-line` 内部シークレット必須化（9e84960）、`line-webhook` 署名検証（フェイルオープン解消）。
+- ✅ **XSS止血（別件）**: 保存型XSSエスケープ漏れ67箇所を修正（コミット `6d64a20`）。anon全開放と連鎖する被害経路を縮小。※XSSは止血であり、根治は本Phase3。
+
+### 未実施（順序厳守：Phase2完了検証 → Phase1 → Phase3）
+- ☐ **Phase 2残：全機能の認証セッション下E2E検証**（シフト/予約/委託金/顧客/Push/生体認証）。
+- ☐ **Phase 1：KYOUKANO store_idバックフィル**（約2,620件、メンテ枠・要バックアップ・件数照合）。
+- ☐ **Phase 3：`check_store_access` のanon分岐をfalse化**（§4 Phase3のSQL）。**Phase2検証完了が絶対条件**。
+
+### Phase2完了を阻む「store_id=NULL/anon前提」コードの洗い出し（2026-06-10時点）
+移行時（認証セッション化）に `currentStoreId` 基準へ統一が必要な箇所:
+
+| 箇所 | 内容 | 対応方針 |
+|---|---|---|
+| [index.html:1774](../index.html#L1774) | `rooms` を `.is('store_id',null)` で固定取得（レガシー初期化） | `eq('store_id',currentStoreId)` 化（既に1484に正版あり、レガシー側を統一） |
+| [index.html:5879](../index.html#L5879) | 非SaaS時に `q.is('store_id',null)`（shifts等のフィルタ分岐） | currentStoreId 基準に一本化 |
+| [index.html:2566](../index.html#L2566) | push用 store_id 算出が `SAAS_MODE` 条件 | PIN認証モードも store_id を持つよう一般化 |
+
+**フィルタ網羅性**: `sb.from(` 計270。`withStoreFilter`179 + `withStoreId`29 が付与経路。残り直接呼び出し約60は内訳が
+(a) `eq('store_id',currentStoreId)` 明示済み（PIN/SaaS初期化: 1482-1513, 2294-2342 等）、
+(b) cast_id/id/credential_id 基準の補助テーブル（`push_subscriptions`, `passkeys`）、
+(c) 上記レガシーNULL固定（要修正）。
+→ Phase2のE2E検証時に (a)(b) が認証セッション下で正しく自店スコープに収まるかを実機確認し、(c) を潰す。
+
+### 次アクション（推奨順）
+1. テスト店舗（本番RLS隔離・[[test-env-and-schema-findings]]）で Phase2 全機能E2E予行。
+2. 上記レガシーNULL固定3箇所を currentStoreId 基準へ修正。
+3. Phase1 バックフィルSQLをテスト環境で予行（件数照合手順を確立）。
+4. Phase3 RLS厳格化を**ロールバックSQL常備**で本番メンテ枠実施。
+
+※ 1〜4はいずれも本番影響が大きい。各Phaseはユーザー承認＋テスト環境予行を経てから実施する。
