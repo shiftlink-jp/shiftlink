@@ -6,10 +6,15 @@ const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET") ?? "";
-// SUPABASE_JWT_SECRET は Supabase Edge Functions に自動注入される組み込みシークレット
-const JWT_SECRET = new TextEncoder().encode(Deno.env.get("SUPABASE_JWT_SECRET") ?? "");
+// 重要: 本プロジェクトは新JWT署名キー(JWKS)へ移行済みで SUPABASE_JWT_SECRET は自動注入されない。
+// レガシーanon鍵(HS256)を署名検証するには、ダッシュボードの「Legacy JWT Secret」を
+// Edge Functions のシークレットに手動設定する。ただし SUPABASE_ で始まる名前は予約のため不可。
+// → LEGACY_JWT_SECRET という名前で設定すること（未設定だと anon鍵を検証できず全て401）。
+const JWT_SECRET = new TextEncoder().encode(
+  Deno.env.get("LEGACY_JWT_SECRET") ?? Deno.env.get("SUPABASE_JWT_SECRET") ?? "",
+);
 
-// JWT 署名を SUPABASE_JWT_SECRET で検証する（ペイロード読み取りのみでは偽造可能なため）
+// JWT 署名を Legacy JWT Secret で検証する（ペイロード読み取りのみでは偽造可能なため）
 async function isValidSupabaseJWT(token: string): Promise<boolean> {
   if (!JWT_SECRET.length) return false;
   try {
@@ -79,7 +84,7 @@ serve(async (req) => {
     // クライアント(currentStoreId=null)からはstore_id:nullで送られてくる(ステップ2デプロイまでの間)。
     // RLSのcompat shimと同様、NULL/KYOUKANO_UUIDの両方を許可して通知欠落を防ぐ。
     const KYOUKANO_STORE_ID = "4cb3383a-31e5-408a-9f75-60a25943ac4d";
-    let url = `${SUPABASE_URL}/rest/v1/push_subscriptions?cast_id=eq.${cast_id}`;
+    let url = `${SUPABASE_URL}/rest/v1/push_subscriptions?select=id,subscription&cast_id=eq.${cast_id}`;
     if (store_id) url += `&store_id=eq.${store_id}`;
     else url += `&or=(store_id.is.null,store_id.eq.${KYOUKANO_STORE_ID})`;
 
@@ -89,15 +94,41 @@ serve(async (req) => {
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
     });
-    const subs = await res.json();
+    const rawSubs = await res.json();
+    const subs = Array.isArray(rawSubs) ? rawSubs : [];
 
-    const results = [];
+    // 1件ずつ送信し、失敗しても他の購読への送信を止めない。
+    // 失効(410 Gone / 404 Not Found)した購読はDBから掃除して、次回以降の連鎖失敗を防ぐ。
+    // ※従来は for ループ内で1件でも例外が飛ぶと全体が中断し、生きている購読にも届かなかった。
+    let sent = 0;
+    let failed = 0;
+    const deadIds: string[] = [];
     for (const sub of subs) {
-      const result = await sendPush(sub.subscription, { title, body: pushBody });
-      results.push(result);
+      try {
+        await sendPush(sub.subscription, { title, body: pushBody });
+        sent++;
+      } catch (err) {
+        failed++;
+        // deno-lint-ignore no-explicit-any
+        const code = (err as any)?.statusCode;
+        if (code === 404 || code === 410) deadIds.push(sub.id);
+        // deno-lint-ignore no-explicit-any
+        console.error(`[send-push] sub ${sub.id} failed: ${code ?? ""} ${(err as any)?.message ?? err}`);
+      }
     }
 
-    return new Response(JSON.stringify({ ok: true, sent: results.length }), {
+    if (deadIds.length > 0) {
+      const idList = deadIds.map((id) => `"${id}"`).join(",");
+      await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=in.(${idList})`, {
+        method: "DELETE",
+        headers: {
+          "apikey": SUPABASE_SERVICE_KEY,
+          "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+      }).catch(() => {});
+    }
+
+    return new Response(JSON.stringify({ ok: true, sent, failed, cleaned: deadIds.length }), {
       headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
     });
   } catch (e) {
