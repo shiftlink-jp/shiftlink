@@ -627,6 +627,13 @@ nav a.nav-link:hover { color: var(--white); }
   flex-direction: column;
   overflow: hidden;
 }
+.mock-screenshot {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
 .iphone-home-bar {
   height: 18px;
   display: flex;
@@ -1357,32 +1364,7 @@ footer {
         <div class="iphone-screen-outer">
           <div class="iphone-dynamic-island"></div>
           <div class="phone-screen">
-            <div class="mock-app-header">
-              <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-              <div class="mock-nav-badge">👑 店舗</div>
-            </div>
-            <div class="mock-screen-content">
-              <div style="font-size:10px;font-weight:700;color:var(--text);margin-bottom:6px">出勤状況 <span style="font-size:8px;color:var(--sub);font-weight:400">5月26日（今日）</span></div>
-              <div style="font-size:8px;color:var(--sub);margin-bottom:5px">ルーム</div>
-              <div class="mock-room-grid">
-                <div class="mock-room-card pink"><div class="mock-room-name">Aルーム</div><div class="mock-room-cast">さくら</div><div class="mock-room-time">14:00〜02:00</div></div>
-                <div class="mock-room-card blue"><div class="mock-room-name">Bルーム</div><div class="mock-room-cast">みく</div><div class="mock-room-time">20:00〜02:00</div></div>
-                <div class="mock-room-card empty"><div class="mock-room-name">Cルーム</div><div style="font-size:9px;color:var(--sub);margin-top:3px">空き</div></div>
-                <div class="mock-room-card yellow"><div class="mock-room-name">Dルーム</div><div class="mock-room-cast">あおい</div><div class="mock-room-time">17:00〜02:00</div></div>
-              </div>
-              <div style="background:var(--white);border:1px solid var(--border);border-radius:7px;padding:7px 8px;margin-top:4px">
-                <div style="font-size:9px;font-weight:700;margin-bottom:4px">さくら <span style="font-size:8px;color:var(--sub);font-weight:400">14:00〜</span></div>
-                <div style="font-size:8px;color:var(--sub)">事前予約 2件</div>
-                <div style="font-size:8px;color:var(--orange);font-weight:600;margin-top:3px">18:00〜 ○○様 / 80分コース</div>
-              </div>
-            </div>
-            <div class="mock-tab-bar">
-              <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-              <div class="mock-tab active"><span class="mock-tab-icon">🏠</span>本日</div>
-              <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-              <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-              <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
-            </div>
+            <img src="screenshots/lp-app-today.png" alt="ShiftLink 本日画面（ルーム状況・シフト）" class="mock-screenshot">
           </div>
           <div class="iphone-home-bar"></div>
         </div>
@@ -1508,30 +1490,7 @@ footer {
             <div class="iphone-screen-outer">
               <div class="iphone-dynamic-island"></div>
               <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div class="mock-nav-badge">👑 店舗</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div style="font-size:9px;font-weight:700;color:var(--text);margin-bottom:6px">💰 委託金明細 — 5月分</div>
-                  <div style="background:#FFF7ED;border:1.5px solid var(--orange);border-radius:8px;padding:8px 10px;margin-bottom:6px">
-                    <div style="font-size:7px;color:var(--sub)">月間 委託金合計</div>
-                    <div style="font-size:16px;font-weight:700;color:var(--orange)">¥245,800</div>
-                    <div style="font-size:7px;color:var(--sub)">粗利益 <span style="color:#2563EB;font-weight:700">¥312,400</span></div>
-                  </div>
-                  <div class="mock-row"><span class="mock-name">さくら</span><span class="mock-amount">¥62,500</span></div>
-                  <div class="mock-row"><span class="mock-name">りな</span><span class="mock-amount">¥58,300</span></div>
-                  <div class="mock-row"><span class="mock-name">あおい</span><span class="mock-amount">¥48,200</span></div>
-                  <div class="mock-row"><span class="mock-name">ゆい</span><span class="mock-amount">¥41,000</span></div>
-                  <div class="mock-row"><span class="mock-name">みく</span><span class="mock-amount">¥35,800</span></div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab active"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
+                <img src="screenshots/lp-app-fees.png" alt="ShiftLink 委託金・粗利益の自動計算画面" class="mock-screenshot">
               </div>
               <div class="iphone-home-bar"></div>
             </div>
@@ -1557,52 +1516,7 @@ footer {
             <div class="iphone-screen-outer">
               <div class="iphone-dynamic-island"></div>
               <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div class="mock-nav-badge">👑 店舗</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div class="mock-shift-header">
-                    <span>シフト表</span>
-                    <span>5月 第3週</span>
-                  </div>
-                  <div class="mock-weekgrid">
-                    <div class="mock-weekcell">月</div>
-                    <div class="mock-weekcell">火</div>
-                    <div class="mock-weekcell today">水</div>
-                    <div class="mock-weekcell">木</div>
-                    <div class="mock-weekcell">金</div>
-                    <div class="mock-weekcell on">土</div>
-                    <div class="mock-weekcell on">日</div>
-                  </div>
-                  <div class="mock-shift-row">
-                    <div class="mock-dot"></div>
-                    <span class="mock-shift-name">あおい</span>
-                    <span class="mock-shift-time">12:00〜21:00</span>
-                  </div>
-                  <div class="mock-shift-row">
-                    <div class="mock-dot"></div>
-                    <span class="mock-shift-name">さくら</span>
-                    <span class="mock-shift-time">14:00〜23:00</span>
-                  </div>
-                  <div class="mock-shift-row">
-                    <div class="mock-dot"></div>
-                    <span class="mock-shift-name">みく</span>
-                    <span class="mock-shift-time">11:00〜20:00</span>
-                  </div>
-                  <div class="mock-shift-row">
-                    <div class="mock-dot" style="background:#D1D5DB"></div>
-                    <span class="mock-shift-name" style="color:#9CA3AF">ゆい</span>
-                    <span class="mock-shift-time">休み</span>
-                  </div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab active"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
+                <img src="screenshots/lp-app-shift.png" alt="ShiftLink シフトカレンダー画面" class="mock-screenshot">
               </div>
               <div class="iphone-home-bar"></div>
             </div>
@@ -1703,55 +1617,7 @@ footer {
             <div class="iphone-screen-outer">
               <div class="iphone-dynamic-island"></div>
               <div class="phone-screen">
-                <div class="mock-app-header">
-                  <div class="mock-logo"><div class="mock-logo-mark">S</div><div class="mock-logo-text">SHIFT LINK</div></div>
-                  <div style="font-size:8px;color:var(--orange);font-weight:700">📊 月次売上</div>
-                </div>
-                <div class="mock-screen-content">
-                  <div style="font-size:8px;font-weight:700;color:var(--sub);margin-bottom:5px;text-align:center">2026年5月</div>
-                  <div class="mock-kpi-grid">
-                    <div class="mock-kpi-card highlight">
-                      <div class="mock-kpi-label">総売上</div>
-                      <div class="mock-kpi-value">¥1,248K</div>
-                    </div>
-                    <div class="mock-kpi-card red-val">
-                      <div class="mock-kpi-label">委託金</div>
-                      <div class="mock-kpi-value">¥842K</div>
-                    </div>
-                    <div class="mock-kpi-card blue-val">
-                      <div class="mock-kpi-label">粗利益</div>
-                      <div class="mock-kpi-value">¥406K</div>
-                    </div>
-                    <div class="mock-kpi-card">
-                      <div class="mock-kpi-label">施術数</div>
-                      <div class="mock-kpi-value">87本</div>
-                    </div>
-                    <div class="mock-kpi-card">
-                      <div class="mock-kpi-label">平均単価</div>
-                      <div class="mock-kpi-value">¥14,340</div>
-                    </div>
-                    <div class="mock-kpi-card">
-                      <div class="mock-kpi-label">目標達成</div>
-                      <div class="mock-kpi-value" style="color:var(--orange)">89%</div>
-                    </div>
-                  </div>
-                  <div class="mock-barchart" style="margin-top:6px">
-                    <div class="mock-bar-wrap"><div class="mock-bar dim" style="height:28px"></div><span class="mock-bar-label">月</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar" style="height:42px"></div><span class="mock-bar-label">火</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar dim" style="height:20px"></div><span class="mock-bar-label">水</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar" style="height:50px"></div><span class="mock-bar-label">木</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar" style="height:38px"></div><span class="mock-bar-label">金</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar" style="height:56px"></div><span class="mock-bar-label">土</span></div>
-                    <div class="mock-bar-wrap"><div class="mock-bar" style="height:46px"></div><span class="mock-bar-label">日</span></div>
-                  </div>
-                </div>
-                <div class="mock-tab-bar">
-                  <div class="mock-tab"><span class="mock-tab-icon">📋</span>シフト</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">🏠</span>本日</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">💰</span>委託金</div>
-                  <div class="mock-tab active"><span class="mock-tab-icon">📊</span>売上</div>
-                  <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>管理</div>
-                </div>
+                <img src="screenshots/lp-app-sales.png" alt="ShiftLink 月次売上・日別集計画面" class="mock-screenshot">
               </div>
               <div class="iphone-home-bar"></div>
             </div>
