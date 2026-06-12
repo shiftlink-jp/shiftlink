@@ -45,6 +45,52 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// listUsers は perPage 上限があるため、全ページを走査して email 一致のユーザーIDを返す。
+// （#5: 旧実装は先頭200件しか見ず、内部Authユーザーが200を超えると既存ユーザーを取り逃し、
+//   ログイン不能=500になっていた。store_members で引けない異常系のフォールバック用。）
+// deno-lint-ignore no-explicit-any
+async function findAuthUserIdByEmail(admin: any, email: string): Promise<string | null> {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 100; page++) { // 最大2万ユーザーまでの安全弁
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) break;
+    const users = data?.users ?? [];
+    // deno-lint-ignore no-explicit-any
+    const found = users.find((u: any) => (u.email || "").toLowerCase() === target);
+    if (found) return found.id;
+    if (users.length < perPage) break; // 最終ページに到達
+  }
+  return null;
+}
+
+// PIN照合: auth_pins（bcrypt）を Postgres 関数 verify_pin で照合する。
+// ハッシュ計算は全てDB内に閉じ、Deno側でハッシュを再現しない（言語間不整合・弱いハッシュを排除）。
+// 未移行（011前でテーブル/関数が無い、または該当レコードが無い）場合のみ平文列にフォールバック。
+// これにより「pin-login新版デプロイ → 011 → 012」の順で無停止移行できる。
+// deno-lint-ignore no-explicit-any
+async function verifyPin(
+  admin: any,
+  store_id: string,
+  principal: string,
+  pin: string,
+  legacyPlain: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc("verify_pin", {
+    p_store_id: store_id, p_principal: principal, p_pin: pin,
+  });
+  if (!error) {
+    if (data === true) return true;
+    // 関数あり＆false: 該当 principal のレコードが存在すれば「PIN不一致」確定（平文へ落とさない）
+    const { data: ap } = await admin
+      .from("auth_pins").select("principal")
+      .eq("store_id", store_id).eq("principal", principal).maybeSingle();
+    if (ap) return false;
+  }
+  // 011前（関数/テーブル無し→errorで到達）または未移行レコード → 平文フォールバック
+  return !!legacyPlain && safeEqual(pin, legacyPlain);
+}
+
 serve(async (req) => {
   const origin = req.headers.get("origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
@@ -80,21 +126,22 @@ serve(async (req) => {
       );
     };
 
-    // 1) サーバ側でPIN照合
+    // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
     let memberRole: string;
     let memberCastId: number | null = null;
     if (role === "owner") {
       const { data: ss } = await admin
         .from("store_settings").select("owner_pin").eq("store_id", store_id).maybeSingle();
-      const ownerPin = ss?.owner_pin ? String(ss.owner_pin) : "";
-      if (!ownerPin || !safeEqual(pinStr, ownerPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
+      const ok = await verifyPin(admin, store_id, "owner", pinStr, ss?.owner_pin ? String(ss.owner_pin) : "");
+      if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "owner";
     } else {
       if (!cast_id) return json({ error: "cast_id が必要です" }, 400, origin);
+      // cast の存在確認（pin列はもう照合に使わない。存在/所属の確認のみ）
       const { data: c } = await admin
         .from("casts").select("id,pin").eq("id", cast_id).eq("store_id", store_id).maybeSingle();
-      const castPin = c?.pin ? String(c.pin) : "";
-      if (!c || !castPin || !safeEqual(pinStr, castPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
+      const ok = c && await verifyPin(admin, store_id, `cast.${cast_id}`, pinStr, c?.pin ? String(c.pin) : "");
+      if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = Number(cast_id);
     }
@@ -105,17 +152,26 @@ serve(async (req) => {
     // 2) この主体に対応する内部Authユーザーを用意（決定的email）
     const email = `pin.${principalKey}@shiftlink.internal`;
     let userId: string | null = null;
-    // 既存検索（admin listはページングのため email フィルタが無いので getUserByEmail 相当を試行）
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
-    });
-    if (created?.user) {
-      userId = created.user.id;
-    } else if (createErr) {
-      // 既に存在 → 一覧から検索
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const found = list?.users?.find((u) => (u.email || "").toLowerCase() === email.toLowerCase());
-      userId = found?.id ?? null;
+
+    // 既存ユーザーは store_members から決定的に引く（#5: listUsersのperPage上限で
+    // ログイン不能になる問題を回避）。(store_id, role, cast_id) は principalKey と1対1で、
+    // 初回ログイン時に下の手順3で store_members へ登録済み。
+    {
+      let q = admin.from("store_members").select("user_id")
+        .eq("store_id", store_id).eq("role", memberRole).limit(1);
+      q = memberCastId == null ? q.is("cast_id", null) : q.eq("cast_id", memberCastId);
+      const { data: smRows } = await q;
+      if (smRows && smRows[0]?.user_id) userId = smRows[0].user_id as string;
+    }
+
+    // store_members に無ければ新規作成（初回ログイン）。
+    // 作成失敗(=Authユーザーは在るがstore_members未登録の異常系)なら全ページ走査で確実に取得。
+    if (!userId) {
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
+      });
+      if (created?.user) userId = created.user.id;
+      else if (createErr) userId = await findAuthUserIdByEmail(admin, email);
     }
     if (!userId) return json({ error: "認証ユーザーの準備に失敗しました" }, 500, origin);
 
@@ -128,17 +184,27 @@ serve(async (req) => {
       });
     }
 
-    // 4) 使い捨てパスワードを設定 → サインインしてセッション取得（永続シークレット不要）
-    const ephemeral = crypto.randomUUID() + crypto.randomUUID();
-    await admin.auth.admin.updateUserById(userId, { password: ephemeral });
+    // 4) 使い捨てパスワードを設定 → サインインしてセッション取得（永続シークレット不要）。
+    //    #6: 同一principal(オーナーが複数端末で同時ログイン等)だとパスワード設定が
+    //    互いに上書きし合い、片方の signIn が失敗するレースがある。設定→即サインインを
+    //    数回リトライして吸収する（各試行で自分のパスワードを直前に再設定するため収束する）。
     const anon = createClient(SUPABASE_URL, ANON_KEY);
-    const { data: signIn, error: signErr } = await anon.auth.signInWithPassword({ email, password: ephemeral });
-    if (signErr || !signIn?.session) return json({ error: "セッション発行に失敗しました" }, 500, origin);
+    // deno-lint-ignore no-explicit-any
+    let session: any = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const ephemeral = crypto.randomUUID() + crypto.randomUUID();
+      await admin.auth.admin.updateUserById(userId, { password: ephemeral });
+      const { data: signIn } = await anon.auth.signInWithPassword({ email, password: ephemeral });
+      if (signIn?.session) { session = signIn.session; break; }
+      // 競合で上書きされた可能性 → ジッターを入れて再試行
+      await new Promise((r) => setTimeout(r, 40 + Math.floor(Math.random() * 120)));
+    }
+    if (!session) return json({ error: "セッション発行に失敗しました" }, 500, origin);
 
     return json({
-      access_token: signIn.session.access_token,
-      refresh_token: signIn.session.refresh_token,
-      expires_at: signIn.session.expires_at,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
       store_id, role: memberRole, cast_id: memberCastId, user_id: userId,
     }, 200, origin);
   } catch (e) {

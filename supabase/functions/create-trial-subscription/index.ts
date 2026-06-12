@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 
-const ALLOWED_ORIGINS = ['https://app.shiftlink.jp', 'http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500']
+const ALLOWED_ORIGINS = ['https://shiftlink-app.jp', 'https://www.shiftlink-app.jp', 'https://app.shiftlink.jp', 'http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500']
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || ''
   return {

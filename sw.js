@@ -1,6 +1,5 @@
-const CACHE_VERSION = 'v15';
-const SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
+const CACHE_VERSION = 'v16';
+// #8: SWからの直接DB書き込み(anon鍵)を廃止したため SUPABASE_URL / SUPABASE_KEY は不要に。
 const VAPID_KEY = 'BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E';
 
 self.addEventListener('install', function(event) {
@@ -78,19 +77,12 @@ self.addEventListener('pushsubscriptionchange', function(event) {
     }).then(function(newSub) {
       var newJson = newSub.toJSON();
       var oldEndpoint = event.oldSubscription ? event.oldSubscription.endpoint : null;
-      // 古いsubscriptionをDBから削除
-      var deletePromise = oldEndpoint
-        ? supabaseRest('DELETE', '/rest/v1/push_subscriptions?subscription->>endpoint=eq.' + encodeURIComponent(oldEndpoint))
-        : Promise.resolve();
-      return deletePromise.then(function() {
-        // メインスレッドにcast_idを問い合わせて新しいsubscriptionを登録
-        return self.clients.matchAll({ type: 'window' }).then(function(clients) {
-          if (clients.length > 0) {
-            // メインスレッドに新subscription情報を送って登録させる
-            clients.forEach(function(client) {
-              client.postMessage({ type: 'PUSH_SUB_CHANGED', subscription: newJson });
-            });
-          }
+      // #8: SWはanon鍵でDBを直接書かない（anon遮断後に失敗するため）。
+      // 新subの登録も旧subの削除も、ログイン済みセッションを持つメインスレッドに委譲する。
+      // メインスレッドが閉じている場合の旧sub残りは send-push の失効購読クリーンアップが回収する。
+      return self.clients.matchAll({ type: 'window' }).then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'PUSH_SUB_CHANGED', subscription: newJson, oldEndpoint: oldEndpoint });
         });
       });
     }).catch(function(e) {
@@ -98,21 +90,6 @@ self.addEventListener('pushsubscriptionchange', function(event) {
     })
   );
 });
-
-// Supabase REST API直接呼び出し
-function supabaseRest(method, path, body) {
-  var opts = {
-    method: method,
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  return fetch(SUPABASE_URL + path, opts);
-}
 
 function urlBase64ToUint8Array(base64String) {
   var padding = '='.repeat((4 - base64String.length % 4) % 4);

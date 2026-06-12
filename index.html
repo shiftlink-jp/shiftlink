@@ -358,7 +358,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v15';
+const SW_VER = 'v16';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -428,6 +428,8 @@ if("serviceWorker" in navigator && !_isSaaS){
         if(e.data && e.data.type === 'PUSH_SUB_CHANGED' && e.data.subscription){
           console.log('[SW] Push subscription変更通知 → DB再登録');
           window._pendingPushSubChange = e.data.subscription;
+          // #8: 旧subの削除もここ(ログイン済みセッション)で行う。SWはanon直書きしない。
+          const oldEndpoint = e.data.oldEndpoint || null;
           // ログイン中ユーザーのDB登録を即座に更新（オーナー・キャスト両対応）
           try {
             if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
@@ -439,7 +441,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[OwnerPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint || (oldEndpoint && s.endpoint === oldEndpoint); } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
@@ -459,7 +461,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[CastPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint || (oldEndpoint && s.endpoint === oldEndpoint); } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
@@ -602,7 +604,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <!-- ステップ2: オーナーPIN設定 -->
     <div id="ob-panel-2" style="display:none">
       <div style="font-weight:700;font-size:.95rem;margin-bottom:.75rem">🔐 オーナー用PINを設定してください</div>
-      <input class="linput" type="number" id="ob-owner-pin" placeholder="例: 1234（1〜8桁）" inputmode="numeric" style="margin-bottom:.5rem">
+      <input class="linput" type="number" id="ob-owner-pin" placeholder="例: 1234（4〜8桁）" inputmode="numeric" style="margin-bottom:.5rem">
       <div style="font-size:.75rem;color:var(--text3);margin-bottom:1rem">ログインや管理画面に使います。後から変更できます。</div>
       <div class="lerr" id="ob-err" style="margin-bottom:.5rem"></div>
       <button class="btn-login" style="background:var(--accent)" onclick="obNext(2)">次へ →</button>
@@ -1079,7 +1081,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <button class="sh-close" onclick="closeSheet('cast')">✕</button>
     <div class="sh-title">キャストを追加</div>
     <div class="fg"><label>名前</label><input type="text" class="fi2" id="new-name" placeholder="例：さくら"></div>
-    <div class="fg"><label>PIN（1〜8桁）</label><input type="password" class="fi2" id="new-pin" maxlength="8" inputmode="numeric" placeholder="••••"></div>
+    <div class="fg"><label>PIN（4〜8桁）</label><input type="password" class="fi2" id="new-pin" maxlength="8" inputmode="numeric" placeholder="••••"></div>
     <div style="font-size:.76rem;color:var(--text3);background:var(--surface2);border-radius:var(--rs);padding:.65rem .85rem;margin-bottom:.75rem;line-height:1.6">バック設定は追加後に「バック設定」から変更できます</div>
     <button class="btn btn-gold btn-full" onclick="addCast()">追加する</button>
     <div class="lerr" id="cast-add-err"></div>
@@ -1271,7 +1273,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         <div style="font-size:.75rem;color:var(--text3)">現在の店舗PIN</div>
         <div id="current-owner-pin-display" style="font-size:1.5rem;font-weight:700;letter-spacing:.25em;color:var(--text);font-family:monospace"></div>
       </div>
-      <div class="fg"><label>新しい店舗PIN（1〜8桁の数字）</label>
+      <div class="fg"><label>新しい店舗PIN（4〜8桁の数字）</label>
         <input type="number" class="fi2" id="new-owner-pin" maxlength="8" inputmode="numeric" placeholder="新しいPINを入力">
       </div>
       <button class="btn btn-ghost btn-full" onclick="changeOwnerPinFromSheet()" style="margin-bottom:.25rem">店舗PINを変更する</button>
@@ -1411,13 +1413,20 @@ const SUPABASE_KEY = SAAS_MODE
 let OWNER_PIN = '' // DBまたはlocalStorageからロードされるまで認証不可
 // SaaS用グローバル変数
 let currentStoreId = null // ログイン後にセットされる
-// ── Phase2: PIN認証モード ──
-// ?pinauth=<store_id> で有効化（テスト用）。本番切替時は定数で設定する。
-// ONのとき、PINログインを pin-login 関数経由の認証セッションにする（anon遮断の前提）。
-// OFF（既定）は従来のanon方式（現行KYOUKANO本番）。
+// ── Phase2/ステップ2: PIN認証モード ──
+// ?pinauth=<store_id> でテスト店舗を明示指定（最優先）。
+// 本番KYOUKANO（非SaaS）は ?pinauth 無しでもPIN認証を既定にする（anon遮断の前提）。
+//   …コードにkyoukano.vercel.app等のホスト名直書きを避けるため「非SaaS＝KYOUKANO」で判定。
+//   将来の貸出先はSaaS版(app.shiftlink.jp系)で別経路のため干渉しない。
+// ONのとき、PINログインを pin-login 関数経由の認証セッションにする。
+// SaaS（app.shiftlink.jp系）は従来通りSupabase Auth（この設計の対象外）。
 const _pinAuthParam = new URLSearchParams(location.search).get('pinauth')
-const PIN_AUTH_MODE = !!_pinAuthParam
-let PIN_STORE_ID = _pinAuthParam || null
+const KYOUKANO_STORE_ID = '4cb3383a-31e5-408a-9f75-60a25943ac4d' // 本番KYOUKANO（Phase1で全データにstore_id付与済 2026-06-11）
+const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE
+// #4対策: 非SaaS(本番KYOUKANO)では pinauth を無視し店舗をKYOUKANOに固定する。
+// （URLに ?pinauth=<他店ID> を付けて公式アプリを他店PINの総当たり台にされるのを防ぐ。
+//   pinauth は SaaS=開発/検証時のみ有効。SaaS本格稼働時は店舗をサブドメイン等から確定する想定）
+let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || null) : KYOUKANO_STORE_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -1484,7 +1493,7 @@ async function loadStoreDataForPin(){
   const{data:rm}=await sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order')
   const{data:ss}=await sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
   courses=cs||[]; opts=op||[]; roomList=rm||[]; storeSettings=ss||{}
-  if(ss&&ss.owner_pin) OWNER_PIN=String(ss.owner_pin)
+  // owner_pin は auth_pins へ隔離済み。クライアントはPINを保持しない（照合は pin-login のみ）。
 }
 // PINをサーバ側(pin-login)で照合してセッションを取得し、setSessionする
 async function pinLoginViaServer(role, castId, pin){
@@ -1497,6 +1506,24 @@ async function pinLoginViaServer(role, castId, pin){
   if(!res.ok) throw new Error(j.error||'ログインに失敗しました')
   await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
   currentStoreId=j.store_id
+  return j
+}
+// PIN設定/変更をサーバ(set-pin)経由で auth_pins に保存する（平文をDBに書かない）。
+// target: 'owner' または キャストID(number)。オーナーのセッションでのみ成功する。
+async function setPinViaServer(target, pin){
+  const{data:{session}}=await sb.auth.getSession()
+  const tok=session?.access_token
+  if(!tok) throw new Error('セッションが無効です。再ログインしてください')
+  const sid=currentStoreId||PIN_STORE_ID
+  if(!sid) throw new Error('店舗が特定できません')
+  const payload=(target==='owner')?{store_id:sid,target:'owner',pin}:{store_id:sid,cast_id:Number(target),pin}
+  const res=await fetch(SUPABASE_URL+'/functions/v1/set-pin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+tok},
+    body:JSON.stringify(payload)
+  })
+  const j=await res.json().catch(()=>({}))
+  if(!res.ok) throw new Error(j.error||'PINの保存に失敗しました')
   return j
 }
 // PIN認証モードの初期化（既存セッション復元 or ログイン画面表示）
@@ -1888,6 +1915,10 @@ async function passkeyLogin(){
 
 // PINログイン後に生体認証登録を促す
 async function offerPasskeyRegistration(castId, castName){
+  // Option B: PIN認証モードではpasskeyログイン未対応（ログインはpin-login経由で認証セッションを
+  // 発行する設計）。使えない機能の登録を案内しないよう抑止。passkeyのサーバ側セッション発行は
+  // 後日Edge Function方式で再実装予定（docs/phase2-3-cutover-audit-20260611.md 参照）。
+  if(PIN_AUTH_MODE) return
   if(!window.PublicKeyCredential) return
   // localStorage でこの端末の登録状態を確認
   const localKey = 'passkey_registered_' + castId
@@ -2387,11 +2418,12 @@ async function obNext(step){
     document.getElementById('ob-step-2').style.color='#fff'
   } else if(step===2){
     const pin=(document.getElementById('ob-owner-pin')?.value||'').trim()
-    if(!pin||pin.length<1||pin.length>8||!/^\d+$/.test(pin)){
-      if(errEl)errEl.textContent='PINは1〜8桁の数字で入力してください';return
+    if(!pin||pin.length<4||pin.length>8||!/^\d+$/.test(pin)){
+      if(errEl)errEl.textContent='PINは4〜8桁の数字で入力してください';return
     }
-    await withStoreFilter(sb.from('store_settings').update({owner_pin:pin})).catch(()=>{})
-    OWNER_PIN=pin
+    // owner_pin は平文で持たず set-pin(auth_pins) へ保存
+    try{ await setPinViaServer('owner', pin) }
+    catch(e){ if(errEl)errEl.textContent='PIN保存に失敗：'+(e.message||''); return }
     document.getElementById('ob-panel-2').style.display='none'
     document.getElementById('ob-panel-3').style.display='block'
     document.getElementById('ob-step-2').style.background='#22c55e'
@@ -2566,9 +2598,13 @@ async function sendPushNotification(castId, title, body) {
   }
   try {
     const storeId = currentStoreId || null
+    // #2対策: ログイン済みなら本物のセッションを送る（send-pushがこれを検証し、他店への送信を遮断）。
+    // セッションが無い場合のみ従来のanon鍵にフォールバック（カットオーバー前の互換維持）。
+    const{data:{session}}=await sb.auth.getSession()
+    const authTok=session?.access_token||SUPABASE_KEY
     const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+authTok},
       body:JSON.stringify({cast_id:castId, title, body, store_id:storeId})
     });
     if (!res.ok) { console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>'')); _pushRecentKeys.delete(key); }
@@ -5383,10 +5419,11 @@ async function loadOwnerCal(){
       <div style="font-size:.88rem;font-weight:700;margin-bottom:.4rem">${jpDate(date)}</div>`
     ss.forEach(s=>{
       const sid=s.id
-      const sname=(s.casts?.name||'?').replace(/'/g,"\\'")
+      // onclick内のJS文字列に入れる値は escapeHtml(jsEsc()) で二重エスケープ（格納型XSS対策 #3）
+      const sname=escapeHtml(jsEsc(s.casts?.name||'?'))
       const sstart=s.start_time?.slice(0,5)||'13:00'
       const send=s.end_time?.slice(0,5)||'22:00'
-      const snote=(s.note||'').replace(/'/g,"\\'")
+      const snote=escapeHtml(jsEsc(s.note||''))
       html+=`<div id="pending-item-${sid}" style="padding:.4rem 0;border-bottom:1px solid var(--border)">
         <div style="margin-bottom:.3rem">
           <span style="font-size:.88rem;font-weight:600">${escapeHtml(s.casts?.name||'?')}</span>
@@ -5445,13 +5482,16 @@ async function ownerSelectDay(ds){
       const send=(s.end_time||'').slice(0,5)||'22:00'
       const snote=s.note||''
       const stime=sstart+'〜'+send
+      // 表示用(escapeHtml)とonclick用(escapeHtml(jsEsc()))を分けて格納型XSS対策 #3
+      const snameH=escapeHtml(sname), snoteH=escapeHtml(snote)
+      const snameJ=escapeHtml(jsEsc(sname)), snoteJ=escapeHtml(jsEsc(snote))
       html+='<div id="pending-item-'+sid+'" style="background:var(--surface);border-radius:var(--r);padding:.85rem 1rem;box-shadow:var(--sh);margin-bottom:.5rem">'
-      html+='<div style="margin-bottom:.35rem"><div style="font-size:.92rem;font-weight:600">'+sname+'</div>'
-      html+='<div style="font-size:.78rem;color:var(--text3)">'+stime+(snote?' / '+snote:'')+'</div></div>'
+      html+='<div style="margin-bottom:.35rem"><div style="font-size:.92rem;font-weight:600">'+snameH+'</div>'
+      html+='<div style="font-size:.78rem;color:var(--text3)">'+stime+(snote?' / '+snoteH:'')+'</div></div>'
       html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-bottom:.4rem">'
       html+='<button class="btn btn-green btn-xs" onclick="approveShift('+sid+');closeSheet(\'owner-shift-detail\')">✓ 承認</button>'
       html+='<button class="btn btn-red btn-xs" onclick="rejectShift('+sid+');closeSheet(\'owner-shift-detail\')">✕ 却下</button>'
-      html+='<button class="btn btn-gray btn-xs" onclick="openShiftEdit('+sid+',\''+sname+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\''+snote+'\')">訂正</button>'
+      html+='<button class="btn btn-gray btn-xs" onclick="openShiftEdit('+sid+',\''+snameJ+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\''+snoteJ+'\')">訂正</button>'
       html+='</div>'
       html+='<div style="font-size:.67rem;color:var(--text3);margin-bottom:.25rem">ルームを選んで確定ボタンを押してください：</div>'
       html+='<div id="room-selected-'+sid+'" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:.3rem;min-height:1em"></div>'
@@ -5477,15 +5517,18 @@ async function ownerSelectDay(ds){
         const send=(s.end_time||'').slice(0,5)||'22:00'
         const sroom=s.room||''
         const stimestr=sstart+'〜'+send
+        // 表示用(escapeHtml)とonclick用(escapeHtml(jsEsc()))を分けて格納型XSS対策 #3
+        const snameH=escapeHtml(sname)
+        const snameJ=escapeHtml(jsEsc(sname)), sroomJ=escapeHtml(jsEsc(sroom))
         html+='<div style="padding:.35rem 0;border-bottom:1px solid var(--border)">'
         const rvCnt=shiftRvCount[sid]||0
         const rvBadgeS=rvCnt>0?'<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1px solid var(--accent);margin-left:.35rem">予約'+rvCnt+'件</span>':''
-        html+='<div style="font-size:.88rem;font-weight:600;margin-bottom:.25rem">'+sname+'<span style="font-size:.72rem;color:var(--text3);margin-left:.3rem">'+stimestr+'</span>'+rvBadgeS+'</div>'
+        html+='<div style="font-size:.88rem;font-weight:600;margin-bottom:.25rem">'+snameH+'<span style="font-size:.72rem;color:var(--text3);margin-left:.3rem">'+stimestr+'</span>'+rvBadgeS+'</div>'
         html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.25rem">'
-        html+='<button class="btn btn-purple btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openRoom('+sid+',\''+sname+'\',\''+stimestr+'\',\''+sroom+'\'),100)">ルーム変更</button>'
-        html+='<button class="btn btn-blue btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openReservation('+sid+',\''+sname+'\',\''+ds+'\'),100)">予約登録</button>'
-        html+='<button class="btn btn-gray btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftEdit('+sid+',\''+sname+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\'\'),100)">訂正</button>'
-        html+='<button class="btn btn-gold btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftReservations('+sid+',\''+sname+'\'),100)">予約確認</button>'
+        html+='<button class="btn btn-purple btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openRoom('+sid+',\''+snameJ+'\',\''+stimestr+'\',\''+sroomJ+'\'),100)">ルーム変更</button>'
+        html+='<button class="btn btn-blue btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openReservation('+sid+',\''+snameJ+'\',\''+ds+'\'),100)">予約登録</button>'
+        html+='<button class="btn btn-gray btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftEdit('+sid+',\''+snameJ+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\'\'),100)">訂正</button>'
+        html+='<button class="btn btn-gold btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftReservations('+sid+',\''+snameJ+'\'),100)">予約確認</button>'
         html+='</div></div>'
       })
       html+='</div>'
@@ -7051,13 +7094,16 @@ async function addCast(){
   const pin=document.getElementById('new-pin').value.trim()
   const err=document.getElementById('cast-add-err')
   if(!name){err.textContent='名前を入力してください';return}
-  if(pin.length<1||pin.length>8||!/^\d+$/.test(pin)){err.textContent='PINは1〜8桁の数字で入力してください';return}
+  if(pin.length<4||pin.length>8||!/^\d+$/.test(pin)){err.textContent='PINは4〜8桁の数字で入力してください';return}
   const{data:maxData}=await withStoreFilter(sb.from('casts').select('sort_order').order('sort_order',{ascending:false}).limit(1))
   const nextOrder=((maxData||[])[0]?.sort_order||0)+1
-  const{error}=await sb.from('casts').insert(withStoreId({name,pin,sort_order:nextOrder,active:true}))
+  // PINは平文で casts に書かず、作成後に set-pin(auth_pins) へ保存する
+  const{error}=await sb.from('casts').insert(withStoreId({name,sort_order:nextOrder,active:true}))
   if(error){err.textContent='エラー：'+error.message;return}
   const{data:newCast}=await withStoreFilter(sb.from('casts').select('id').eq('name',name).order('id',{ascending:false}).limit(1))
   if(newCast&&newCast[0]){
+    try{ await setPinViaServer(newCast[0].id, pin) }
+    catch(e){ err.textContent='キャストは作成されましたがPIN保存に失敗：'+(e.message||''); }
     await sb.from('cast_fees').insert(withStoreId({cast_id:newCast[0].id,back_50:DEFAULT_FEE.back_50,back_80:DEFAULT_FEE.back_80,back_100:DEFAULT_FEE.back_100,back_130:DEFAULT_FEE.back_130,back_ext30:DEFAULT_FEE.back_ext30,shimei_free:DEFAULT_FEE.shimei_free,shimei_net:DEFAULT_FEE.shimei_net,shimei_hon:DEFAULT_FEE.shimei_hon,op_gokueki:DEFAULT_FEE.op_gokueki,op_isho:DEFAULT_FEE.op_isho,op_isho2:DEFAULT_FEE.op_isho2}))
   }
   toast('追加しました！')
@@ -7067,13 +7113,12 @@ async function addCast(){
 }
 
 async function changePIN(castId,name){
-  const{data:castData}=await withStoreFilter(sb.from('casts').select('pin').eq('id',castId)).maybeSingle()
-  const currentPin=castData?.pin||'未設定'
-  const pin=prompt(name+'のPIN変更\n\n現在のPIN：'+currentPin+'\n\n新しいPIN（1〜8桁）を入力してください')
+  // 現在のPINは auth_pins に隔離されており、もはや読み取れない（セキュリティ仕様）
+  const pin=prompt(name+'のPIN変更\n\n新しいPIN（4〜8桁の数字）を入力してください')
   if(pin===null)return
-  if(pin.length<1||pin.length>8||isNaN(pin)){toast('PINは1〜8桁の数字で入力してください');return}
-  const{error}=await withStoreFilter(sb.from('casts').update({pin})).eq('id',castId)
-  if(error){toast('エラーが発生しました');return}
+  if(pin.length<4||pin.length>8||!/^\d+$/.test(pin)){toast('PINは4〜8桁の数字で入力してください');return}
+  try{ await setPinViaServer(castId, pin) }
+  catch(e){ toast('エラー：'+(e.message||'PIN変更に失敗しました')); return }
   toast('PINを変更しました！')
   loadCastMgmt()
 }
@@ -7547,12 +7592,9 @@ async function openStoreSettings(){
     if(cffEl) cffEl.value=ss.card_fee_fixed!=null?ss.card_fee_fixed:80
   }
   document.getElementById('store-overlay').classList.add('on')
-  // DBから最新のPINを取得して表示
-  const{data:pinSs}=await withStoreFilter(sb.from('store_settings').select('owner_pin')).maybeSingle()
-  const latestPin = (pinSs&&pinSs.owner_pin) ? String(pinSs.owner_pin) : OWNER_PIN
-  OWNER_PIN = latestPin
+  // 現在PINは auth_pins に隔離済みで表示できない（変更のみ可能）
   const pinDisp = document.getElementById('current-owner-pin-display')
-  if(pinDisp) pinDisp.textContent = latestPin
+  if(pinDisp) pinDisp.textContent = '••••（変更のみ可能）'
 }
 
 async function renderStoreCourseList(){
@@ -7686,25 +7728,19 @@ async function saveShimeiSettings(){
 async function changeOwnerPinFromSheet(){
   const input = document.getElementById('new-owner-pin')
   const pin = String(input.value).trim()
-  if(!pin || pin.length < 1 || pin.length > 8 || !/^\d+$/.test(pin)){
-    toast('PINは1〜8桁の数字で入力してください'); return
+  if(!pin || pin.length < 4 || pin.length > 8 || !/^\d+$/.test(pin)){
+    toast('PINは4〜8桁の数字で入力してください'); return
   }
-  // DBに保存（全端末で共有）
-  const{error} = await withStoreFilter(sb.from('store_settings').update({owner_pin: pin}))
-  if(error){
-    // store_settingsにowner_pinカラムがない場合はlocalStorageのみに保存
-    console.warn('DB保存エラー（owner_pinカラム未作成の可能性）:', error.message)
-    localStorage.setItem('shiftlink_owner_pin', pin)
-    toast('⚠️ DB保存に失敗。この端末のみPINを変更しました。')
-  } else {
-    // DB保存成功→メモリとlocalStorageも更新
-    OWNER_PIN = pin
-    localStorage.setItem('shiftlink_owner_pin', pin)
-    input.value = ''
-    const pinDisp = document.getElementById('current-owner-pin-display')
-    if(pinDisp) pinDisp.textContent = pin
-    toast('✅ 店舗PINを変更しました（全端末に反映）')
+  // auth_pins へサーバ(set-pin)経由で保存（平文をDB/端末に残さない）
+  try{
+    await setPinViaServer('owner', pin)
+  }catch(e){
+    toast('⚠️ PIN変更に失敗：'+(e.message||'')); return
   }
+  input.value = ''
+  const pinDisp = document.getElementById('current-owner-pin-display')
+  if(pinDisp) pinDisp.textContent = '••••（変更済み）'
+  toast('✅ 店舗PINを変更しました（全端末に反映）')
 }
 
 // saveStoreSettings() は廃止 — コース/オプション/指名料金はそれぞれ個別CRUD関数で管理
