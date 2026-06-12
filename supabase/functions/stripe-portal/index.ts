@@ -5,7 +5,7 @@ import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 // Stripe Customer Portal セッション作成
 // 解約・カード変更・請求書閲覧はすべてStripeのポータル画面で処理
 
-const ALLOWED_ORIGINS = ['https://app.shiftlink.jp', 'http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3100']
+const ALLOWED_ORIGINS = ['https://shiftlink-app.jp', 'https://www.shiftlink-app.jp', 'https://app.shiftlink.jp', 'http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3100']
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || ''
   return {
@@ -47,7 +47,7 @@ serve(async (req) => {
 
     if (!store.stripe_customer_id) throw new Error('Stripeアカウントが未設定です。先にプランのアップグレードを行ってください。')
 
-    const appUrl = Deno.env.get('APP_URL') || 'https://app.shiftlink.jp'
+    const appUrl = Deno.env.get('APP_URL') || 'https://shiftlink-app.jp'
 
     // Customer Portal セッション作成
     const session = await stripe.billingPortal.sessions.create({
