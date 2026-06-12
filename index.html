@@ -3382,7 +3382,7 @@ async function loadCastToday() {
     const today = bizDay();
     // 自分の今日承認済みシフトを取得
     const { data: shifts, error: shiftErr } = await sb.from('shifts')
-      .select('id,start_time,end_time')
+      .select('id,start_time,end_time,clock_in_at,clock_out_at')
       .eq('cast_id', me.id)
       .eq('date', today)
       .eq('status', 'approved');
@@ -3393,6 +3393,8 @@ async function loadCastToday() {
     }
 
     const sids = shifts.map(s => s.id);
+    // 出勤/退勤の打刻コントロール（予約有無に関わらず常に上部に表示）
+    const attHtml = buildCastAttHtml(shifts);
     const { data: rvs, error: rvErr } = await sb.from('reservations')
       .select('*,room_in_at,room_out_at')
       .in('shift_id', sids)
@@ -3400,14 +3402,14 @@ async function loadCastToday() {
     const rvsSorted = sortRvsByTime(rvs);
 
     if (rvErr || !rvs || rvs.length === 0) {
-      area.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません<br><small>shift_ids:' + escapeHtml(JSON.stringify(sids)) + (rvErr?' err:'+escapeHtml(rvErr.message):'') + '</small></div>';
+      area.innerHTML = attHtml + '<div class="card" style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.85rem">本日の予約はまだありません</div>';
       // 定期リフレッシュ
       clearTimeout(castTodayTimer);
       castTodayTimer = setTimeout(loadCastToday, 60000);
       return;
     }
 
-    renderCastTodayCards(rvsSorted);
+    renderCastTodayCards(rvsSorted, attHtml);
 
     // 1分ごとに再描画（時刻チェック）
     clearTimeout(castTodayTimer);
@@ -3435,7 +3437,7 @@ function startCastTodayClock() {
   }, msToNextMin);
 }
 
-function renderCastTodayCards(rvs) {
+function renderCastTodayCards(rvs, attHtml) {
   const area = document.getElementById('cast-today-area');
   if (!area) return;
   const now = new Date();
@@ -3512,7 +3514,65 @@ function renderCastTodayCards(rvs) {
     </div>`;
   });
 
-  area.innerHTML = html;
+  area.innerHTML = (attHtml || '') + html;
+}
+
+// timestamptz を端末ローカルの HH:MM 表示に変換
+function fmtClock(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  } catch (e) { return ''; }
+}
+
+// キャスト本日ページ上部の出勤/退勤コントロールHTMLを組み立てる
+function buildCastAttHtml(shifts) {
+  if (!shifts || !shifts.length) return '';
+  let h = '';
+  shifts.forEach(s => {
+    const range = (s.start_time ? String(s.start_time).slice(0, 5) : '') + '〜' + (s.end_time ? String(s.end_time).slice(0, 5) : '');
+    const inT = fmtClock(s.clock_in_at), outT = fmtClock(s.clock_out_at);
+    let badge, action;
+    if (s.clock_out_at) {
+      badge = '<span style="font-size:.72rem;background:#8a97ad;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">退勤済み</span>';
+      action = '<div style="font-size:.82rem;color:var(--text3);font-weight:600">出勤 ' + inT + ' ／ 退勤 ' + outT + '</div>';
+    } else if (s.clock_in_at) {
+      badge = '<span style="font-size:.72rem;background:#1e9e4a;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">● 出勤中</span>';
+      action = '<div style="display:flex;align-items:center;gap:.6rem">'
+        + '<span style="font-size:.82rem;color:var(--text3);font-weight:600;white-space:nowrap">出勤 ' + inT + '〜</span>'
+        + '<button onclick="castClockOut(' + s.id + ')" style="flex:1;padding:.7rem 0;border:none;border-radius:12px;font-weight:700;font-size:.9rem;cursor:pointer;background:#d9534f;color:#fff">退勤する</button></div>';
+    } else {
+      badge = '<span style="font-size:.72rem;background:#c9bfa8;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">出勤予定</span>';
+      action = '<button onclick="castClockIn(' + s.id + ')" style="width:100%;padding:.8rem 0;border:none;border-radius:12px;font-weight:700;font-size:.95rem;cursor:pointer;background:#1e9e4a;color:#fff">出勤する</button>';
+    }
+    h += '<div style="background:#fff;border:2px solid #e8dcc8;border-radius:14px;padding:.85rem 1rem;margin-bottom:.85rem">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">'
+      + '<div style="font-size:.9rem;font-weight:700;color:var(--text)">本日のシフト <span style="font-weight:600;color:var(--text3);font-size:.82rem">' + range + '</span></div>'
+      + badge + '</div>' + action + '</div>';
+  });
+  return h;
+}
+
+// 出勤打刻
+async function castClockIn(shiftId) {
+  try {
+    const { error } = await withStoreFilter(sb.from('shifts').update({ clock_in_at: new Date().toISOString() })).eq('id', shiftId).eq('cast_id', me.id);
+    if (error) throw error;
+    toast('出勤しました');
+    loadCastToday();
+  } catch (e) { console.error('[出勤]', e); toast('出勤の記録に失敗しました'); }
+}
+
+// 退勤打刻（誤操作防止に確認）
+async function castClockOut(shiftId) {
+  if (!confirm('退勤しますか？')) return;
+  try {
+    const { error } = await withStoreFilter(sb.from('shifts').update({ clock_out_at: new Date().toISOString() })).eq('id', shiftId).eq('cast_id', me.id);
+    if (error) throw error;
+    toast('お疲れさまでした。退勤しました');
+    loadCastToday();
+  } catch (e) { console.error('[退勤]', e); toast('退勤の記録に失敗しました'); }
 }
 
 function timeStrToMin2(t) {
@@ -5945,6 +6005,13 @@ async function loadToday(){
     const rt=s.room?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc2.bg};color:${rc2.tx};border-color:${rc2.bd}">${escapeHtml(s.room)}</span>`:`<span class="tag tr2">ルーム未指定</span>`
     const shiftRvs=rvByShift2[s.id]||[]
     const rvBadge=shiftRvs.length>0?`<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">事前予約${shiftRvs.length}件</span>`:''
+    // 出勤ステータスバッジ（打刻の有無から判定: 退勤済み/出勤中/出勤予定）
+    const attSt=s.clock_out_at?'done':(s.clock_in_at?'working':'scheduled')
+    const attBadge=attSt==='working'
+      ? `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:#e6f4ea;color:#1e7e34;border:1.5px solid #34a853">● 出勤中</span>`
+      : attSt==='done'
+      ? `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:#eef1f6;color:#5a6b85;border:1.5px solid #b9c4d6">退勤済み</span>`
+      : `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:#f0ede8;color:#9b8f7a;border:1.5px solid #ddd6c8">出勤予定</span>`
     // インターバル計算（intervalHtmlは後段のintervalDisplayに統合）
     let intervalHtml=''
     const intervalMin=intervalBycast[s.cast_id]||0
@@ -5997,7 +6064,7 @@ async function loadToday(){
       <div class="ib">
         <div class="it">${escapeHtml(s.casts?.name||'?')}${intervalDisplay}</div>
         <div class="is">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}${s.note?' ／ '+escapeHtml(s.note):''}</div>
-        <div class="tags">${rt}${rvBadge}</div>
+        <div class="tags">${attBadge}${rt}${rvBadge}</div>
         ${rvListHtml}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
