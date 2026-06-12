@@ -358,7 +358,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v16';
+const SW_VER = 'v17';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -1508,6 +1508,58 @@ async function pinLoginViaServer(role, castId, pin){
   currentStoreId=j.store_id
   return j
 }
+// ── 生体認証(パスキー) v2: サーバ側で署名検証する安全版。PIN認証モードで使用 ──
+// 旧版(サーバ検証なし)は使えないため、本人が各端末で1回だけ再登録する。
+let _pkLib=null
+async function pkBrowser(){ if(!_pkLib) _pkLib=await import('https://esm.sh/@simplewebauthn/browser@13'); return _pkLib }
+function pkFlag(castId){ return 'pkv2_'+castId }              // この端末でv2登録済みかの目印
+function pkHasLocal(castId){ try{ return localStorage.getItem(pkFlag(castId))==='1' }catch(e){ return false } }
+async function pkApi(action, payload, token){
+  const res=await fetch(SUPABASE_URL+'/functions/v1/passkey',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+(token||SUPABASE_KEY)},
+    body:JSON.stringify({store_id:PIN_STORE_ID, ...payload, action})
+  })
+  const j=await res.json().catch(()=>({}))
+  if(!res.ok) throw new Error(j.error||('HTTP '+res.status))
+  return j
+}
+// セッション確立後、initPinAuthと同じ手順でアプリに入る（owner/cast判定→データ読込→startApp）
+async function enterAppAfterSession(){
+  const{data:{session}}=await sb.auth.getSession()
+  if(!session) return false
+  currentStoreId=PIN_STORE_ID
+  const{data:mem}=await sb.from('store_members').select('role,cast_id').eq('user_id',session.user.id).eq('store_id',PIN_STORE_ID).maybeSingle()
+  if(!mem){ await sb.auth.signOut(); return false }
+  await loadStoreDataForPin()
+  if(mem.role==='owner'||mem.role==='manager'){ me={id:0,name:'店舗',is_owner:true}; startApp(); return true }
+  if(mem.cast_id){
+    const{data:c}=await sb.from('casts').select('*').eq('id',mem.cast_id).maybeSingle()
+    if(c){ me={...c,is_owner:false}; startApp(); return true }
+  }
+  await sb.auth.signOut(); return false
+}
+// 生体認証でログイン（castId: owner=0）。成功でtrue、未登録でfalse、キャンセルはthrow(NotAllowedError)
+async function pkLoginV2(castId){
+  const opt=await pkApi('auth-options',{cast_id:castId})
+  if(!opt.options||!opt.credentials) return false   // この主体に登録済みパスキー無し
+  const lib=await pkBrowser()
+  const asr=await lib.startAuthentication({optionsJSON:opt.options})
+  const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
+  await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
+  return await enterAppAfterSession()
+}
+// 生体認証を登録（ログイン中の本人セッションが必要。castId: owner=0）
+async function pkRegisterV2(castId){
+  const{data:{session}}=await sb.auth.getSession()
+  const tok=session?.access_token
+  if(!tok) throw new Error('セッションが無効です。再ログインしてください')
+  const opt=await pkApi('reg-options',{}, tok)
+  const lib=await pkBrowser()
+  const att=await lib.startRegistration({optionsJSON:opt.options})
+  await pkApi('reg-verify',{challenge_id:opt.challenge_id, response:att}, tok)
+  try{ localStorage.setItem(pkFlag(castId),'1') }catch(e){}
+}
 // PIN設定/変更をサーバ(set-pin)経由で auth_pins に保存する（平文をDBに書かない）。
 // target: 'owner' または キャストID(number)。オーナーのセッションでのみ成功する。
 async function setPinViaServer(target, pin){
@@ -1915,10 +1967,15 @@ async function passkeyLogin(){
 
 // PINログイン後に生体認証登録を促す
 async function offerPasskeyRegistration(castId, castName){
-  // Option B: PIN認証モードではpasskeyログイン未対応（ログインはpin-login経由で認証セッションを
-  // 発行する設計）。使えない機能の登録を案内しないよう抑止。passkeyのサーバ側セッション発行は
-  // 後日Edge Function方式で再実装予定（docs/phase2-3-cutover-audit-20260611.md 参照）。
-  if(PIN_AUTH_MODE) return
+  // PIN認証モード: サーバ検証ありのv2方式で登録（pkRegisterV2）。本人のセッションが前提。
+  if(PIN_AUTH_MODE){
+    if(!window.PublicKeyCredential) return
+    if(pkHasLocal(castId)) return // この端末は登録済み
+    if(!confirm('顔認証・指紋認証でログインできるように設定しますか？\n次回から素早くログインできます。')) return
+    try{ await pkRegisterV2(castId); toast('🔐 生体認証を登録しました！次回からすぐログインできます') }
+    catch(e){ if(e.name!=='NotAllowedError') toast('登録失敗: '+(e.message||e)) }
+    return
+  }
   if(!window.PublicKeyCredential) return
   // localStorage でこの端末の登録状態を確認
   const localKey = 'passkey_registered_' + castId
@@ -1968,8 +2025,15 @@ async function offerPasskeyRegistration(castId, castName){
 
 // ログインボタン押下時：生体認証が使えれば使う、なければPIN認証
 async function doOwnerLoginSmart(){
-  // PIN認証モードでは生体認証ショートカットを使わず、PIN入力時のみPIN経路へ
-  if(PIN_AUTH_MODE){ if(document.getElementById('owner-pin')?.value) doOwnerLogin(); return }
+  // PIN認証モード: PIN入力があればPIN経路、空なら生体認証(v2/サーバ検証)を試す
+  if(PIN_AUTH_MODE){
+    if(document.getElementById('owner-pin')?.value){ doOwnerLogin(); return }
+    if(window.PublicKeyCredential && pkHasLocal(0)){
+      try{ if(await pkLoginV2(0)) return }
+      catch(e){ if(e.name==='NotAllowedError') return; document.getElementById('owner-err').textContent='生体認証に失敗しました。PINでログインしてください。' }
+    }
+    return
+  }
   const pin = document.getElementById('owner-pin')?.value
   const localKey = 'passkey_registered_0'
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -2003,8 +2067,15 @@ async function doOwnerLoginSmart(){
 async function doCastLoginSmart(){
   const cid = document.getElementById('cast-sel').value
   if(!cid){ document.getElementById('cast-err').textContent='名前を選んでください'; return }
-  // PIN認証モードでは生体認証ショートカットを使わず、PIN入力時のみPIN経路へ
-  if(PIN_AUTH_MODE){ if(document.getElementById('cast-pin')?.value) doCastLogin(); return }
+  // PIN認証モード: PIN入力があればPIN経路、空なら生体認証(v2/サーバ検証)を試す
+  if(PIN_AUTH_MODE){
+    if(document.getElementById('cast-pin')?.value){ doCastLogin(); return }
+    if(window.PublicKeyCredential && pkHasLocal(parseInt(cid))){
+      try{ if(await pkLoginV2(parseInt(cid))) return }
+      catch(e){ if(e.name==='NotAllowedError') return; document.getElementById('cast-err').textContent='生体認証に失敗しました。PINでログインしてください。' }
+    }
+    return
+  }
   const pin = document.getElementById('cast-pin')?.value
   const localKey = 'passkey_registered_' + cid
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -2049,6 +2120,7 @@ async function doOwnerLogin(){
       await loadStoreDataForPin()
       me={id:0,name:'店舗',is_owner:true}
       startApp()
+      setTimeout(()=>offerPasskeyRegistration(0,'店舗'), 800)
     }catch(e){ err.textContent=e.message||'ログインに失敗しました' }
     finally{ btn.disabled=false; btn.textContent='ログイン' }
     return
@@ -2115,6 +2187,7 @@ async function doCastLogin(){
       const{data:c}=await sb.from('casts').select('*').eq('id',cid).maybeSingle()
       me=c?{...c,is_owner:false}:{id:parseInt(cid),name:'キャスト',is_owner:false}
       startApp()
+      setTimeout(()=>offerPasskeyRegistration(parseInt(cid),(c&&c.name)||'キャスト'), 800)
     }catch(e){ err.textContent=e.message||'PINが正しくありません' }
     finally{ btn.disabled=false; btn.textContent='ログイン' }
     return
