@@ -45,6 +45,25 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// listUsers は perPage 上限があるため、全ページを走査して email 一致のユーザーIDを返す。
+// （#5: 旧実装は先頭200件しか見ず、内部Authユーザーが200を超えると既存ユーザーを取り逃し、
+//   ログイン不能=500になっていた。store_members で引けない異常系のフォールバック用。）
+// deno-lint-ignore no-explicit-any
+async function findAuthUserIdByEmail(admin: any, email: string): Promise<string | null> {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 100; page++) { // 最大2万ユーザーまでの安全弁
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) break;
+    const users = data?.users ?? [];
+    // deno-lint-ignore no-explicit-any
+    const found = users.find((u: any) => (u.email || "").toLowerCase() === target);
+    if (found) return found.id;
+    if (users.length < perPage) break; // 最終ページに到達
+  }
+  return null;
+}
+
 // PIN照合: auth_pins（bcrypt）を Postgres 関数 verify_pin で照合する。
 // ハッシュ計算は全てDB内に閉じ、Deno側でハッシュを再現しない（言語間不整合・弱いハッシュを排除）。
 // 未移行（011前でテーブル/関数が無い、または該当レコードが無い）場合のみ平文列にフォールバック。
@@ -133,17 +152,26 @@ serve(async (req) => {
     // 2) この主体に対応する内部Authユーザーを用意（決定的email）
     const email = `pin.${principalKey}@shiftlink.internal`;
     let userId: string | null = null;
-    // 既存検索（admin listはページングのため email フィルタが無いので getUserByEmail 相当を試行）
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
-    });
-    if (created?.user) {
-      userId = created.user.id;
-    } else if (createErr) {
-      // 既に存在 → 一覧から検索
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const found = list?.users?.find((u) => (u.email || "").toLowerCase() === email.toLowerCase());
-      userId = found?.id ?? null;
+
+    // 既存ユーザーは store_members から決定的に引く（#5: listUsersのperPage上限で
+    // ログイン不能になる問題を回避）。(store_id, role, cast_id) は principalKey と1対1で、
+    // 初回ログイン時に下の手順3で store_members へ登録済み。
+    {
+      let q = admin.from("store_members").select("user_id")
+        .eq("store_id", store_id).eq("role", memberRole).limit(1);
+      q = memberCastId == null ? q.is("cast_id", null) : q.eq("cast_id", memberCastId);
+      const { data: smRows } = await q;
+      if (smRows && smRows[0]?.user_id) userId = smRows[0].user_id as string;
+    }
+
+    // store_members に無ければ新規作成（初回ログイン）。
+    // 作成失敗(=Authユーザーは在るがstore_members未登録の異常系)なら全ページ走査で確実に取得。
+    if (!userId) {
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
+      });
+      if (created?.user) userId = created.user.id;
+      else if (createErr) userId = await findAuthUserIdByEmail(admin, email);
     }
     if (!userId) return json({ error: "認証ユーザーの準備に失敗しました" }, 500, origin);
 
