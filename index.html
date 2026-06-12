@@ -1421,7 +1421,10 @@ let currentStoreId = null // ログイン後にセットされる
 const _pinAuthParam = new URLSearchParams(location.search).get('pinauth')
 const KYOUKANO_STORE_ID = '4cb3383a-31e5-408a-9f75-60a25943ac4d' // 本番KYOUKANO（Phase1で全データにstore_id付与済 2026-06-11）
 const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE
-let PIN_STORE_ID = _pinAuthParam || (SAAS_MODE ? null : KYOUKANO_STORE_ID)
+// #4対策: 非SaaS(本番KYOUKANO)では pinauth を無視し店舗をKYOUKANOに固定する。
+// （URLに ?pinauth=<他店ID> を付けて公式アプリを他店PINの総当たり台にされるのを防ぐ。
+//   pinauth は SaaS=開発/検証時のみ有効。SaaS本格稼働時は店舗をサブドメイン等から確定する想定）
+let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || null) : KYOUKANO_STORE_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
