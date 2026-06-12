@@ -184,17 +184,27 @@ serve(async (req) => {
       });
     }
 
-    // 4) 使い捨てパスワードを設定 → サインインしてセッション取得（永続シークレット不要）
-    const ephemeral = crypto.randomUUID() + crypto.randomUUID();
-    await admin.auth.admin.updateUserById(userId, { password: ephemeral });
+    // 4) 使い捨てパスワードを設定 → サインインしてセッション取得（永続シークレット不要）。
+    //    #6: 同一principal(オーナーが複数端末で同時ログイン等)だとパスワード設定が
+    //    互いに上書きし合い、片方の signIn が失敗するレースがある。設定→即サインインを
+    //    数回リトライして吸収する（各試行で自分のパスワードを直前に再設定するため収束する）。
     const anon = createClient(SUPABASE_URL, ANON_KEY);
-    const { data: signIn, error: signErr } = await anon.auth.signInWithPassword({ email, password: ephemeral });
-    if (signErr || !signIn?.session) return json({ error: "セッション発行に失敗しました" }, 500, origin);
+    // deno-lint-ignore no-explicit-any
+    let session: any = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const ephemeral = crypto.randomUUID() + crypto.randomUUID();
+      await admin.auth.admin.updateUserById(userId, { password: ephemeral });
+      const { data: signIn } = await anon.auth.signInWithPassword({ email, password: ephemeral });
+      if (signIn?.session) { session = signIn.session; break; }
+      // 競合で上書きされた可能性 → ジッターを入れて再試行
+      await new Promise((r) => setTimeout(r, 40 + Math.floor(Math.random() * 120)));
+    }
+    if (!session) return json({ error: "セッション発行に失敗しました" }, 500, origin);
 
     return json({
-      access_token: signIn.session.access_token,
-      refresh_token: signIn.session.refresh_token,
-      expires_at: signIn.session.expires_at,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
       store_id, role: memberRole, cast_id: memberCastId, user_id: userId,
     }, 200, origin);
   } catch (e) {
