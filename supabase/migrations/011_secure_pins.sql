@@ -113,11 +113,13 @@ AS $$
   DO UPDATE SET pin_hash = EXCLUDED.pin_hash, updated_at = now();
 $$;
 
--- ★重要★ デフォルトの PUBLIC EXECUTE を剥奪し service_role のみに許可する。
---   これを怠ると anon/authenticated が PostgREST RPC で verify_pin（PINオラクル）や
+-- ★重要★ EXECUTE 権限を service_role のみに絞る。
+--   Supabase は public スキーマの関数に対し anon/authenticated へ EXECUTE を
+--   デフォルト自動付与するため、PUBLIC だけでなく anon/authenticated からも明示 REVOKE する。
+--   これを怠ると anon が PostgREST RPC で verify_pin（PINオラクル）や
 --   set_pin_hash（任意PIN設定）を直接叩けてしまう。
-REVOKE ALL ON FUNCTION public.verify_pin(uuid, text, text)   FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.set_pin_hash(uuid, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.verify_pin(uuid, text, text)   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.set_pin_hash(uuid, text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_pin(uuid, text, text)   TO service_role;
 GRANT EXECUTE ON FUNCTION public.set_pin_hash(uuid, text, text) TO service_role;
 
