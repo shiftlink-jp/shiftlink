@@ -45,6 +45,33 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// PIN照合: auth_pins（bcrypt）を Postgres 関数 verify_pin で照合する。
+// ハッシュ計算は全てDB内に閉じ、Deno側でハッシュを再現しない（言語間不整合・弱いハッシュを排除）。
+// 未移行（011前でテーブル/関数が無い、または該当レコードが無い）場合のみ平文列にフォールバック。
+// これにより「pin-login新版デプロイ → 011 → 012」の順で無停止移行できる。
+// deno-lint-ignore no-explicit-any
+async function verifyPin(
+  admin: any,
+  store_id: string,
+  principal: string,
+  pin: string,
+  legacyPlain: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc("verify_pin", {
+    p_store_id: store_id, p_principal: principal, p_pin: pin,
+  });
+  if (!error) {
+    if (data === true) return true;
+    // 関数あり＆false: 該当 principal のレコードが存在すれば「PIN不一致」確定（平文へ落とさない）
+    const { data: ap } = await admin
+      .from("auth_pins").select("principal")
+      .eq("store_id", store_id).eq("principal", principal).maybeSingle();
+    if (ap) return false;
+  }
+  // 011前（関数/テーブル無し→errorで到達）または未移行レコード → 平文フォールバック
+  return !!legacyPlain && safeEqual(pin, legacyPlain);
+}
+
 serve(async (req) => {
   const origin = req.headers.get("origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
@@ -80,21 +107,22 @@ serve(async (req) => {
       );
     };
 
-    // 1) サーバ側でPIN照合
+    // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
     let memberRole: string;
     let memberCastId: number | null = null;
     if (role === "owner") {
       const { data: ss } = await admin
         .from("store_settings").select("owner_pin").eq("store_id", store_id).maybeSingle();
-      const ownerPin = ss?.owner_pin ? String(ss.owner_pin) : "";
-      if (!ownerPin || !safeEqual(pinStr, ownerPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
+      const ok = await verifyPin(admin, store_id, "owner", pinStr, ss?.owner_pin ? String(ss.owner_pin) : "");
+      if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "owner";
     } else {
       if (!cast_id) return json({ error: "cast_id が必要です" }, 400, origin);
+      // cast の存在確認（pin列はもう照合に使わない。存在/所属の確認のみ）
       const { data: c } = await admin
         .from("casts").select("id,pin").eq("id", cast_id).eq("store_id", store_id).maybeSingle();
-      const castPin = c?.pin ? String(c.pin) : "";
-      if (!c || !castPin || !safeEqual(pinStr, castPin)) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
+      const ok = c && await verifyPin(admin, store_id, `cast.${cast_id}`, pinStr, c?.pin ? String(c.pin) : "");
+      if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = Number(cast_id);
     }
