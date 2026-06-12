@@ -358,7 +358,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v15';
+const SW_VER = 'v16';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -428,6 +428,8 @@ if("serviceWorker" in navigator && !_isSaaS){
         if(e.data && e.data.type === 'PUSH_SUB_CHANGED' && e.data.subscription){
           console.log('[SW] Push subscription変更通知 → DB再登録');
           window._pendingPushSubChange = e.data.subscription;
+          // #8: 旧subの削除もここ(ログイン済みセッション)で行う。SWはanon直書きしない。
+          const oldEndpoint = e.data.oldEndpoint || null;
           // ログイン中ユーザーのDB登録を即座に更新（オーナー・キャスト両対応）
           try {
             if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
@@ -439,7 +441,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[OwnerPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint || (oldEndpoint && s.endpoint === oldEndpoint); } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
@@ -459,7 +461,7 @@ if("serviceWorker" in navigator && !_isSaaS){
                 });
                 if (exists) { console.log('[CastPush] PUSH_SUB_CHANGED: 既に登録済み'); return; }
                 const staleIds = allSubs.filter(function(r){
-                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint; } catch(e2){ return false; }
+                  try { const s = typeof r.subscription === 'string' ? JSON.parse(r.subscription) : r.subscription; return s.endpoint === newSub.endpoint || (oldEndpoint && s.endpoint === oldEndpoint); } catch(e2){ return false; }
                 }).map(function(r){ return r.id; });
                 var cleanup = staleIds.length > 0 ? sb.from('push_subscriptions').delete().in('id', staleIds) : Promise.resolve();
                 cleanup.then(function(){
