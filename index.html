@@ -2593,9 +2593,13 @@ async function sendPushNotification(castId, title, body) {
   }
   try {
     const storeId = currentStoreId || null
+    // #2対策: ログイン済みなら本物のセッションを送る（send-pushがこれを検証し、他店への送信を遮断）。
+    // セッションが無い場合のみ従来のanon鍵にフォールバック（カットオーバー前の互換維持）。
+    const{data:{session}}=await sb.auth.getSession()
+    const authTok=session?.access_token||SUPABASE_KEY
     const res = await fetch(SUPABASE_URL+'/functions/v1/send-push', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+authTok},
       body:JSON.stringify({cast_id:castId, title, body, store_id:storeId})
     });
     if (!res.ok) { console.error('[Push] send-push failed:', res.status, await res.text().catch(()=>'')); _pushRecentKeys.delete(key); }

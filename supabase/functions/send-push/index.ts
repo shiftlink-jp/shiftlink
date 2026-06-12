@@ -1,29 +1,29 @@
+// send-push: Web Push 通知を送信する Edge Function。
+//
+// ★監査#2 対策（公開anon鍵だけで誰でも偽Pushを送れる問題の根治）★
+//   旧版は「Supabaseが発行した正規JWTか？」だけを見ていたが、公開anon鍵自体も正規JWTのため
+//   素通りし、anon鍵を知る誰でも（=全員）任意の cast_id / store_id / 本文で偽通知を送れた。
+//   本版では信頼済み(サーバ間)経路を除き、admin.auth.getUser で「本物のログインセッション」を
+//   必須にする（anon鍵では user が取れず 401）。さらに store_members で呼び出し元の所属店舗を
+//   求め、送信先 store_id が自店であることを検証する（他店への偽Push送信を遮断）。
+//
+//   ※前提: PIN認証カットオーバー後はクライアントが pin-login 発行のセッションを持つため、
+//     sendPushNotification はその access_token を送る（無い場合のみ従来anonにフォールバック）。
+//     本版のデプロイはカットオーバー Phase B（anon遮断と同段階）で行う。
+//     詳細は docs/cutover-runbook-20260611.md / docs/secure-pins-runbook.md 参照。
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { jwtVerify } from "npm:jose@5";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const VAPID_PUBLIC_KEY = "BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// サーバ間呼び出し（他Edge Function等）用の内部シークレット。クライアントには配らない。
 const INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET") ?? "";
-// 重要: 本プロジェクトは新JWT署名キー(JWKS)へ移行済みで SUPABASE_JWT_SECRET は自動注入されない。
-// レガシーanon鍵(HS256)を署名検証するには、ダッシュボードの「Legacy JWT Secret」を
-// Edge Functions のシークレットに手動設定する。ただし SUPABASE_ で始まる名前は予約のため不可。
-// → LEGACY_JWT_SECRET という名前で設定すること（未設定だと anon鍵を検証できず全て401）。
-const JWT_SECRET = new TextEncoder().encode(
-  Deno.env.get("LEGACY_JWT_SECRET") ?? Deno.env.get("SUPABASE_JWT_SECRET") ?? "",
-);
 
-// JWT 署名を Legacy JWT Secret で検証する（ペイロード読み取りのみでは偽造可能なため）
-async function isValidSupabaseJWT(token: string): Promise<boolean> {
-  if (!JWT_SECRET.length) return false;
-  try {
-    await jwtVerify(token, JWT_SECRET, { issuer: "supabase" });
-    return true;
-  } catch {
-    return false;
-  }
-}
+// KYOUKANO本番はPhase1で全データにstore_idを付与済みだが、レガシー行(store_id=null)の
+// 取りこぼし防止のため null / KYOUKANO_UUID の両方を「KYOUKANOの店」として扱う。
+const KYOUKANO_STORE_ID = "4cb3383a-31e5-408a-9f75-60a25943ac4d";
 
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
@@ -40,9 +40,16 @@ function corsHeaders(origin: string | null) {
   const allowed = isAllowed ? origin! : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Headers": "authorization, content-type, x-internal-secret",
+    "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-internal-secret",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
+}
+
+function json(body: unknown, status: number, origin: string | null) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+  });
 }
 
 serve(async (req) => {
@@ -53,17 +60,29 @@ serve(async (req) => {
   }
 
   const internalSecret = req.headers.get("x-internal-secret");
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.replace("Bearer ", "").trim();
+  const token = (req.headers.get("authorization") ?? "").replace("Bearer ", "").trim();
 
-  const isInternal = INTERNAL_SECRET && internalSecret === INTERNAL_SECRET;
-  const isValidToken = await isValidSupabaseJWT(token) || token === SUPABASE_SERVICE_KEY;
+  // 信頼済み経路: 内部シークレット or service_role（サーバ間呼び出し）。全店へ送信可。
+  const isInternal = !!INTERNAL_SECRET && internalSecret === INTERNAL_SECRET;
+  const isService = !!token && token === SUPABASE_SERVICE_KEY;
 
-  if (!isInternal && !isValidToken) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-    });
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // callerStoreIds: null=信頼済み(全店可)。配列=このユーザーが所属する店舗のみ送信可。
+  let callerStoreIds: string[] | null = null;
+  if (!isInternal && !isService) {
+    // ★本物のログインセッションを必須にする（公開anon鍵では user が取れず 401）★
+    const { data: { user }, error: uErr } = await admin.auth.getUser(token);
+    if (uErr || !user) {
+      return json({ error: "Unauthorized" }, 401, origin);
+    }
+    // 呼び出し元の所属店舗を取得（他店への送信を防ぐ根拠）
+    const { data: mems } = await admin
+      .from("store_members").select("store_id").eq("user_id", user.id);
+    callerStoreIds = (mems ?? []).map((m: { store_id: string }) => m.store_id).filter(Boolean);
+    if (callerStoreIds.length === 0) {
+      return json({ error: "Forbidden" }, 403, origin);
+    }
   }
 
   try {
@@ -71,22 +90,30 @@ serve(async (req) => {
     const cast_id = body?.cast_id;
     const title = String(body?.title ?? "").slice(0, 100);
     const pushBody = String(body?.body ?? "").slice(0, 300);
-    const store_id: string | null = body?.store_id ?? null;
+    let store_id: string | null = body?.store_id ?? null;
 
     if (cast_id == null || !title) {
-      return new Response(JSON.stringify({ error: "cast_id と title は必須です" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-      });
+      return json({ error: "cast_id と title は必須です" }, 400, origin);
     }
 
-    // KYOUKANO本番はPhase1バックフィルでpush_subscriptions.store_idがUUID化済みだが、
-    // クライアント(currentStoreId=null)からはstore_id:nullで送られてくる(ステップ2デプロイまでの間)。
-    // RLSのcompat shimと同様、NULL/KYOUKANO_UUIDの両方を許可して通知欠落を防ぐ。
-    const KYOUKANO_STORE_ID = "4cb3383a-31e5-408a-9f75-60a25943ac4d";
+    // ユーザーセッション呼び出しは「自店のみ」に制限（他店へ偽Pushを送れない）。
+    if (callerStoreIds !== null) {
+      const callerHasKyoukano = callerStoreIds.includes(KYOUKANO_STORE_ID);
+      // 後方互換: クライアントが store_id:null を送ってきても、本人がKYOUKANO所属ならKYOUKANOに寄せる。
+      if (!store_id && callerHasKyoukano) store_id = KYOUKANO_STORE_ID;
+      if (!store_id || !callerStoreIds.includes(store_id)) {
+        return json({ error: "他店舗への送信はできません" }, 403, origin);
+      }
+    }
+
+    // 送信先購読を取得（service_role で読むのでRLSの影響を受けない）。
     let url = `${SUPABASE_URL}/rest/v1/push_subscriptions?select=id,subscription&cast_id=eq.${cast_id}`;
-    if (store_id) url += `&store_id=eq.${store_id}`;
-    else url += `&or=(store_id.is.null,store_id.eq.${KYOUKANO_STORE_ID})`;
+    if (!store_id || store_id === KYOUKANO_STORE_ID) {
+      // KYOUKANO/未指定: 旧データ(store_id=null)も含めて取りこぼし防止。
+      url += `&or=(store_id.is.null,store_id.eq.${KYOUKANO_STORE_ID})`;
+    } else {
+      url += `&store_id=eq.${store_id}`;
+    }
 
     const res = await fetch(url, {
       headers: {
@@ -99,7 +126,6 @@ serve(async (req) => {
 
     // 1件ずつ送信し、失敗しても他の購読への送信を止めない。
     // 失効(410 Gone / 404 Not Found)した購読はDBから掃除して、次回以降の連鎖失敗を防ぐ。
-    // ※従来は for ループ内で1件でも例外が飛ぶと全体が中断し、生きている購読にも届かなかった。
     let sent = 0;
     let failed = 0;
     const deadIds: string[] = [];
@@ -128,14 +154,9 @@ serve(async (req) => {
       }).catch(() => {});
     }
 
-    return new Response(JSON.stringify({ ok: true, sent, failed, cleaned: deadIds.length }), {
-      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-    });
+    return json({ ok: true, sent, failed, cleaned: deadIds.length }, 200, origin);
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e.message) }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-    });
+    return json({ error: String((e as Error).message ?? e) }, 500, origin);
   }
 });
 
