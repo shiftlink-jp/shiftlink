@@ -5414,10 +5414,11 @@ async function loadOwnerCal(){
       <div style="font-size:.88rem;font-weight:700;margin-bottom:.4rem">${jpDate(date)}</div>`
     ss.forEach(s=>{
       const sid=s.id
-      const sname=(s.casts?.name||'?').replace(/'/g,"\\'")
+      // onclick内のJS文字列に入れる値は escapeHtml(jsEsc()) で二重エスケープ（格納型XSS対策 #3）
+      const sname=escapeHtml(jsEsc(s.casts?.name||'?'))
       const sstart=s.start_time?.slice(0,5)||'13:00'
       const send=s.end_time?.slice(0,5)||'22:00'
-      const snote=(s.note||'').replace(/'/g,"\\'")
+      const snote=escapeHtml(jsEsc(s.note||''))
       html+=`<div id="pending-item-${sid}" style="padding:.4rem 0;border-bottom:1px solid var(--border)">
         <div style="margin-bottom:.3rem">
           <span style="font-size:.88rem;font-weight:600">${escapeHtml(s.casts?.name||'?')}</span>
@@ -5476,13 +5477,16 @@ async function ownerSelectDay(ds){
       const send=(s.end_time||'').slice(0,5)||'22:00'
       const snote=s.note||''
       const stime=sstart+'〜'+send
+      // 表示用(escapeHtml)とonclick用(escapeHtml(jsEsc()))を分けて格納型XSS対策 #3
+      const snameH=escapeHtml(sname), snoteH=escapeHtml(snote)
+      const snameJ=escapeHtml(jsEsc(sname)), snoteJ=escapeHtml(jsEsc(snote))
       html+='<div id="pending-item-'+sid+'" style="background:var(--surface);border-radius:var(--r);padding:.85rem 1rem;box-shadow:var(--sh);margin-bottom:.5rem">'
-      html+='<div style="margin-bottom:.35rem"><div style="font-size:.92rem;font-weight:600">'+sname+'</div>'
-      html+='<div style="font-size:.78rem;color:var(--text3)">'+stime+(snote?' / '+snote:'')+'</div></div>'
+      html+='<div style="margin-bottom:.35rem"><div style="font-size:.92rem;font-weight:600">'+snameH+'</div>'
+      html+='<div style="font-size:.78rem;color:var(--text3)">'+stime+(snote?' / '+snoteH:'')+'</div></div>'
       html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-bottom:.4rem">'
       html+='<button class="btn btn-green btn-xs" onclick="approveShift('+sid+');closeSheet(\'owner-shift-detail\')">✓ 承認</button>'
       html+='<button class="btn btn-red btn-xs" onclick="rejectShift('+sid+');closeSheet(\'owner-shift-detail\')">✕ 却下</button>'
-      html+='<button class="btn btn-gray btn-xs" onclick="openShiftEdit('+sid+',\''+sname+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\''+snote+'\')">訂正</button>'
+      html+='<button class="btn btn-gray btn-xs" onclick="openShiftEdit('+sid+',\''+snameJ+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\''+snoteJ+'\')">訂正</button>'
       html+='</div>'
       html+='<div style="font-size:.67rem;color:var(--text3);margin-bottom:.25rem">ルームを選んで確定ボタンを押してください：</div>'
       html+='<div id="room-selected-'+sid+'" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:.3rem;min-height:1em"></div>'
@@ -5508,15 +5512,18 @@ async function ownerSelectDay(ds){
         const send=(s.end_time||'').slice(0,5)||'22:00'
         const sroom=s.room||''
         const stimestr=sstart+'〜'+send
+        // 表示用(escapeHtml)とonclick用(escapeHtml(jsEsc()))を分けて格納型XSS対策 #3
+        const snameH=escapeHtml(sname)
+        const snameJ=escapeHtml(jsEsc(sname)), sroomJ=escapeHtml(jsEsc(sroom))
         html+='<div style="padding:.35rem 0;border-bottom:1px solid var(--border)">'
         const rvCnt=shiftRvCount[sid]||0
         const rvBadgeS=rvCnt>0?'<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:rgba(255,149,0,.15);color:var(--accent);border:1px solid var(--accent);margin-left:.35rem">予約'+rvCnt+'件</span>':''
-        html+='<div style="font-size:.88rem;font-weight:600;margin-bottom:.25rem">'+sname+'<span style="font-size:.72rem;color:var(--text3);margin-left:.3rem">'+stimestr+'</span>'+rvBadgeS+'</div>'
+        html+='<div style="font-size:.88rem;font-weight:600;margin-bottom:.25rem">'+snameH+'<span style="font-size:.72rem;color:var(--text3);margin-left:.3rem">'+stimestr+'</span>'+rvBadgeS+'</div>'
         html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.25rem">'
-        html+='<button class="btn btn-purple btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openRoom('+sid+',\''+sname+'\',\''+stimestr+'\',\''+sroom+'\'),100)">ルーム変更</button>'
-        html+='<button class="btn btn-blue btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openReservation('+sid+',\''+sname+'\',\''+ds+'\'),100)">予約登録</button>'
-        html+='<button class="btn btn-gray btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftEdit('+sid+',\''+sname+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\'\'),100)">訂正</button>'
-        html+='<button class="btn btn-gold btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftReservations('+sid+',\''+sname+'\'),100)">予約確認</button>'
+        html+='<button class="btn btn-purple btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openRoom('+sid+',\''+snameJ+'\',\''+stimestr+'\',\''+sroomJ+'\'),100)">ルーム変更</button>'
+        html+='<button class="btn btn-blue btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openReservation('+sid+',\''+snameJ+'\',\''+ds+'\'),100)">予約登録</button>'
+        html+='<button class="btn btn-gray btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftEdit('+sid+',\''+snameJ+'\',\''+ds+'\',\''+sstart+'\',\''+send+'\',\'\'),100)">訂正</button>'
+        html+='<button class="btn btn-gold btn-xs" onclick="closeSheet(\'owner-shift-detail\');setTimeout(()=>openShiftReservations('+sid+',\''+snameJ+'\'),100)">予約確認</button>'
         html+='</div></div>'
       })
       html+='</div>'
