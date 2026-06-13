@@ -358,7 +358,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v17';
+const SW_VER = 'v18';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -1514,10 +1514,28 @@ let _pkLib=null
 async function pkBrowser(){ if(!_pkLib) _pkLib=await import('https://esm.sh/@simplewebauthn/browser@13'); return _pkLib }
 function pkFlag(castId){ return 'pkv2_'+castId }              // この端末でv2登録済みかの目印
 function pkHasLocal(castId){ try{ return localStorage.getItem(pkFlag(castId))==='1' }catch(e){ return false } }
-// アプリ起動ごとの「ロック解除」。sessionStorageはアプリを閉じると消えるので、閉じて開き直すと
-// 未解除→再認証(PIN/生体)を要求できる(ログインセッション自体はlocalStorageに保持され続ける)。
-function markUnlocked(){ try{ sessionStorage.setItem('shiftlink_unlocked','1') }catch(e){} }
-function isUnlocked(){ try{ return sessionStorage.getItem('shiftlink_unlocked')==='1' }catch(e){ return false } }
+// アプリの「認証済み」状態(メモリ保持)。コールドスタート/バックグラウンド復帰では未認証に戻し、
+// 再ロック解除(PIN/生体)を要求する。ログインセッション自体はlocalStorageに保持され続ける。
+let appAuthed=false        // この起動でアプリに入って良い状態か
+let pkInProgress=false     // 生体認証の最中(下のvisibilitychangeで誤ロックしないためのガード)
+let _lastHiddenAt=0
+const LOCK_GRACE_MS=1500   // これ以上バックグラウンドにいたら、復帰時に再ロック(再認証を要求)
+function lockApp(){
+  if(!PIN_AUTH_MODE) return
+  appAuthed=false; me=null
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  const top=document.getElementById('s-top'); if(top) top.classList.add('on')
+  try{ renderPinCastPicker() }catch(e){}
+}
+// バックグラウンド→復帰(アプリを開き直した/別アプリから戻った)時に再ロック。
+// iOSのPWAはセッションを保持したままビューを復帰させ起動処理が走らないため、これが必須。
+document.addEventListener('visibilitychange', function(){
+  if(!PIN_AUTH_MODE) return
+  if(document.visibilityState==='hidden'){ _lastHiddenAt=Date.now(); return }
+  const hiddenFor=_lastHiddenAt?(Date.now()-_lastHiddenAt):0
+  _lastHiddenAt=0
+  if(appAuthed && !pkInProgress && hiddenFor>LOCK_GRACE_MS) lockApp()
+})
 async function pkApi(action, payload, token){
   const res=await fetch(SUPABASE_URL+'/functions/v1/passkey',{
     method:'POST',
@@ -1545,24 +1563,30 @@ async function enterAppAfterSession(){
 }
 // 生体認証でログイン（castId: owner=0）。成功でtrue、未登録でfalse、キャンセルはthrow(NotAllowedError)
 async function pkLoginV2(castId){
-  const opt=await pkApi('auth-options',{cast_id:castId})
-  if(!opt.options||!opt.credentials) return false   // この主体に登録済みパスキー無し
-  const lib=await pkBrowser()
-  const asr=await lib.startAuthentication({optionsJSON:opt.options})
-  const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
-  await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
-  return await enterAppAfterSession()
+  pkInProgress=true
+  try{
+    const opt=await pkApi('auth-options',{cast_id:castId})
+    if(!opt.options||!opt.credentials) return false   // この主体に登録済みパスキー無し
+    const lib=await pkBrowser()
+    const asr=await lib.startAuthentication({optionsJSON:opt.options})
+    const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
+    await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
+    return await enterAppAfterSession()
+  } finally { pkInProgress=false; _lastHiddenAt=0 }
 }
 // 生体認証を登録（ログイン中の本人セッションが必要。castId: owner=0）
 async function pkRegisterV2(castId){
-  const{data:{session}}=await sb.auth.getSession()
-  const tok=session?.access_token
-  if(!tok) throw new Error('セッションが無効です。再ログインしてください')
-  const opt=await pkApi('reg-options',{}, tok)
-  const lib=await pkBrowser()
-  const att=await lib.startRegistration({optionsJSON:opt.options})
-  await pkApi('reg-verify',{challenge_id:opt.challenge_id, response:att}, tok)
-  try{ localStorage.setItem(pkFlag(castId),'1') }catch(e){}
+  pkInProgress=true
+  try{
+    const{data:{session}}=await sb.auth.getSession()
+    const tok=session?.access_token
+    if(!tok) throw new Error('セッションが無効です。再ログインしてください')
+    const opt=await pkApi('reg-options',{}, tok)
+    const lib=await pkBrowser()
+    const att=await lib.startRegistration({optionsJSON:opt.options})
+    await pkApi('reg-verify',{challenge_id:opt.challenge_id, response:att}, tok)
+    try{ localStorage.setItem(pkFlag(castId),'1') }catch(e){}
+  } finally { pkInProgress=false; _lastHiddenAt=0 }
 }
 // PIN設定/変更をサーバ(set-pin)経由で auth_pins に保存する（平文をDBに書かない）。
 // target: 'owner' または キャストID(number)。オーナーのセッションでのみ成功する。
@@ -1584,25 +1608,9 @@ async function setPinViaServer(target, pin){
 }
 // PIN認証モードの初期化（既存セッション復元 or ログイン画面表示）
 async function initPinAuth(){
-  try{
-    const{data:{session}}=await sb.auth.getSession()
-    // セッションがあっても「この起動でまだ認証していない(=アプリを開き直した直後)」なら
-    // 自動入室させず、下のログイン画面で再認証(PIN/生体)を要求する。リロードはisUnlocked=trueで自動復帰。
-    if(session && isUnlocked()){
-      currentStoreId=PIN_STORE_ID
-      const{data:mem}=await sb.from('store_members').select('role,cast_id').eq('user_id',session.user.id).eq('store_id',PIN_STORE_ID).maybeSingle()
-      if(mem){
-        await loadStoreDataForPin()
-        if(mem.role==='owner'||mem.role==='manager'){ me={id:0,name:'店舗',is_owner:true}; startApp(); return }
-        if(mem.cast_id){
-          const{data:c}=await sb.from('casts').select('*').eq('id',mem.cast_id).maybeSingle()
-          if(c){ me={...c,is_owner:false}; startApp(); return }
-        }
-      }
-      await sb.auth.signOut()  // メンバー不整合 → ログインし直し
-    }
-  }catch(e){ console.error('[pinauth] restore error', e) }
-  // 未ログイン → ログイン選択画面＋キャスト一覧描画
+  // コールドスタート時は、ログインセッションが残っていても自動入室しない＝必ず再認証(PIN/生体)を要求する。
+  // (セッションはAPI用に保持。再認証時に pin-login/passkey が新しいセッションへ張り替える)
+  // バックグラウンド復帰時のロックは visibilitychange 側で行う。
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-top').classList.add('on')
   await renderPinCastPicker()
@@ -2559,7 +2567,7 @@ async function startStripeCheckout(){
 }
 
 function startApp(){
-  markUnlocked()  // この起動で認証済み=以降のリロードは自動復帰可。閉じれば解除される。
+  appAuthed=true  // 認証済み。バックグラウンド復帰/再起動でfalseに戻り再ロックされる。
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   document.getElementById('s-app').classList.add('on')
   document.getElementById('hdr-name').textContent=me.is_owner?'店舗 👑':me.name
@@ -2911,7 +2919,7 @@ async function registerOwnerPush(){
 function doLogout(){
   me=null; myShifts=[]
   // PIN認証モードは認証セッションを破棄してリロード（状態を確実に初期化）
-  if(PIN_AUTH_MODE){ currentStoreId=null; sessionStorage.removeItem('shiftlink_tab'); sessionStorage.removeItem('shiftlink_unlocked'); sb.auth.signOut().finally(()=>location.reload()); return }
+  if(PIN_AUTH_MODE){ appAuthed=false; currentStoreId=null; sessionStorage.removeItem('shiftlink_tab'); sb.auth.signOut().finally(()=>location.reload()); return }
   sessionStorage.removeItem('shiftlink_me')
   sessionStorage.removeItem('shiftlink_tab')
   document.getElementById('owner-pin').value=''
