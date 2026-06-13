@@ -358,7 +358,7 @@ tr:last-child td{border-bottom:none}
 }
 </style>
 <script>
-const SW_VER = 'v18';
+const SW_VER = 'v19';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -1562,11 +1562,25 @@ async function enterAppAfterSession(){
   await sb.auth.signOut(); return false
 }
 // 生体認証でログイン（castId: owner=0）。成功でtrue、未登録でfalse、キャンセルはthrow(NotAllowedError)
+// 高速化: ログイン画面を開いた時点でライブラリとチャレンジ取得を先に走らせる(fire-and-forget)。
+// pkLoginV2はその進行中の通信を待つだけなので、ログイン契機で即startAuthentication=Face IDがすぐ出る。
+let _pkPrep={}   // { castId: {p: Promise<optObj|null>, at} }
+function pkPrepare(castId){
+  castId=Number(castId)
+  if(!window.PublicKeyCredential || !pkHasLocal(castId)) return
+  pkBrowser()  // ライブラリ先読み(待たない)
+  const p=pkApi('auth-options',{cast_id:castId}).then(o=>(o&&o.options&&o.credentials)?o:null).catch(()=>null)
+  _pkPrep[castId]={p, at:Date.now()}
+}
 async function pkLoginV2(castId){
+  castId=Number(castId)
   pkInProgress=true
   try{
-    const opt=await pkApi('auth-options',{cast_id:castId})
-    if(!opt.options||!opt.credentials) return false   // この主体に登録済みパスキー無し
+    let opt=null
+    const pre=_pkPrep[castId]; delete _pkPrep[castId]   // チャレンジは単回使用
+    if(pre && (Date.now()-pre.at)<240000) opt=await pre.p   // 先読み(進行中可)を待つ
+    if(!opt){ const o=await pkApi('auth-options',{cast_id:castId}); opt=(o&&o.options&&o.credentials)?o:null }
+    if(!opt) return false   // この主体に登録済みパスキー無し
     const lib=await pkBrowser()
     const asr=await lib.startAuthentication({optionsJSON:opt.options})
     const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
@@ -1805,7 +1819,7 @@ function showLogin(type){
   // 管理サブタブを非表示
   const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   if(type==='top') document.getElementById('s-top').classList.add('on')
-  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); setTimeout(doOwnerLoginSmart, 500) }
+  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); pkPrepare(0); setTimeout(doOwnerLoginSmart, 150) }
   else if(type==='cast'){ document.getElementById('s-cast-login').classList.add('on'); if(PIN_AUTH_MODE) renderPinCastPicker() }
 }
 
@@ -2168,7 +2182,8 @@ function selectCastCard(castId, castName){
   document.getElementById('cast-pin')?.focus()
   document.getElementById('cast-err').textContent=''
   checkPasskeyBtn(castId)
-  setTimeout(()=>doCastLoginSmart(), 300)
+  pkPrepare(castId)
+  setTimeout(()=>doCastLoginSmart(), 120)
 }
 
 function clearCastSelection(){
