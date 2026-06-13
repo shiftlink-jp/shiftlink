@@ -233,11 +233,11 @@ serve(async (req) => {
       // auth-verify
       const { response, challenge_id } = body;
       if (!response || !challenge_id) return json({ error: "response, challenge_id は必須です" }, 400, origin);
-      // 高速化: チャレンジ取得・チャレンジ削除(単回使用)・パスキー取得は互いに独立なので並行実行。
-      //   削除はチャレンジ内容に依存せず必ず実行される＝単回使用保証は不変。妥当性は下で検証する。
-      const [{ data: ch }, , { data: pk }] = await Promise.all([
-        admin.from("webauthn_challenges").select("*").eq("id", challenge_id).maybeSingle(),
-        admin.from("webauthn_challenges").delete().eq("id", challenge_id),
+      // チャレンジは「削除して同時に取得(DELETE ... RETURNING)」で原子的に単回消費する。
+      //   ※SELECTとDELETEを別々に並行実行すると削除が先勝ちしてSELECTが空を返す競合(=認証失敗)が起きる。
+      //   削除返却なら1往復・競合なし・単回使用保証。パスキー取得は別テーブルなので並行で良い。
+      const [{ data: ch }, { data: pk }] = await Promise.all([
+        admin.from("webauthn_challenges").delete().eq("id", challenge_id).select("*").maybeSingle(),
         admin.from("passkeys").select("*").eq("store_id", store_id).eq("cast_id", cast_id).eq("pk_format", "v2")
           .eq("credential_id", String(response.id)).maybeSingle(),
       ]);
