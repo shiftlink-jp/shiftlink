@@ -3560,6 +3560,7 @@ async function castClockIn(shiftId) {
     const { error } = await withStoreFilter(sb.from('shifts').update({ clock_in_at: new Date().toISOString() })).eq('id', shiftId).eq('cast_id', me.id);
     if (error) throw error;
     toast('出勤しました');
+    await sendPushNotification(0, '出勤しました🟢', me.name + 'さんが出勤しました');
     loadCastToday();
   } catch (e) { console.error('[出勤]', e); toast('出勤の記録に失敗しました'); }
 }
@@ -3571,6 +3572,7 @@ async function castClockOut(shiftId) {
     const { error } = await withStoreFilter(sb.from('shifts').update({ clock_out_at: new Date().toISOString() })).eq('id', shiftId).eq('cast_id', me.id);
     if (error) throw error;
     toast('お疲れさまでした。退勤しました');
+    await sendPushNotification(0, '退勤しました🔴', me.name + 'さんが退勤しました');
     loadCastToday();
   } catch (e) { console.error('[退勤]', e); toast('退勤の記録に失敗しました'); }
 }
