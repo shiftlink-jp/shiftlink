@@ -3534,13 +3534,17 @@ function buildCastAttHtml(shifts) {
     const range = (s.start_time ? String(s.start_time).slice(0, 5) : '') + '〜' + (s.end_time ? String(s.end_time).slice(0, 5) : '');
     const inT = fmtClock(s.clock_in_at), outT = fmtClock(s.clock_out_at);
     let badge, action;
+    const undoStyle = 'font-size:.72rem;color:#8a97ad;background:none;border:1px solid #d7d0c4;border-radius:8px;padding:.45rem .65rem;cursor:pointer;white-space:nowrap';
     if (s.clock_out_at) {
       badge = '<span style="font-size:.72rem;background:#8a97ad;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">退勤済み</span>';
-      action = '<div style="font-size:.82rem;color:var(--text3);font-weight:600">出勤 ' + inT + ' ／ 退勤 ' + outT + '</div>';
+      action = '<div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem">'
+        + '<span style="font-size:.82rem;color:var(--text3);font-weight:600">出勤 ' + inT + ' ／ 退勤 ' + outT + '</span>'
+        + '<button onclick="castClockReset(' + s.id + ',\'clock_out_at\')" style="' + undoStyle + '">退勤を取消</button></div>';
     } else if (s.clock_in_at) {
       badge = '<span style="font-size:.72rem;background:#1e9e4a;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">● 出勤中</span>';
       action = '<div style="display:flex;align-items:center;gap:.6rem">'
         + '<span style="font-size:.82rem;color:var(--text3);font-weight:600;white-space:nowrap">出勤 ' + inT + '〜</span>'
+        + '<button onclick="castClockReset(' + s.id + ',\'clock_in_at\')" style="' + undoStyle + '">取消</button>'
         + '<button onclick="castClockOut(' + s.id + ')" style="flex:1;padding:.7rem 0;border:none;border-radius:12px;font-weight:700;font-size:.9rem;cursor:pointer;background:#d9534f;color:#fff">退勤する</button></div>';
     } else {
       badge = '<span style="font-size:.72rem;background:#c9bfa8;color:#fff;border-radius:20px;padding:.18rem .7rem;font-weight:700">出勤予定</span>';
@@ -3575,6 +3579,18 @@ async function castClockOut(shiftId) {
     await sendPushNotification(0, '退勤しました🔴', me.name + 'さんが退勤しました');
     loadCastToday();
   } catch (e) { console.error('[退勤]', e); toast('退勤の記録に失敗しました'); }
+}
+
+// 打刻の取消（誤操作の修正）。field='clock_in_at'(出勤予定に戻す) / 'clock_out_at'(出勤中に戻す)
+async function castClockReset(shiftId, field) {
+  const label = field === 'clock_out_at' ? '退勤' : '出勤';
+  if (!confirm(label + 'の打刻を取り消しますか？')) return;
+  try {
+    const { error } = await withStoreFilter(sb.from('shifts').update({ [field]: null })).eq('id', shiftId).eq('cast_id', me.id);
+    if (error) throw error;
+    toast(label + 'の打刻を取り消しました');
+    loadCastToday();
+  } catch (e) { console.error('[打刻取消]', e); toast('取り消しに失敗しました'); }
 }
 
 function timeStrToMin2(t) {
