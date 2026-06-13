@@ -4638,12 +4638,12 @@ function openCastMemoSheet(custId,custName){
 async function saveCastMemo(){
   const memo=document.getElementById('cm-memo').value.trim()
   if(!memo){toast('メモを入力してください');return}
-  const{error}=await sb.from('customer_visits').upsert({
+  const{error}=await sb.from('customer_visits').upsert(withStoreId({
     customer_id:castMemoCustomerId,
     cast_name:me.name,
     cast_memo:memo,
     visit_date:today()
-  },{onConflict:'customer_id,cast_name,visit_date'})
+  }),{onConflict:'customer_id,cast_name,visit_date'})
   if(error){toast('エラー: '+error.message);return}
   // オーナーへPush通知
   await sendPushNotification(0, '接客メモが保存されました📝', me.name+'さんが接客メモを入力しました。');
@@ -5844,7 +5844,7 @@ async function saveTodayInquiry(){
   if(st) st.textContent='保存中...'
   clearTimeout(_inqTimer)
   _inqTimer=setTimeout(async()=>{
-    const{error}=await sb.from('daily_notes').upsert({date:td,inquiry_count:val},{onConflict:'date'})
+    const{error}=await sb.from('daily_notes').upsert(withStoreId({date:td,inquiry_count:val}),{onConflict:'date'})
     if(st) st.textContent=error?'エラー':'保存済'
     setTimeout(()=>{if(st)st.textContent=''},2000)
     monthlyCachedData=null // 日別テーブルのキャッシュクリア
@@ -9238,7 +9238,7 @@ async function saveMonthlySales(){
   const total_custom=custom_expenses.reduce((s,e)=>s+(e.amount||0),0)
   const total_expenses=total_fixed+total_variable+total_custom
   const payload={month:monthlyMonth,goal_sales:parseMoneyInput('mse-goal-sales'),goal_count:getvInt('mse-goal-count'),goal_recruit:getvInt('mse-goal-recruit'),actual_recruit:getvInt('mse-actual-recruit'),next_goal_sales:parseMoneyInput('mse-next-goal-sales'),next_goal_count:getvInt('mse-next-goal-count'),next_goal_recruit:getvInt('mse-next-goal-recruit'),ad_expenses,total_ad_expense,rent_expenses,total_rent,utility_expenses,total_utility,fixed_expenses,total_fixed,variable_expenses,total_variable,custom_expenses,total_expenses,acquisition_routes:{esute_kon:getvInt('mse-route-ekon'),panda:getvInt('mse-route-panda'),esute_love:getvInt('mse-route-elove'),ranking:getvInt('mse-route-rank'),japan:getvInt('mse-route-japan'),zerotwo:getvInt('mse-route-zero'),hp:getvInt('mse-route-hp'),sns:getvInt('mse-route-sns'),other:getvInt('mse-route-other')},new_customers:getvInt('mse-new-cust'),repeat_customers:getvInt('mse-repeat-cust'),shimei_free:getvInt('mse-shimei-free'),shimei_net:getvInt('mse-shimei-net'),shimei_hon:getvInt('mse-shimei-hon')}
-  const {error}=await sb.from('monthly_sales').upsert(payload,{onConflict:'month'})
+  const {error}=await sb.from('monthly_sales').upsert(withStoreId(payload),{onConflict:'month'})
   btn.disabled=false;btn.textContent='💾 保存'
   if(error){toast('保存失敗: '+error.message);return}
   toast('保存しました')
