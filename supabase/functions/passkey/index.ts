@@ -75,10 +75,11 @@ async function mintSession(admin: any, store_id: string, role: string, castId: n
   let userId: string | null = null;
 
   // 既存は store_members から決定的に引く
+  let memberKnown = false; // store_members 経由で確定したら ensure 再取得を省略できる
   let q = admin.from("store_members").select("user_id").eq("store_id", store_id).eq("role", role).limit(1);
   q = castId == null ? q.is("cast_id", null) : q.eq("cast_id", castId);
   const { data: smRows } = await q;
-  if (smRows && smRows[0]?.user_id) userId = smRows[0].user_id as string;
+  if (smRows && smRows[0]?.user_id) { userId = smRows[0].user_id as string; memberKnown = true; }
 
   if (!userId) {
     const { data: created } = await admin.auth.admin.createUser({
@@ -100,11 +101,13 @@ async function mintSession(admin: any, store_id: string, role: string, castId: n
   }
   if (!userId) throw new Error("認証ユーザーの準備に失敗しました");
 
-  // store_members を保証
-  const { data: mem } = await admin
-    .from("store_members").select("id").eq("user_id", userId).eq("store_id", store_id).maybeSingle();
-  if (!mem) {
-    await admin.from("store_members").insert({ store_id, user_id: userId, role, cast_id: castId });
+  // store_members を保証（lookupで確定済みなら存在は自明なので再取得を省略＝1往復削減）
+  if (!memberKnown) {
+    const { data: mem } = await admin
+      .from("store_members").select("id").eq("user_id", userId).eq("store_id", store_id).maybeSingle();
+    if (!mem) {
+      await admin.from("store_members").insert({ store_id, user_id: userId, role, cast_id: castId });
+    }
   }
 
   // 使い捨てパスワード→サインイン（#6対策のリトライ）
@@ -230,16 +233,18 @@ serve(async (req) => {
       // auth-verify
       const { response, challenge_id } = body;
       if (!response || !challenge_id) return json({ error: "response, challenge_id は必須です" }, 400, origin);
-      const { data: ch } = await admin.from("webauthn_challenges")
-        .select("*").eq("id", challenge_id).maybeSingle();
-      await admin.from("webauthn_challenges").delete().eq("id", challenge_id);
+      // 高速化: チャレンジ取得・チャレンジ削除(単回使用)・パスキー取得は互いに独立なので並行実行。
+      //   削除はチャレンジ内容に依存せず必ず実行される＝単回使用保証は不変。妥当性は下で検証する。
+      const [{ data: ch }, , { data: pk }] = await Promise.all([
+        admin.from("webauthn_challenges").select("*").eq("id", challenge_id).maybeSingle(),
+        admin.from("webauthn_challenges").delete().eq("id", challenge_id),
+        admin.from("passkeys").select("*").eq("store_id", store_id).eq("cast_id", cast_id).eq("pk_format", "v2")
+          .eq("credential_id", String(response.id)).maybeSingle(),
+      ]);
       if (!ch || ch.purpose !== "authenticate" || ch.store_id !== store_id || ch.cast_id !== cast_id ||
           new Date(ch.expires_at) < new Date()) {
         return json({ error: "チャレンジが無効です。やり直してください" }, 400, origin);
       }
-      const { data: pk } = await admin.from("passkeys")
-        .select("*").eq("store_id", store_id).eq("cast_id", cast_id).eq("pk_format", "v2")
-        .eq("credential_id", String(response.id)).maybeSingle();
       if (!pk) return json({ error: "認証情報が見つかりません" }, 400, origin);
 
       const verification = await verifyAuthenticationResponse({
@@ -254,14 +259,14 @@ serve(async (req) => {
       });
       if (!verification.verified) return json({ error: "生体認証の検証に失敗しました" }, 401, origin);
 
-      // カウンタ更新（クローン検知用）
-      await admin.from("passkeys")
-        .update({ counter: verification.authenticationInfo.newCounter }).eq("id", pk.id);
-
-      // 検証成功 → セッション発行（owner=cast_id 0）
+      // 検証成功 → カウンタ更新(クローン検知)とセッション発行は独立なので並行実行（owner=cast_id 0）。
       const role = cast_id === 0 ? "owner" : "staff";
       const memberCastId = cast_id === 0 ? null : cast_id;
-      const { session, userId } = await mintSession(admin, store_id, role, memberCastId);
+      const [, minted] = await Promise.all([
+        admin.from("passkeys").update({ counter: verification.authenticationInfo.newCounter }).eq("id", pk.id),
+        mintSession(admin, store_id, role, memberCastId),
+      ]);
+      const { session, userId } = minted;
       return json({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
