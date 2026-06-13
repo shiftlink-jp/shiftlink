@@ -1679,6 +1679,10 @@ async function renderPinCastPicker(){
       cardList.appendChild(btn)
     })
   }
+  // 高速化: ピッカー表示時点(タップより数秒前)で生体認証チャレンジ/ライブラリを先読み開始しておく。
+  // pkPrepareは未登録(pkHasLocalがfalse)なら何もしないので、登録済みの主体のみ先読みされる。
+  pkPrepare(0)
+  casts.forEach(c=>{ const id=Number(c.id); if(Number.isFinite(id)) pkPrepare(id) })
 }
 // ルーム情報はDBから読み込み（roomListグローバル変数）
 let roomList=[]
