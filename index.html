@@ -1488,10 +1488,13 @@ function withStoreFilter(q){
 // ── Phase2: PIN認証（pin-login関数経由で認証セッションを発行） ──
 // 認証後にstore-scopedなデータを読み込む（anon遮断後はこれが唯一の経路になる）
 async function loadStoreDataForPin(){
-  const{data:cs}=await sb.from('courses').select('*').eq('store_id',currentStoreId).order('price')
-  const{data:op}=await sb.from('options').select('*').eq('store_id',currentStoreId).order('id')
-  const{data:rm}=await sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order')
-  const{data:ss}=await sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
+  // 高速化: 4テーブルは互いに独立なので並行取得(直列4往復→1往復相当)。
+  const[{data:cs},{data:op},{data:rm},{data:ss}]=await Promise.all([
+    sb.from('courses').select('*').eq('store_id',currentStoreId).order('price'),
+    sb.from('options').select('*').eq('store_id',currentStoreId).order('id'),
+    sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order'),
+    sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
+  ])
   courses=cs||[]; opts=op||[]; roomList=rm||[]; storeSettings=ss||{}
   // owner_pin は auth_pins へ隔離済み。クライアントはPINを保持しない（照合は pin-login のみ）。
 }
@@ -1547,16 +1550,25 @@ async function pkApi(action, payload, token){
   return j
 }
 // セッション確立後、initPinAuthと同じ手順でアプリに入る（owner/cast判定→データ読込→startApp）
-async function enterAppAfterSession(){
+// info: passkey関数のauth-verify応答({role,cast_id})。あれば store_members 再取得を省略(往復削減)。
+async function enterAppAfterSession(info){
   const{data:{session}}=await sb.auth.getSession()
   if(!session) return false
   currentStoreId=PIN_STORE_ID
-  const{data:mem}=await sb.from('store_members').select('role,cast_id').eq('user_id',session.user.id).eq('store_id',PIN_STORE_ID).maybeSingle()
-  if(!mem){ await sb.auth.signOut(); return false }
-  await loadStoreDataForPin()
-  if(mem.role==='owner'||mem.role==='manager'){ me={id:0,name:'店舗',is_owner:true}; startApp(); return true }
-  if(mem.cast_id){
-    const{data:c}=await sb.from('casts').select('*').eq('id',mem.cast_id).maybeSingle()
+  let role=info&&info.role, castId=(info&&info.cast_id!=null)?Number(info.cast_id):null
+  if(!role){
+    // 応答が無い経路用のフォールバック（従来通りstore_membersから判定）
+    const{data:mem}=await sb.from('store_members').select('role,cast_id').eq('user_id',session.user.id).eq('store_id',PIN_STORE_ID).maybeSingle()
+    if(!mem){ await sb.auth.signOut(); return false }
+    role=mem.role; castId=mem.cast_id!=null?Number(mem.cast_id):null
+  }
+  if(role==='owner'||role==='manager'){ await loadStoreDataForPin(); me={id:0,name:'店舗',is_owner:true}; startApp(); return true }
+  if(castId){
+    // 店舗データとキャスト本人情報を並行取得(直列2→1往復)
+    const[,{data:c}]=await Promise.all([
+      loadStoreDataForPin(),
+      sb.from('casts').select('*').eq('id',castId).eq('store_id',PIN_STORE_ID).maybeSingle()
+    ])
     if(c){ me={...c,is_owner:false}; startApp(); return true }
   }
   await sb.auth.signOut(); return false
@@ -1585,7 +1597,7 @@ async function pkLoginV2(castId){
     const asr=await lib.startAuthentication({optionsJSON:opt.options})
     const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
     await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
-    return await enterAppAfterSession()
+    return await enterAppAfterSession(j)
   } finally { pkInProgress=false; _lastHiddenAt=0 }
 }
 // 生体認証を登録（ログイン中の本人セッションが必要。castId: owner=0）
@@ -2216,8 +2228,11 @@ async function doCastLogin(){
     btn.disabled=true; btn.textContent='確認中...'
     try{
       await pinLoginViaServer('cast', parseInt(cid), pin)
-      await loadStoreDataForPin()
-      const{data:c}=await sb.from('casts').select('*').eq('id',cid).maybeSingle()
+      // 店舗データとキャスト本人情報を並行取得(直列2→1往復)
+      const[,{data:c}]=await Promise.all([
+        loadStoreDataForPin(),
+        sb.from('casts').select('*').eq('id',cid).maybeSingle()
+      ])
       me=c?{...c,is_owner:false}:{id:parseInt(cid),name:'キャスト',is_owner:false}
       startApp()
       setTimeout(()=>offerPasskeyRegistration(parseInt(cid),(c&&c.name)||'キャスト'), 800)
