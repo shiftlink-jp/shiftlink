@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v21';
+const CACHE_VERSION = 'v22';
 // #8: SWからの直接DB書き込み(anon鍵)を廃止したため SUPABASE_URL / SUPABASE_KEY は不要に。
 const VAPID_KEY = 'BIWgxZ65EfPhsXdHaY7_L_Pk7dd3PWTIaePCNwBUqL-gUppTf7LCvd5RqrOPbfsYfdOnc-OLrTOH1ff8h5r9n0E';
 
