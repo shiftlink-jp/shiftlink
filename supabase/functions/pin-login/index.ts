@@ -164,39 +164,34 @@ serve(async (req) => {
     // 認証成功 → 失敗カウントをリセット
     await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
 
-    // 2) この主体に対応する内部Authユーザーを用意（決定的email）
-    const email = `pin.${principalKey}@shiftlink.internal`;
+    // 2) この主体に対応する内部Authユーザーを「決定的email」で用意する。
+    //    emailは実体（owner / cast.<本人ID>）から導出する。ロック用 principalKey とは別物。
+    //    （PIN-only経路では principalKey=castpin.<store> だが、認証ユーザーは本人ごとに分ける必要があるため）
+    const authPrincipal = memberRole === "owner" ? `owner.${store_id}` : `cast.${memberCastId}.${store_id}`;
+    const email = `pin.${authPrincipal}@shiftlink.internal`;
     let userId: string | null = null;
-
-    // 既存ユーザーは store_members から決定的に引く（#5: listUsersのperPage上限で
-    // ログイン不能になる問題を回避）。(store_id, role, cast_id) は principalKey と1対1で、
-    // 初回ログイン時に下の手順3で store_members へ登録済み。
     {
-      let q = admin.from("store_members").select("user_id")
-        .eq("store_id", store_id).eq("role", memberRole).limit(1);
-      q = memberCastId == null ? q.is("cast_id", null) : q.eq("cast_id", memberCastId);
-      const { data: smRows } = await q;
-      if (smRows && smRows[0]?.user_id) userId = smRows[0].user_id as string;
-    }
-
-    // store_members に無ければ新規作成（初回ログイン）。
-    // 作成失敗(=Authユーザーは在るがstore_members未登録の異常系)なら全ページ走査で確実に取得。
-    if (!userId) {
-      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      const { data: created } = await admin.auth.admin.createUser({
         email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
       });
       if (created?.user) userId = created.user.id;
-      else if (createErr) userId = await findAuthUserIdByEmail(admin, email);
+      else userId = await findAuthUserIdByEmail(admin, email); // 既存ならemailで取得
     }
     if (!userId) return json({ error: "認証ユーザーの準備に失敗しました" }, 500, origin);
 
-    // 3) store_members を保証（自店スコープの根拠）
-    const { data: mem } = await admin
-      .from("store_members").select("id").eq("user_id", userId).eq("store_id", store_id).maybeSingle();
-    if (!mem) {
-      await admin.from("store_members").insert({
-        store_id, user_id: userId, role: memberRole, cast_id: memberCastId,
-      });
+    // 3) store_members を保証（自店スコープの根拠）。
+    //    同じ(role,cast_id)に別ユーザーの古い行があれば正しいユーザーへ付け替える（過去の不整合の自己修復）。
+    {
+      let q = admin.from("store_members").select("id,user_id")
+        .eq("store_id", store_id).eq("role", memberRole).limit(1);
+      q = memberCastId == null ? q.is("cast_id", null) : q.eq("cast_id", memberCastId);
+      const { data: smRows } = await q;
+      const existing = (smRows && smRows[0]) || null;
+      if (!existing) {
+        await admin.from("store_members").insert({ store_id, user_id: userId, role: memberRole, cast_id: memberCastId });
+      } else if (existing.user_id !== userId) {
+        await admin.from("store_members").update({ user_id: userId }).eq("id", existing.id);
+      }
     }
 
     // 4) 使い捨てパスワードを設定 → サインインしてセッション取得（永続シークレット不要）。
