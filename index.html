@@ -1522,7 +1522,7 @@ function pkHasLocal(castId){ try{ return localStorage.getItem(pkFlag(castId))===
 let appAuthed=false        // この起動でアプリに入って良い状態か
 let pkInProgress=false     // 生体認証の最中(下のvisibilitychangeで誤ロックしないためのガード)
 let _lastHiddenAt=0
-const LOCK_GRACE_MS=1500   // これ以上バックグラウンドにいたら、復帰時に再ロック(再認証を要求)
+const LOCK_GRACE_MS=600000  // 10分。これ以上バックグラウンドにいたら、復帰時に再ロック(再認証を要求)
 function lockApp(){
   if(!PIN_AUTH_MODE) return
   appAuthed=false; me=null
