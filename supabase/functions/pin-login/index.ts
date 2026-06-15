@@ -151,11 +151,17 @@ serve(async (req) => {
       // PINは店舗内で重複しない前提（set-pin側で重複登録を禁止）。
       const { data: castRows } = await admin
         .from("casts").select("id,pin").eq("store_id", store_id);
-      let matchedId: number | null = null;
-      for (const c of (castRows ?? [])) {
-        const ok = await verifyPin(admin, store_id, `cast.${c.id}`, pinStr, c?.pin ? String(c.pin) : "");
-        if (ok) { matchedId = Number(c.id); break; }
-      }
+      const rows = castRows ?? [];
+      // 高速化: 全キャストのPIN照合を並行実行（直列N往復→1往復相当）。bcryptはDB内で実行。
+      const results = await Promise.all(rows.map(async (c) => {
+        const { data, error } = await admin.rpc("verify_pin", {
+          p_store_id: store_id, p_principal: `cast.${c.id}`, p_pin: pinStr,
+        });
+        if (!error && data === true) return Number(c.id);
+        if (c?.pin != null && safeEqual(pinStr, String(c.pin))) return Number(c.id); // 未移行の平文フォールバック
+        return null;
+      }));
+      const matchedId = results.find((x) => x != null) ?? null;
       if (matchedId == null) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = matchedId;
@@ -170,12 +176,24 @@ serve(async (req) => {
     const authPrincipal = memberRole === "owner" ? `owner.${store_id}` : `cast.${memberCastId}.${store_id}`;
     const email = `pin.${authPrincipal}@shiftlink.internal`;
     let userId: string | null = null;
+    // 高速化: まず store_members から候補を取得し、本人の決定的emailと一致すれば採用（listUsers走査を回避）
     {
+      let q = admin.from("store_members").select("user_id")
+        .eq("store_id", store_id).eq("role", memberRole).limit(1);
+      q = memberCastId == null ? q.is("cast_id", null) : q.eq("cast_id", memberCastId);
+      const { data: smRows } = await q;
+      const candId = smRows && smRows[0]?.user_id;
+      if (candId) {
+        const { data: u } = await admin.auth.admin.getUserById(candId);
+        if (u?.user?.email === email) userId = candId as string;
+      }
+    }
+    // 候補が無い/不一致（初回 or 過去の不整合）→ emailで確定
+    if (!userId) {
       const { data: created } = await admin.auth.admin.createUser({
         email, email_confirm: true, user_metadata: { store_id, role: memberRole, cast_id: memberCastId },
       });
-      if (created?.user) userId = created.user.id;
-      else userId = await findAuthUserIdByEmail(admin, email); // 既存ならemailで取得
+      userId = created?.user?.id ?? await findAuthUserIdByEmail(admin, email);
     }
     if (!userId) return json({ error: "認証ユーザーの準備に失敗しました" }, 500, origin);
 
