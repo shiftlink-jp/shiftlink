@@ -106,7 +106,10 @@ serve(async (req) => {
     const pinStr = String(pin);
     if (pinStr.length < 1 || pinStr.length > 12) return json({ error: "PIN形式が不正です" }, 400, origin);
 
-    const principalKey = role === "owner" ? `owner.${store_id}` : `cast.${cast_id}.${store_id}`;
+    // ロック用キー: owner / cast(id指定=旧経路) / cast(PINのみ=本人特定。名前未指定なので店舗単位)
+    const principalKey = role === "owner"
+      ? `owner.${store_id}`
+      : (cast_id ? `cast.${cast_id}.${store_id}` : `castpin.${store_id}`);
 
     // 0) ロック状態を確認（ブルートフォース対策）
     const { data: att } = await admin
@@ -135,15 +138,27 @@ serve(async (req) => {
       const ok = await verifyPin(admin, store_id, "owner", pinStr, ss?.owner_pin ? String(ss.owner_pin) : "");
       if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "owner";
-    } else {
-      if (!cast_id) return json({ error: "cast_id が必要です" }, 400, origin);
-      // cast の存在確認（pin列はもう照合に使わない。存在/所属の確認のみ）
+    } else if (cast_id) {
+      // 旧経路（名前選択あり＝cast_id指定）。後方互換のため温存。
       const { data: c } = await admin
         .from("casts").select("id,pin").eq("id", cast_id).eq("store_id", store_id).maybeSingle();
       const ok = c && await verifyPin(admin, store_id, `cast.${cast_id}`, pinStr, c?.pin ? String(c.pin) : "");
       if (!ok) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = Number(cast_id);
+    } else {
+      // 新経路（PINのみ＝名前選択なし）。店舗内の全キャストとPINを照合し、一致した本人を特定する。
+      // PINは店舗内で重複しない前提（set-pin側で重複登録を禁止）。
+      const { data: castRows } = await admin
+        .from("casts").select("id,pin").eq("store_id", store_id);
+      let matchedId: number | null = null;
+      for (const c of (castRows ?? [])) {
+        const ok = await verifyPin(admin, store_id, `cast.${c.id}`, pinStr, c?.pin ? String(c.pin) : "");
+        if (ok) { matchedId = Number(c.id); break; }
+      }
+      if (matchedId == null) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
+      memberRole = "staff";
+      memberCastId = matchedId;
     }
 
     // 認証成功 → 失敗カウントをリセット

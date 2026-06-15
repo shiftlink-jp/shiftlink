@@ -1835,8 +1835,11 @@ function showLogin(type){
   // 管理サブタブを非表示
   const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   if(type==='top') document.getElementById('s-top').classList.add('on')
-  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); pkPrepare(0); setTimeout(doOwnerLoginSmart, 150) }
-  else if(type==='cast'){ document.getElementById('s-cast-login').classList.add('on'); if(PIN_AUTH_MODE) renderPinCastPicker() }
+  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); pkPrepare(0); setTimeout(()=>doOwnerLoginSmart(true), 150) }
+  else if(type==='cast'){
+    document.getElementById('s-cast-login').classList.add('on')
+    if(PIN_AUTH_MODE) setupCastPinLogin()
+  }
 }
 
 async function init(){
@@ -2068,13 +2071,14 @@ async function offerPasskeyRegistration(castId, castName){
 }
 
 // ログインボタン押下時：生体認証が使えれば使う、なければPIN認証
-async function doOwnerLoginSmart(){
+async function doOwnerLoginSmart(auto){
   // PIN認証モード: PIN入力があればPIN経路、空なら生体認証(v2/サーバ検証)を試す
+  // auto=true（画面表示時の自動試行）の失敗はエラー表示しない（出ていないのに「失敗」と出る誤表示を防ぐ）
   if(PIN_AUTH_MODE){
     if(document.getElementById('owner-pin')?.value){ doOwnerLogin(); return }
     if(window.PublicKeyCredential && pkHasLocal(0)){
       try{ if(await pkLoginV2(0)) return }
-      catch(e){ if(e.name==='NotAllowedError') return; document.getElementById('owner-err').textContent='生体認証に失敗しました。PINでログインしてください。' }
+      catch(e){ if(e.name==='NotAllowedError') return; if(!auto) document.getElementById('owner-err').textContent='生体認証に失敗しました。PINでログインしてください。' }
     }
     return
   }
@@ -2109,17 +2113,10 @@ async function doOwnerLoginSmart(){
 }
 
 async function doCastLoginSmart(){
+  // PIN認証モード（名前選択なし）: PINだけでサーバーが本人を特定してログイン
+  if(PIN_AUTH_MODE){ doCastLogin(); return }
   const cid = document.getElementById('cast-sel').value
   if(!cid){ document.getElementById('cast-err').textContent='名前を選んでください'; return }
-  // PIN認証モード: PIN入力があればPIN経路、空なら生体認証(v2/サーバ検証)を試す
-  if(PIN_AUTH_MODE){
-    if(document.getElementById('cast-pin')?.value){ doCastLogin(); return }
-    if(window.PublicKeyCredential && pkHasLocal(parseInt(cid))){
-      try{ if(await pkLoginV2(parseInt(cid))) return }
-      catch(e){ if(e.name==='NotAllowedError') return; document.getElementById('cast-err').textContent='生体認証に失敗しました。PINでログインしてください。' }
-    }
-    return
-  }
   const pin = document.getElementById('cast-pin')?.value
   const localKey = 'passkey_registered_' + cid
   // PINが空 かつ 生体認証登録済みなら生体認証
@@ -2220,26 +2217,27 @@ async function doCastLogin(){
   const pin=document.getElementById('cast-pin').value
   const err=document.getElementById('cast-err')
   err.textContent=''
-  if(!cid){err.textContent='名前を選んでください';return}
   if(pin.length<1||pin.length>8){err.textContent='PINは1〜8桁で入力してください';return}
-  // ── Phase2: PIN認証モード（サーバ側照合＋セッション発行） ──
+  // ── PIN認証モード（名前選択なし＝PINで本人特定。サーバ側照合＋セッション発行） ──
   if(PIN_AUTH_MODE){
     const btn=document.getElementById('btn-cast')
     btn.disabled=true; btn.textContent='確認中...'
     try{
-      await pinLoginViaServer('cast', parseInt(cid), pin)
+      const j=await pinLoginViaServer('cast', cid?parseInt(cid):null, pin)
+      const rid=(j&&j.cast_id!=null)?Number(j.cast_id):(cid?parseInt(cid):null)
       // 店舗データとキャスト本人情報を並行取得(直列2→1往復)
       const[,{data:c}]=await Promise.all([
         loadStoreDataForPin(),
-        sb.from('casts').select('*').eq('id',cid).maybeSingle()
+        rid!=null ? sb.from('casts').select('*').eq('id',rid).maybeSingle() : Promise.resolve({data:null})
       ])
-      me=c?{...c,is_owner:false}:{id:parseInt(cid),name:'キャスト',is_owner:false}
+      me=c?{...c,is_owner:false}:{id:rid,name:'キャスト',is_owner:false}
       startApp()
-      setTimeout(()=>offerPasskeyRegistration(parseInt(cid),(c&&c.name)||'キャスト'), 800)
+      if(rid!=null) setTimeout(()=>offerPasskeyRegistration(rid,(c&&c.name)||'キャスト'), 800)
     }catch(e){ err.textContent=e.message||'PINが正しくありません' }
     finally{ btn.disabled=false; btn.textContent='ログイン' }
     return
   }
+  if(!cid){err.textContent='名前を選んでください';return}
   const btn=document.getElementById('btn-cast')
   btn.disabled=true; btn.textContent='確認中...'
   const{data:c,error}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid).eq('pin',pin)).maybeSingle()
@@ -2252,6 +2250,62 @@ async function doCastLogin(){
   setTimeout(()=>offerPasskeyRegistration(c.id, c.name), 800)
 }
 
+// ── PIN認証モードのセラピストログイン（名前選択なし）補助 ──
+function setupCastPinLogin(){
+  const cl=document.getElementById('cast-card-list'); if(cl) cl.style.display='none'
+  const nameLbl=document.querySelector('#s-cast-login .lbl'); if(nameLbl) nameLbl.style.display='none'
+  const badge=document.getElementById('cast-selected-badge'); if(badge&&badge.parentElement) badge.parentElement.style.display='none'
+  const pa=document.getElementById('cast-pin-area'); if(pa) pa.style.display='block'
+  const sel=document.getElementById('cast-sel'); if(sel) sel.value=''
+  const pin=document.getElementById('cast-pin'); if(pin){ pin.value=''; setTimeout(()=>{try{pin.focus()}catch(e){}},100) }
+  const err=document.getElementById('cast-err'); if(err) err.textContent=''
+  renderCastBiometricButton()
+}
+function castRegisteredIds(){
+  const ids=[]
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); const m=k&&k.match(/^pkv2_(\d+)$/); if(m && localStorage.getItem(k)==='1' && Number(m[1])>0) ids.push(Number(m[1])) } }catch(e){}
+  return ids
+}
+function renderCastBiometricButton(){
+  const old=document.getElementById('cast-bio-btn'); if(old) old.remove()
+  const oldc=document.getElementById('cast-bio-choose'); if(oldc) oldc.remove()
+  if(!PIN_AUTH_MODE || !window.PublicKeyCredential) return
+  const ids=castRegisteredIds(); if(!ids.length) return
+  ids.forEach(id=>{ try{ pkPrepare(id) }catch(e){} })
+  const btn=document.createElement('button')
+  btn.id='cast-bio-btn'; btn.type='button'; btn.textContent='🔐 生体認証でログイン'
+  btn.style.cssText='width:100%;margin-top:.6rem;padding:.9rem;border:1.5px solid var(--accent);background:#fff;color:var(--accent);border-radius:var(--r);font-size:.95rem;font-weight:700;font-family:inherit;cursor:pointer'
+  btn.addEventListener('click', ()=>castBiometricLogin(ids))
+  const loginBtn=document.getElementById('btn-cast')
+  if(loginBtn) loginBtn.insertAdjacentElement('afterend', btn)
+  else { const pa=document.getElementById('cast-pin-area'); if(pa) pa.appendChild(btn) }
+}
+async function castBiometricLogin(ids){
+  const err=document.getElementById('cast-err'); if(err) err.textContent=''
+  const tryOne=async(id)=>{
+    try{ if(await pkLoginV2(id)) return true; if(err) err.textContent='生体認証が登録されていません。PINでログインしてください。' }
+    catch(e){ if(e.name!=='NotAllowedError' && err) err.textContent='生体認証に失敗しました。PINでログインしてください。' }
+    return false
+  }
+  if(ids.length===1){ await tryOne(ids[0]); return }
+  let casts=[]
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({store_id:PIN_STORE_ID})})
+    const j=await res.json().catch(()=>({})); casts=Array.isArray(j.casts)?j.casts:[]
+  }catch(e){}
+  const old=document.getElementById('cast-bio-btn'); if(old) old.remove()
+  const wrap=document.getElementById('cast-pin-area'); if(!wrap) return
+  const oldbox=document.getElementById('cast-bio-choose'); if(oldbox) oldbox.remove()
+  const box=document.createElement('div'); box.id='cast-bio-choose'; box.style.cssText='margin-top:.6rem;display:grid;gap:.4rem'
+  ids.forEach(id=>{
+    const nm=(casts.find(c=>Number(c.id)===id)||{}).name||('ID '+id)
+    const b=document.createElement('button'); b.type='button'; b.textContent='🔐 '+nm
+    b.style.cssText='width:100%;padding:.8rem;border:1.5px solid var(--accent);background:#fff;color:var(--accent);border-radius:var(--r);font-weight:700;font-family:inherit;cursor:pointer'
+    b.addEventListener('click', ()=>tryOne(id))
+    box.appendChild(b)
+  })
+  wrap.appendChild(box)
+}
 // ── SaaS認証関数 ──
 function _hideSaasForms(){
   ;['saas-login-form','saas-signup-form','saas-reset-form','saas-newpw-form'].forEach(id=>{
@@ -7310,7 +7364,7 @@ async function addCast(){
   const{data:newCast}=await withStoreFilter(sb.from('casts').select('id').eq('name',name).order('id',{ascending:false}).limit(1))
   if(newCast&&newCast[0]){
     try{ await setPinViaServer(newCast[0].id, pin) }
-    catch(e){ err.textContent='キャストは作成されましたがPIN保存に失敗：'+(e.message||''); }
+    catch(e){ await withStoreFilter(sb.from('casts').delete()).eq('id',newCast[0].id); err.textContent='登録できませんでした：'+(e.message||'PIN保存に失敗しました'); return }
     await sb.from('cast_fees').insert(withStoreId({cast_id:newCast[0].id,back_50:DEFAULT_FEE.back_50,back_80:DEFAULT_FEE.back_80,back_100:DEFAULT_FEE.back_100,back_130:DEFAULT_FEE.back_130,back_ext30:DEFAULT_FEE.back_ext30,shimei_free:DEFAULT_FEE.shimei_free,shimei_net:DEFAULT_FEE.shimei_net,shimei_hon:DEFAULT_FEE.shimei_hon,op_gokueki:DEFAULT_FEE.op_gokueki,op_isho:DEFAULT_FEE.op_isho,op_isho2:DEFAULT_FEE.op_isho2}))
   }
   toast('追加しました！')

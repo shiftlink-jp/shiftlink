@@ -76,6 +76,20 @@ serve(async (req) => {
         .from("casts").select("id").eq("id", cid).eq("store_id", store_id).maybeSingle();
       if (!c) return json({ error: "対象キャストが見つかりません" }, 404, origin);
       principal = `cast.${cid}`;
+
+      // 重複PIN防止: 同店舗の他キャストが同じPINを使っていないか確認
+      // （名前なしPINログインのため、店舗内でPINは一意である必要がある）
+      const { data: others } = await admin
+        .from("casts").select("id,pin").eq("store_id", store_id).neq("id", cid);
+      for (const o of (others ?? [])) {
+        const { data: dup, error: dupErr } = await admin.rpc("verify_pin", {
+          p_store_id: store_id, p_principal: `cast.${o.id}`, p_pin: pinStr,
+        });
+        const isDup = (!dupErr && dup === true) || (o?.pin != null && String(o.pin) === pinStr);
+        if (isDup) {
+          return json({ error: "このPINは他のセラピストが使用中です。別の番号にしてください" }, 409, origin);
+        }
+      }
     }
 
     // 5) auth_pins へ保存（ハッシュ化=bcrypt は Postgres 関数内で実施）
