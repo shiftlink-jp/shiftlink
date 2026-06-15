@@ -149,29 +149,36 @@ serve(async (req) => {
     } else {
       // 新経路（PINのみ＝名前選択なし）。店舗内の全キャストとPINを照合し、一致した本人を特定する。
       // PINは店舗内で重複しない前提（set-pin側で重複登録を禁止）。
-      const { data: castRows } = await admin
-        .from("casts").select("id,pin,active").eq("store_id", store_id);
-      // 退店(active=false)は照合対象外（在籍者のみログイン可。null/未設定は在籍扱い）
-      const rows = (castRows ?? []).filter((c) => c.active !== false);
-      // 高速化: 全在籍キャストを並行照合し、最初に一致した本人で即確定（全件の完了を待たない）
-      const matchedId: number | null = await new Promise((resolve) => {
-        let remaining = rows.length, done = false;
-        if (!remaining) { resolve(null); return; }
-        for (const c of rows) {
-          (async () => {
-            let ok = false;
-            try {
-              const { data, error } = await admin.rpc("verify_pin", {
-                p_store_id: store_id, p_principal: `cast.${c.id}`, p_pin: pinStr,
-              });
-              ok = (!error && data === true) || (c?.pin != null && safeEqual(pinStr, String(c.pin)));
-            } catch (_) { /* skip */ }
-            if (done) return;
-            if (ok) { done = true; resolve(Number(c.id)); }
-            else if (--remaining === 0) resolve(null);
-          })();
-        }
+      // 高速パス: DB内で一括照合（1往復）。resolve_cast_pin 未デプロイ時のみ従来ループにフォールバック。
+      let matchedId: number | null = null;
+      const { data: rid, error: rErr } = await admin.rpc("resolve_cast_pin", {
+        p_store_id: store_id, p_pin: pinStr,
       });
+      if (!rErr) {
+        matchedId = rid != null ? Number(rid) : null;
+      } else {
+        const { data: castRows } = await admin
+          .from("casts").select("id,pin,active").eq("store_id", store_id);
+        const rows = (castRows ?? []).filter((c) => c.active !== false);
+        matchedId = await new Promise<number | null>((resolve) => {
+          let remaining = rows.length, done = false;
+          if (!remaining) { resolve(null); return; }
+          for (const c of rows) {
+            (async () => {
+              let ok = false;
+              try {
+                const { data, error } = await admin.rpc("verify_pin", {
+                  p_store_id: store_id, p_principal: `cast.${c.id}`, p_pin: pinStr,
+                });
+                ok = (!error && data === true) || (c?.pin != null && safeEqual(pinStr, String(c.pin)));
+              } catch (_) { /* skip */ }
+              if (done) return;
+              if (ok) { done = true; resolve(Number(c.id)); }
+              else if (--remaining === 0) resolve(null);
+            })();
+          }
+        });
+      }
       if (matchedId == null) { await recordFail(); return json({ error: "PINが違います" }, 401, origin); }
       memberRole = "staff";
       memberCastId = matchedId;
