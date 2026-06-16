@@ -20,7 +20,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3200",
   "http://localhost:3300",
 ];
-const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano[\w-]*\.vercel\.app$/;
+const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano-[a-z0-9-]+-sawaki-nagoyas-projects\.vercel\.app$/;
 
 function cors(origin: string | null) {
   const ok = origin && (ALLOWED_ORIGINS.includes(origin) || VERCEL_PREVIEW_RE.test(origin));

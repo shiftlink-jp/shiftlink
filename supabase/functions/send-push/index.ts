@@ -33,7 +33,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 // Vercel プレビュー URL は kyoukano プロジェクト配下のみ許可
-const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano[\w-]*\.vercel\.app$/;
+const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano-[a-z0-9-]+-sawaki-nagoyas-projects\.vercel\.app$/;
 
 function corsHeaders(origin: string | null) {
   const isAllowed = origin && (ALLOWED_ORIGINS.includes(origin) || VERCEL_PREVIEW_RE.test(origin));
