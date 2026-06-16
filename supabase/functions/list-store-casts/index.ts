@@ -17,8 +17,10 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3300",
 ];
 
+const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano[\w-]*\.vercel\.app$/;
 function cors(origin: string | null) {
-  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const ok = origin && (ALLOWED_ORIGINS.includes(origin) || VERCEL_PREVIEW_RE.test(origin));
+  const allowed = ok ? origin! : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Headers": "authorization, content-type, apikey",
