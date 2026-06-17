@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>ShiftLink</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700&display=swap');
+:root{
+  --bg:#ffffff;--surface:#faf8f4;--border:#ede9e1;
+  --accent:#ff9124;--accent-bg:#fff1e2;--gold:#b8893a;
+  --text:#211c16;--text2:#7a6e5e;--text3:#a89b88;
+  --red:#dc2626;--red-bg:#fff1f0;--blue:#1d4ed8;--blue-bg:#eff3ff;
+  --green:#1e9e4a;--green-bg:#e9f6ef;--purple:#6d28d9;--purple-bg:#f5f3ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);overflow-x:hidden}
+body{font-family:'Noto Sans JP',-apple-system,sans-serif;color:var(--text);line-height:1.5;-webkit-text-size-adjust:100%}
+.inter{font-family:'Inter','Noto Sans JP',sans-serif}
+.screen{display:none;min-height:100svh;flex-direction:column}
+.screen.on{display:flex}
+/* ===== LOGIN ===== */
+.login{align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),20px) 28px calc(env(safe-area-inset-bottom) + 28px)}
+.login-top{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;gap:48px}
+.brand{display:flex;flex-direction:column;align-items:center;gap:10px}
+.brand-mark{width:72px;height:72px;border-radius:22px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(255,145,36,.28);font-size:34px}
+.brand-name{font-family:'Noto Serif JP',serif;font-size:32px;font-weight:700;color:var(--text)}
+.brand-tag{font-family:'Noto Serif JP',serif;font-size:.95rem;letter-spacing:.1em;color:var(--text2)}
+.logins{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.lbtn{width:100%;height:54px;border-radius:14px;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.lbtn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px rgba(255,145,36,.30)}
+.lbtn-ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.login-foot{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3);font-size:12px;text-align:center;line-height:1.7}
+.login-foot a{color:var(--text2);font-weight:600}
+.lform{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px}
+.lform .field-lbl{font-size:.82rem;color:var(--text2);font-weight:600}
+.linput{width:100%;background:#fff;border:1.5px solid var(--border);color:var(--text);border-radius:12px;padding:.9rem 1rem;font-size:1rem;font-family:inherit;outline:none}
+.linput:focus{border-color:var(--accent)}
+.lback{align-self:flex-start;background:none;border:none;font-size:1.4rem;color:var(--text3);cursor:pointer;padding:.2rem .4rem}
+.lerr{font-size:.8rem;color:var(--red);text-align:center;min-height:1.1em}
+/* ===== APP SHELL ===== */
+#s-app{background:var(--bg)}
+.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),10px) 18px 10px;border-bottom:1px solid var(--border)}
+.role-pill{display:flex;align-items:center;gap:5px;background:var(--accent-bg);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:17px;background:var(--surface);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:15px}
+.icon-btn .dot{position:absolute;top:5px;right:5px;width:11px;height:11px;border-radius:6px;background:var(--green);border:1.5px solid #fff}
+.logout-btn{display:flex;align-items:center;gap:5px;background:var(--surface);border:none;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit}
+.app-body{flex:1;overflow-y:auto;padding:8px 20px calc(96px + env(safe-area-inset-bottom))}
+.panel{display:none}.panel.on{display:block}
+/* header within panel */
+.ph{display:flex;align-items:center;justify-content:space-between;margin:8px 0 16px}
+.ph-title{font-size:1.5rem;font-weight:700}
+.datenav{display:flex;align-items:center;gap:4px;background:var(--surface);border-radius:12px;padding:6px 8px}
+.datenav button{background:none;border:none;font-size:1rem;color:var(--text2);cursor:pointer;padding:2px 6px}
+.datenav .d{font-size:.82rem;font-weight:700;min-width:6.5em;text-align:center}
+.seclbl{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.seclbl .l{font-size:.84rem;font-weight:700;color:var(--text)}
+.seclbl .r{font-size:.7rem;color:var(--text3)}
+/* rooms */
+.rooms{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.room{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;min-height:104px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.room .top{display:flex;align-items:center;justify-content:space-between}
+.room .nm{font-size:.8rem;font-weight:700}
+.room .dot{width:8px;height:8px;border-radius:50%}
+.room .st{font-size:.72rem;font-weight:700}
+.room .cast{font-size:.92rem;font-weight:700;color:var(--text)}
+.room .tm{font-size:.62rem;font-weight:400;color:var(--text3);margin-left:.35rem}
+.room .hint{font-size:.58rem;color:var(--text3);opacity:.6;margin-top:auto}
+/* therapist card */
+.tcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.tcard-hd{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px}
+.tcard-hd .nm{font-size:14px;font-weight:700}
+.tcard-hd .sh{font-size:11px;color:var(--text3);margin-top:2px}
+.cnt-pill{background:var(--surface);border-radius:999px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--text2)}
+.rv{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border)}
+.rv .bar{width:3px;align-self:stretch;min-height:34px;border-radius:2px}
+.rv .t{width:46px}
+.rv .t .s{font-size:13px;font-weight:600}
+.rv .t .e{font-size:11px;color:var(--text3)}
+.rv .d{flex:1;min-width:0}
+.rv .d .cu{font-size:13px;font-weight:600}
+.rv .d .co{font-size:11px;color:var(--text2)}
+.rv .stp{font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.act{height:38px;border-radius:10px;border:none;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.empty{text-align:center;color:var(--text3);font-size:.85rem;padding:2rem 0}
+.spin{text-align:center;color:var(--text3);font-size:.85rem;padding:2rem 0}
+/* bottom tab */
+.tbar{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 10px);left:14px;right:14px;height:60px;background:rgba(255,255,255,.72);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.6);border-radius:28px;box-shadow:0 8px 24px rgba(33,32,24,.12);display:flex;padding:6px;gap:2px;z-index:50}
+.tbtn{flex:1;border:none;background:none;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-family:inherit;color:var(--text3);font-size:10px}
+.tbtn .ic{font-size:19px;line-height:1}
+.tbtn.on{background:var(--accent-bg);color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN TOP ===== -->
+<div class="screen login on" id="s-top">
+  <div class="login-top">
+    <div class="brand">
+      <div class="brand-mark">🗓️</div>
+      <div class="brand-name">ShiftLink</div>
+      <div class="brand-tag">予約・シフト・売上を、ひとつに。</div>
+    </div>
+    <div class="logins">
+      <button class="lbtn lbtn-primary" onclick="showScreen('s-owner-login')">店舗ログイン</button>
+      <button class="lbtn lbtn-ghost" onclick="showCastLogin()">セラピストログイン</button>
+    </div>
+  </div>
+  <div class="login-foot">
+    <div><a href="/legal.html" target="_blank">利用規約・プライバシーポリシー</a>に同意の上ご利用ください</div>
+    <div><a href="/tokutei.html" target="_blank">特定商取引法に基づく表示</a></div>
+    <div class="inter" style="font-size:11px">© 2026 ShiftLink</div>
+  </div>
+</div>
+
+<!-- ===== OWNER LOGIN ===== -->
+<div class="screen login" id="s-owner-login">
+  <div class="login-top" style="justify-content:flex-start;padding-top:40px;gap:24px">
+    <button class="lback" onclick="showScreen('s-top')">‹</button>
+    <div class="brand"><div class="brand-name" style="font-size:24px">店舗ログイン</div></div>
+    <div class="lform">
+      <div><div class="field-lbl">店舗PIN（4〜8桁）</div>
+        <input class="linput inter" type="password" id="owner-pin" inputmode="numeric" maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')doOwnerLogin()"></div>
+      <button class="lbtn lbtn-primary" id="owner-btn" onclick="doOwnerLogin()">ログイン</button>
+      <div class="lerr" id="owner-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CAST LOGIN ===== -->
+<div class="screen login" id="s-cast-login">
+  <div class="login-top" style="justify-content:flex-start;padding-top:40px;gap:24px">
+    <button class="lback" onclick="showScreen('s-top')">‹</button>
+    <div class="brand"><div class="brand-name" style="font-size:24px">セラピストログイン</div></div>
+    <div class="lform">
+      <div><div class="field-lbl">PIN（4〜8桁）</div>
+        <input class="linput inter" type="password" id="cast-pin" inputmode="numeric" maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')doCastLogin()"></div>
+      <button class="lbtn lbtn-primary" id="cast-btn" onclick="doCastLogin()">ログイン</button>
+      <div class="lerr" id="cast-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="screen" id="s-app">
+  <div class="app-hdr">
+    <div class="role-pill" id="role-pill">🏪 店舗</div>
+    <div class="hdr-right">
+      <button class="icon-btn">🔔<span class="dot"></span></button>
+      <button class="logout-btn" onclick="doLogout()">⎋ ログアウト</button>
+    </div>
+  </div>
+  <div class="app-body">
+    <!-- 本日 -->
+    <div class="panel on" id="p-today">
+      <div class="ph">
+        <div class="ph-title">本日</div>
+        <div class="datenav">
+          <button onclick="dayMove(-1)">‹</button>
+          <div class="d" id="today-lbl">-</div>
+          <button onclick="dayMove(1)">›</button>
+        </div>
+      </div>
+      <div class="seclbl"><div class="l">ルーム</div><div class="r" id="rooms-stat"></div></div>
+      <div class="rooms" id="rooms"></div>
+      <div class="seclbl"><div class="l">本日の予約</div><div class="r">セラピスト別</div></div>
+      <div id="today-area"><div class="spin">読み込み中...</div></div>
+    </div>
+    <!-- placeholder tabs -->
+    <div class="panel" id="p-stub"><div class="empty" id="stub-msg">準備中</div></div>
+  </div>
+  <div class="tbar" id="tbar"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://qgcgkrcrfzonmmygcdju.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
+const STORE_ID='4cb3383a-31e5-408a-9f75-60a25943ac4d';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let ME=null, ROLE='owner', DAYOFF=0;
+const ROOM_PALETTE=[
+  {dot:'#ff9124',tx:'#c4661a',card:'#fff6ee',bd:'#ffe0c2'},
+  {dot:'#9b72cf',tx:'#6f4aa6',card:'#f6f1fb',bd:'#e2d4f2'},
+  {dot:'#4ecdc4',tx:'#2c8f88',card:'#eefaf8',bd:'#c9ede9'},
+  {dot:'#ff6b9d',tx:'#c44a76',card:'#fff0f5',bd:'#ffd3e2'},
+  {dot:'#1d4ed8',tx:'#1d4ed8',card:'#eef3fc',bd:'#cfe0f7'},
+  {dot:'#f2a93b',tx:'#a8741b',card:'#fdf6e9',bd:'#f3e2bf'}
+];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on')}
+function showCastLogin(){showScreen('s-cast-login')}
+function todayStr(off){const d=new Date();d.setDate(d.getDate()+(off||0));return d.toISOString().slice(0,10)}
+function fmtDate(off){const d=new Date();d.setDate(d.getDate()+(off||0));const w=['日','月','火','水','木','金','土'][d.getDay()];return (d.getMonth()+1)+'月'+d.getDate()+'日('+w+')'+(off===0?' 今日':'')}
+
+async function doOwnerLogin(){
+  const pin=document.getElementById('owner-pin').value.trim();
+  const err=document.getElementById('owner-err');err.textContent='';
+  if(!pin){err.textContent='PINを入力してください';return}
+  const btn=document.getElementById('owner-btn');btn.textContent='確認中...';btn.disabled=true;
+  try{ await pinLogin('owner',null,pin); ROLE='owner'; enterApp(); }
+  catch(e){ err.textContent=e.message||'ログインに失敗しました'; }
+  btn.textContent='ログイン';btn.disabled=false;
+}
+async function doCastLogin(){
+  const pin=document.getElementById('cast-pin').value.trim();
+  const err=document.getElementById('cast-err');err.textContent='';
+  if(!pin){err.textContent='PINを入力してください';return}
+  const btn=document.getElementById('cast-btn');btn.textContent='確認中...';btn.disabled=true;
+  try{ await pinLogin('cast',null,pin); ROLE='cast'; enterApp(); }
+  catch(e){ err.textContent=e.message||'ログインに失敗しました'; }
+  btn.textContent='ログイン';btn.disabled=false;
+}
+async function pinLogin(role,castId,pin){
+  const res=await fetch(SUPABASE_URL+'/functions/v1/pin-login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body:JSON.stringify({store_id:STORE_ID,role,cast_id:castId||null,pin})
+  });
+  const j=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(j.error||'ログインに失敗しました');
+  await sb.auth.setSession({access_token:j.access_token,refresh_token:j.refresh_token});
+  ME=j; return j;
+}
+function doLogout(){ sb.auth.signOut().catch(()=>{}); ME=null; showScreen('s-top'); }
+
+function enterApp(){
+  document.getElementById('role-pill').textContent = ROLE==='owner'?'🏪 店舗':'👤 セラピスト';
+  buildTabbar();
+  showScreen('s-app');
+  DAYOFF=0;
+  loadToday();
+}
+function buildTabbar(){
+  const tabs = ROLE==='owner'
+    ? [['本日','🏠','today'],['シフト','📅','stub'],['委託金','💰','stub'],['売上','📊','stub'],['管理','⚙️','stub']]
+    : [['本日','🏠','today'],['シフト','📅','stub'],['委託金','💰','stub'],['メモ','📝','stub']];
+  const bar=document.getElementById('tbar');
+  bar.innerHTML=tabs.map((t,i)=>`<button class="tbtn${i===0?' on':''}" onclick="switchTab('${t[2]}','${esc(t[0])}',this)"><span class="ic">${t[1]}</span>${t[0]}</button>`).join('');
+}
+function switchTab(panel,label,el){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  if(panel==='today'){document.getElementById('p-today').classList.add('on');}
+  else{document.getElementById('stub-msg').textContent=label+'は準備中です';document.getElementById('p-stub').classList.add('on');}
+}
+function dayMove(d){DAYOFF+=d;loadToday();}
+
+async function loadToday(){
+  document.getElementById('today-lbl').textContent=fmtDate(DAYOFF);
+  const area=document.getElementById('today-area');
+  area.innerHTML='<div class="spin">読み込み中...</div>';
+  document.getElementById('rooms').innerHTML='';
+  const td=todayStr(DAYOFF);
+  const [shiftsRes,castRes,roomRes]=await Promise.all([
+    sb.from('shifts').select('*').eq('store_id',STORE_ID).eq('date',td).eq('status','approved').order('start_time'),
+    sb.from('casts').select('id,name').eq('store_id',STORE_ID),
+    sb.from('rooms').select('*').eq('store_id',STORE_ID).order('sort_order')
+  ]);
+  const castMap={};(castRes.data||[]).forEach(c=>castMap[c.id]=c.name);
+  const shifts=(shiftsRes.data||[]).map(s=>({...s,castName:castMap[s.cast_id]||'?'}));
+  let rvs=[];
+  if(shifts.length){
+    const ids=shifts.map(s=>s.id);
+    const r=await sb.from('reservations').select('*').in('shift_id',ids).order('checkin_time');
+    rvs=r.data||[];
+  }
+  const rvBy={};rvs.forEach(r=>{(rvBy[r.shift_id]=rvBy[r.shift_id]||[]).push(r)});
+  renderRooms(roomRes.data||[],shifts);
+  renderToday(shifts,rvBy,td);
+}
+function roomColor(i){return ROOM_PALETTE[i%ROOM_PALETTE.length]}
+function renderRooms(rooms,shifts){
+  const byRoom={};shifts.forEach(s=>{if(s.room){(byRoom[s.room]=byRoom[s.room]||[]).push(s)}});
+  const list=rooms.length?rooms.map(r=>r.name):Object.keys(byRoom);
+  let used=0;
+  const html=list.map((rn,i)=>{
+    const ss=byRoom[rn];const c=roomColor(i);
+    if(ss&&ss.length){used++;
+      const names=ss.map(s=>`<div class="cast">${esc(s.castName)}<span class="tm">${(s.start_time||'').slice(0,5)}〜${(s.end_time||'').slice(0,5)}</span></div>`).join('');
+      return `<div class="room" style="background:${c.card};border-color:${c.bd}">
+        <div class="top"><div class="nm" style="color:${c.tx}">${esc(rn)}</div><div class="dot" style="background:${c.dot}"></div></div>
+        <div class="st" style="color:${c.tx}">使用中</div>${names}
+        <div class="hint" style="color:${c.tx}">タップでガント表示</div></div>`;
+    }
+    return `<div class="room">
+      <div class="top"><div class="nm">${esc(rn)}</div><div class="dot" style="background:var(--green)"></div></div>
+      <div class="st" style="color:var(--green)">空き</div>
+      <div class="hint">タップでガント表示</div></div>`;
+  }).join('');
+  document.getElementById('rooms').innerHTML=html||'<div class="empty" style="grid-column:1/3">ルーム未設定</div>';
+  document.getElementById('rooms-stat').textContent=list.length?`${used} / ${list.length} 使用中`:'';
+}
+function shimeiStyle(t){
+  if(t&&t.includes('本指'))return'background:var(--accent-bg);color:var(--accent)';
+  if(t&&t.includes('ネット'))return'background:var(--blue-bg);color:var(--blue)';
+  return'background:var(--surface);color:var(--text2)';
+}
+function renderToday(shifts,rvBy,td){
+  const area=document.getElementById('today-area');
+  if(!shifts.length){area.innerHTML='<div class="empty">本日の承認済みシフトはありません</div>';return}
+  area.innerHTML=shifts.map(s=>{
+    const rvs=rvBy[s.id]||[];
+    const rows=rvs.map((r,i)=>{
+      const ci=(r.checkin_time||'').slice(0,5),co=(r.checkout_time||'').slice(0,5);
+      const no=r.customer_no?`No.${esc(String(r.customer_no))} `:'';
+      const opts=r.options?'・'+esc(r.options.split(',').filter(Boolean).join('・')):'';
+      const st=r.checkout_time?'予約':'接客中';
+      const sc=r.checkout_time?'background:var(--surface);color:var(--text2)':'background:var(--accent-bg);color:var(--accent)';
+      return `<div class="rv">
+        <div class="bar" style="background:var(--accent)"></div>
+        <div class="t inter"><div class="s">${ci||'—'}</div><div class="e">${co||''}</div></div>
+        <div class="d"><div class="cu">${no}${esc(r.customer_name||'')}</div><div class="co">${esc(r.course||'')}${opts}</div></div>
+        <div class="stp" style="${sc}">${st}</div>
+      </div>`;
+    }).join('');
+    return `<div class="tcard">
+      <div class="tcard-hd">
+        <div><div class="nm">${esc(s.castName)}</div><div class="sh">出勤 ${(s.start_time||'').slice(0,5)} – ${(s.end_time||'').slice(0,5)}</div></div>
+        <div class="cnt-pill">${rvs.length}件</div>
+      </div>
+      ${rows}
+      <div class="acts">
+        <button class="act" style="background:var(--surface);color:var(--text2)">🚪 ルーム指定</button>
+        <button class="act" style="background:var(--accent-bg);color:var(--accent)">＋ 予約登録</button>
+        <button class="act" style="background:var(--surface);color:var(--text2)">予約確認</button>
+        <button class="act" style="background:var(--surface);color:var(--text2)">委託金入力</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

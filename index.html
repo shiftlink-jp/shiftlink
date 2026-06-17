@@ -141,7 +141,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .btn-xs{padding:.3rem .55rem;font-size:.68rem}
 
 /* SECTION */
-.sec{font-size:.7rem;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:.75rem 0 .5rem}
+.sec{font-size:.84rem;font-weight:700;color:var(--text);letter-spacing:0;margin:1.1rem 0 .6rem}
 
 /* LIST */
 .item{background:var(--surface);border-radius:14px;padding:.85rem 1rem;margin-bottom:.55rem;box-shadow:var(--sh);border:1px solid var(--border);display:flex;align-items:flex-start;gap:.65rem}
@@ -188,9 +188,9 @@ tr:last-child td{border-bottom:none}
 
 /* ROOM */
 .room-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.75rem}
-.room-card{background:var(--surface);border-radius:var(--r);padding:.85rem;border:1.5px solid var(--border);min-height:80px;box-shadow:var(--sh)}
+.room-card{background:var(--surface);border-radius:14px;padding:.85rem;border:1.5px solid var(--border);min-height:104px;box-shadow:var(--sh)}
 .room-card.on{background:var(--gbg);border-color:var(--gbd)}
-.room-lbl{font-size:.62rem;font-weight:700;color:var(--text3);margin-bottom:.3rem}
+.room-lbl{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
 .room-cast{font-size:.95rem;font-weight:700;color:var(--gtx)}
 .room-time{font-size:.65rem;color:var(--text3);margin-top:.1rem}
 .room-empty{font-size:.8rem;color:var(--text3)}
@@ -789,13 +789,13 @@ if("serviceWorker" in navigator && !_isSaaS){
 
     <!-- 店舗：本日状況 -->
     <div class="panel" id="p-today">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-        <div style="font-size:1rem;font-weight:700">出勤状況</div>
-        <div style="display:flex;align-items:center;gap:.4rem">
-          <button class="cal-nav-btn" onclick="todayNavMove(-1)" style="font-size:.85rem;padding:.2rem .5rem">‹</button>
-          <div style="font-size:.78rem;color:var(--text3);min-width:6em;text-align:center" id="today-lbl">-</div>
-          <button class="cal-nav-btn" onclick="todayNavMove(1)" style="font-size:.85rem;padding:.2rem .5rem">›</button>
-          <button class="cal-nav-btn" id="today-jump-btn" onclick="todayNavReset()" style="font-size:.7rem;padding:.2rem .5rem;display:none">今日</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+        <div style="font-size:1.4rem;font-weight:700;letter-spacing:.01em">本日</div>
+        <div style="display:flex;align-items:center;gap:.35rem;background:var(--surface2);border-radius:12px;padding:.3rem .5rem">
+          <button class="cal-nav-btn" onclick="todayNavMove(-1)" style="font-size:.9rem;padding:.1rem .35rem;background:none;border:none">‹</button>
+          <div style="font-size:.82rem;font-weight:700;color:var(--text);min-width:6em;text-align:center" id="today-lbl">-</div>
+          <button class="cal-nav-btn" onclick="todayNavMove(1)" style="font-size:.9rem;padding:.1rem .35rem;background:none;border:none">›</button>
+          <button class="cal-nav-btn" id="today-jump-btn" onclick="todayNavReset()" style="font-size:.68rem;padding:.15rem .5rem;display:none">今日</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem;background:#fff;border-radius:10px;padding:.6rem .8rem;box-shadow:0 1px 6px rgba(0,0,0,.06)">
@@ -6063,16 +6063,24 @@ async function loadToday(){
     const ss=rm[r]
     const rc=getRoomColor(r)
     if(ss&&ss.length){
-      const names=ss.map(s=>`<div style="font-size:${ss.length>1?'.8rem':'.9rem'};font-weight:700;color:${rc.tx}">${s.casts?.name||'?'}<span style="font-size:.6rem;font-weight:400;margin-left:.3rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
+      const names=ss.map(s=>`<div style="font-size:${ss.length>1?'.82rem':'.92rem'};font-weight:700;color:var(--text)">${escapeHtml(s.casts?.name||'?')}<span style="font-size:.62rem;font-weight:400;color:var(--text3);margin-left:.35rem">${s.start_time?.slice(0,5)||''}〜${s.end_time?.slice(0,5)||''}</span></div>`).join('')
       rh+=`<div class="room-card" style="background:${rc.card};border-color:${rc.bd};cursor:pointer" onclick="openGanttModal('${jsEsc(r)}')">
-        <div class="room-lbl" style="color:${rc.tx}">${escapeHtml(r)}</div>${names}
-        <div style="font-size:.55rem;color:${rc.tx};opacity:.6;margin-top:.3rem">タップでガント表示</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="room-lbl" style="color:${rc.tx};margin:0">${escapeHtml(r)}</div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${rc.tx}"></div>
+        </div>
+        <div style="font-size:.7rem;font-weight:700;color:${rc.tx};margin:.2rem 0 .35rem">使用中</div>
+        ${names}
+        <div style="font-size:.58rem;color:${rc.tx};opacity:.55;margin-top:.4rem">タップでガント表示</div>
       </div>`
     } else {
       rh+=`<div class="room-card" style="cursor:pointer" onclick="openGanttModal('${jsEsc(r)}')">
-        <div class="room-lbl">${escapeHtml(r)}</div>
-        <div class="room-empty">空き</div>
-        <div style="font-size:.55rem;color:var(--text3);opacity:.6;margin-top:.3rem">タップでガント表示</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="room-lbl" style="margin:0">${escapeHtml(r)}</div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div>
+        </div>
+        <div style="font-size:.7rem;font-weight:700;color:var(--green);margin:.2rem 0 .35rem">空き</div>
+        <div style="font-size:.58rem;color:var(--text3);opacity:.55;margin-top:.4rem">タップでガント表示</div>
       </div>`
     }
   })
