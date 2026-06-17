@@ -6105,10 +6105,10 @@ async function loadToday(){
     // 出勤ステータスバッジ（打刻の有無から判定: 退勤済み/出勤中/出勤予定）
     const attSt=s.clock_out_at?'done':(s.clock_in_at?'working':'scheduled')
     const attBadge=attSt==='working'
-      ? `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:#e6f4ea;color:#1e7e34;border:1.5px solid #34a853">● 出勤中</span>`
+      ? `<span style="font-size:.62rem;padding:2px 9px;border-radius:99px;font-weight:700;background:#e9f6ef;color:#1e9e4a;border:1px solid #bfe6d2">● 出勤中</span>`
       : attSt==='done'
-      ? `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:#eef1f6;color:#5a6b85;border:1.5px solid #b9c4d6">退勤済み</span>`
-      : `<span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:600;background:#f0ede8;color:#9b8f7a;border:1.5px solid #ddd6c8">出勤予定</span>`
+      ? `<span style="font-size:.62rem;padding:2px 9px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">退勤済み</span>`
+      : `<span style="font-size:.62rem;padding:2px 9px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">出勤予定</span>`
     // インターバル計算（intervalHtmlは後段のintervalDisplayに統合）
     let intervalHtml=''
     const intervalMin=intervalBycast[s.cast_id]||0
@@ -6124,10 +6124,17 @@ async function loadToday(){
         const timeStr=checkin?(checkout?checkin+'〜'+checkout:checkin+'〜'):''
         const noCustNo=!r.customer_no
         const noCustBadge=noCustNo?`<span style="font-size:.6rem;color:var(--rtx);background:var(--rbg);border:1px solid var(--rbd);border-radius:4px;padding:1px 5px;margin-left:.3rem">番号未登録</span>`:''
-        rvListHtml+=`<div style="font-size:.78rem;padding:.2rem 0;border-bottom:1px dashed var(--border)">
-          <span style="font-weight:600;color:var(--text)">${timeStr}</span>
-          <span style="margin-left:.4rem;font-weight:600">${escapeHtml(r.customer_name||'')}${noCustBadge}</span>
-          <span style="font-size:.7rem;color:var(--text3);margin-left:.4rem">${escapeHtml(r.course||'')}${opts?' / '+opts:''}${discs?' / 割引:'+discs:''}</span>
+        const custNoPrefix=r.customer_no?`No.${escapeHtml(String(r.customer_no))} `:''
+        rvListHtml+=`<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border)">
+          <div style="width:3px;align-self:stretch;min-height:32px;border-radius:2px;background:var(--accent)"></div>
+          <div style="min-width:3.2em">
+            <div style="font-size:.78rem;font-weight:700;color:var(--text);font-family:'Inter','Noto Sans JP',sans-serif">${checkin||'—'}</div>
+            <div style="font-size:.66rem;color:var(--text3)">${checkout||''}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.8rem;font-weight:600;color:var(--text)">${custNoPrefix}${escapeHtml(r.customer_name||'')}${noCustBadge}</div>
+            <div style="font-size:.7rem;color:var(--text3)">${escapeHtml(r.course||'')}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
+          </div>
         </div>`
       })
       rvListHtml+=`</div>`
