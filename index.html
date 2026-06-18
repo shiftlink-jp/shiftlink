@@ -459,42 +459,36 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #work-overlay .ws-card-no{font-size:.8125rem;font-weight:700;color:#211C16}
 #work-overlay .ws-card-sub{font-size:.6875rem;color:#A89B88}
 #work-overlay .ws-card-del{font-size:.7rem;font-weight:700;color:#A89B88;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
-/* 列ジオメトリ共通化（col-hdr/row/subtotal で完全に揃える）: item(fill) + pay(50) + 売上/委託金/店舗利益(各52) + gap6 */
+/* === Pencil: Sheet 委託金入力 の明細表 ===
+   全行を同一の grid-template-columns で組み、3列(売上/委託金/店舗利益)を確実に縦揃え
+   列: 項目(可変) / 支払(50px) / 売上(52) / 委託金(52) / 店舗利益(52)  gap 6px */
 #work-overlay .ws-col-hdr,
 #work-overlay .ws-row,
-#work-overlay .ws-subtotal{display:flex;align-items:center;gap:6px}
-#work-overlay .ws-col-hdr .ws-c-item,
-#work-overlay .ws-row .ws-c-item,
-#work-overlay .ws-subtotal .ws-c-item{flex:1;min-width:0}
-#work-overlay .ws-col-hdr .ws-c-pay,
-#work-overlay .ws-row .ws-c-pay,
-#work-overlay .ws-subtotal .ws-c-pay{width:50px;flex-shrink:0}
-#work-overlay .ws-col-hdr .ws-c-sales,
-#work-overlay .ws-col-hdr .ws-c-back,
-#work-overlay .ws-col-hdr .ws-c-shop,
-#work-overlay .ws-row .ws-c-sales,
-#work-overlay .ws-row .ws-c-back,
-#work-overlay .ws-row .ws-c-shop,
-#work-overlay .ws-subtotal .ws-c-sales,
-#work-overlay .ws-subtotal .ws-c-back,
-#work-overlay .ws-subtotal .ws-c-shop{width:52px;flex-shrink:0;text-align:right;font-family:'Inter','Noto Sans JP',sans-serif}
-#work-overlay .ws-col-hdr{padding:.2rem 0;font-size:.625rem;font-weight:700;color:#A89B88}
-#work-overlay .ws-col-hdr .ws-c-pay{text-align:center}
+#work-overlay .ws-subtotal{display:grid;grid-template-columns:minmax(0,1fr) 50px 52px 52px 52px;gap:6px;align-items:center}
+#work-overlay .ws-c-sales,
+#work-overlay .ws-c-back,
+#work-overlay .ws-c-shop{text-align:right;font-family:'Inter','Noto Sans JP',sans-serif;white-space:nowrap}
+/* 列ヘッダ */
+#work-overlay .ws-col-hdr{padding:0 0 2px;font-size:10px;font-weight:700}
+#work-overlay .ws-col-hdr .ws-c-item{color:#A89B88}
+#work-overlay .ws-col-hdr .ws-c-sales{color:#A89B88}
 #work-overlay .ws-col-hdr .ws-c-back{color:#DC2626}
 #work-overlay .ws-col-hdr .ws-c-shop{color:#1D4ED8}
-#work-overlay .ws-row{padding:.4375rem 0;border-bottom:1px solid #EDE9E1}
-#work-overlay .ws-row:last-child{border-bottom:none}
-#work-overlay .ws-row .ws-c-item{font-size:.75rem;color:#211C16}
-#work-overlay .ws-row .ws-c-pay{display:flex;justify-content:center}
-#work-overlay .ws-pay-badge{font-size:.625rem;font-weight:700;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:.15rem .45rem;color:#7A6E5E;white-space:nowrap}
-#work-overlay .ws-row .ws-c-sales{font-size:.6875rem;font-weight:700;color:#211C16}
-#work-overlay .ws-row .ws-c-back{font-size:.6875rem;font-weight:700;color:#DC2626}
-#work-overlay .ws-row .ws-c-shop{font-size:.6875rem;font-weight:700;color:#1D4ED8}
-#work-overlay .ws-subtotal{background:#F1EDE6;border-radius:8px;padding:.5rem 0;margin-top:.3rem}
-#work-overlay .ws-subtotal .ws-c-item{font-size:.75rem;font-weight:700;color:#211C16}
-#work-overlay .ws-subtotal .ws-c-sales{font-size:.6875rem;font-weight:700;color:#211C16}
-#work-overlay .ws-subtotal .ws-c-back{font-size:.6875rem;font-weight:700;color:#DC2626}
-#work-overlay .ws-subtotal .ws-c-shop{font-size:.6875rem;font-weight:700;color:#1D4ED8}
+/* 明細行 */
+#work-overlay .ws-row{padding:7px 0;border-bottom:1px solid #EDE9E1}
+#work-overlay .ws-row .ws-c-item{font-size:12px;color:#211C16;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#work-overlay .ws-c-pay{display:flex;justify-content:center;align-items:center}
+#work-overlay .ws-pay-badge{display:inline-flex;align-items:center;gap:3px;height:22px;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:0 6px;color:#7A6E5E;font-size:9px;font-weight:600;white-space:nowrap}
+#work-overlay .ws-pay-badge svg{width:10px;height:10px;flex-shrink:0}
+#work-overlay .ws-row .ws-c-sales{font-size:11px;font-weight:600;color:#211C16}
+#work-overlay .ws-row .ws-c-back{font-size:11px;font-weight:600;color:#DC2626}
+#work-overlay .ws-row .ws-c-shop{font-size:11px;font-weight:600;color:#1D4ED8}
+/* 小計 */
+#work-overlay .ws-subtotal{background:#F1EDE6;border-radius:8px;padding:8px 0;margin-top:6px}
+#work-overlay .ws-subtotal .ws-c-item{font-size:12px;font-weight:700;color:#211C16}
+#work-overlay .ws-subtotal .ws-c-sales{font-size:11px;font-weight:700;color:#211C16}
+#work-overlay .ws-subtotal .ws-c-back{font-size:11px;font-weight:700;color:#DC2626}
+#work-overlay .ws-subtotal .ws-c-shop{font-size:11px;font-weight:700;color:#1D4ED8}
 #work-overlay .ws-subtotal-tag{font-size:.5625rem;background:#FF9124;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px;font-weight:700}
 #work-overlay .ws-addbtn{width:100%;background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;height:46px;font-size:.875rem;font-weight:700;color:#7A6E5E;cursor:pointer;font-family:inherit;margin-bottom:.75rem}
 #work-overlay .ws-fg{margin-bottom:.75rem}
@@ -8048,6 +8042,13 @@ function workCardBreakdown(w){
   })
   return {billed,base,fee,cash:(w.sales||0)-billed}
 }
+// 支払い方法ピル（Pencil: white pill + lucideアイコン + 文字）
+function wsPayBadge(type){
+  if(type==='card'){
+    return `<span class="ws-pay-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>カード</span>`
+  }
+  return `<span class="ws-pay-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>現金</span>`
+}
 function calcTotal2(){
   let totalBack=0,totalSales=0,discFromBack=0,discFromShop=0,totalDisc=0,totalCardBase=0,totalCardFee=0,totalCardSurcharge=0
   const blocks=document.querySelectorAll('.session-block')
@@ -8140,22 +8141,22 @@ function calcTotal2(){
     const mkRow=(label,cat,price,back,isCard=false,rowKey=null)=>{
       const billedPrice=isCard?Math.round(price*1.1):price
       const shop=billedPrice-back
-      const payLabel=isCard?'💳 カード':'💴 現金'
+      const payBadge=isCard?wsPayBadge('card'):wsPayBadge('cash')
       const mkCell=(val,type,cls)=>{
         if(!rowKey) return `<div class="${cls}">${fmt(val)}</div>`
         const k=rowKey+':'+type
         return `<div class="${cls} editable-amt" data-key="${escapeHtml(k)}" data-sid="${sid}" onclick="startEditAmt(this)" title="タップして修正">${fmt(val)}</div>`
       }
       return `<div class="ws-row">
-        <div class="ws-c-item">${escapeHtml(label)}<div style="font-size:.625rem;color:#A89B88">${cat}</div></div>
-        <div class="ws-c-pay"><span class="ws-pay-badge">${payLabel}</span></div>
+        <div class="ws-c-item">${escapeHtml(label)}</div>
+        <div class="ws-c-pay">${payBadge}</div>
         ${mkCell(billedPrice,'price','ws-c-sales')}
         ${mkCell(back,'back','ws-c-back')}
         <div class="ws-c-shop">${shop>0?fmt(shop):'—'}</div>
       </div>`
     }
     let brows=`<div class="ws-col-hdr">
-      <span class="ws-c-item">項目</span>
+      <span class="ws-c-item"></span>
       <span class="ws-c-pay"></span>
       <span class="ws-c-sales">売上</span>
       <span class="ws-c-back">委託金</span>
@@ -8179,7 +8180,7 @@ function calcTotal2(){
       const isShop=cb.dataset.dtype==='shop'
       const typeLabel=isShop?'店落ち':'委託金'
       brows+=`<div class="ws-row">
-        <div class="ws-c-item" style="color:#DC2626">${escapeHtml(cb.dataset.name)}<div style="font-size:.625rem;color:#A89B88">割引（${typeLabel}）</div></div>
+        <div class="ws-c-item" style="color:#DC2626">${escapeHtml(cb.dataset.name)}<span style="font-size:10px;color:#A89B88;margin-left:4px">割引・${typeLabel}</span></div>
         <div class="ws-c-pay"></div>
         <div class="ws-c-sales" style="color:#DC2626">-${fmt(amt)}</div>
         <div class="ws-c-back" style="color:#DC2626">${isShop?'—':'-'+fmt(amt)}</div>
@@ -8188,11 +8189,11 @@ function calcTotal2(){
     })
     if(blockCardFee>0){
       brows+=`<div class="ws-row">
-        <div class="ws-c-item" style="color:#1D4ED8">決済手数料(6%+80円)</div>
+        <div class="ws-c-item">決済手数料</div>
         <div class="ws-c-pay"></div>
-        <div class="ws-c-sales" style="color:#1D4ED8">-${fmt(blockCardFee)}</div>
+        <div class="ws-c-sales">-${fmt(blockCardFee)}</div>
         <div class="ws-c-back">—</div>
-        <div class="ws-c-shop" style="color:#1D4ED8">-${fmt(blockCardFee)}</div>
+        <div class="ws-c-shop">-${fmt(blockCardFee)}</div>
       </div>`
     }
     const sessionShop=blockSales-blockBack-blockCardFee
