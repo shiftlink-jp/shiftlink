@@ -459,26 +459,42 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #work-overlay .ws-card-no{font-size:.8125rem;font-weight:700;color:#211C16}
 #work-overlay .ws-card-sub{font-size:.6875rem;color:#A89B88}
 #work-overlay .ws-card-del{font-size:.7rem;font-weight:700;color:#A89B88;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
-#work-overlay .ws-col-hdr{display:flex;align-items:center;padding:.2rem 0;font-size:.625rem;font-weight:700;color:#A89B88}
-#work-overlay .ws-col-hdr .ws-c-item{flex:1;min-width:0}
-#work-overlay .ws-col-hdr .ws-c-pay{width:50px;flex-shrink:0;text-align:center}
-#work-overlay .ws-col-hdr .ws-c-sales{width:52px;flex-shrink:0;text-align:right}
-#work-overlay .ws-col-hdr .ws-c-back{width:52px;flex-shrink:0;text-align:right;color:#DC2626}
-#work-overlay .ws-col-hdr .ws-c-shop{width:52px;flex-shrink:0;text-align:right;color:#1D4ED8}
-#work-overlay .ws-row{display:flex;align-items:center;padding:.4375rem 0;border-bottom:1px solid #EDE9E1}
-#work-overlay .ws-row:last-child{border-bottom:none}
-#work-overlay .ws-row .ws-c-item{flex:1;min-width:0;font-size:.75rem;color:#211C16}
-#work-overlay .ws-row .ws-c-pay{width:50px;flex-shrink:0;display:flex;justify-content:center}
-#work-overlay .ws-pay-badge{font-size:.625rem;font-weight:700;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:.15rem .45rem;color:#7A6E5E;white-space:nowrap}
-#work-overlay .ws-row .ws-c-sales{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#211C16;font-family:'Inter','Noto Sans JP',sans-serif}
-#work-overlay .ws-row .ws-c-back{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#DC2626;font-family:'Inter','Noto Sans JP',sans-serif}
-#work-overlay .ws-row .ws-c-shop{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#1D4ED8;font-family:'Inter','Noto Sans JP',sans-serif}
-#work-overlay .ws-subtotal{display:flex;align-items:center;background:#F1EDE6;border-radius:8px;padding:.5rem 0;margin-top:.3rem}
-#work-overlay .ws-subtotal .ws-c-item{flex:1;min-width:0;font-size:.75rem;font-weight:700;color:#211C16;padding-left:.6rem}
+/* 列ジオメトリ共通化（col-hdr/row/subtotal で完全に揃える）: item(fill) + pay(50) + 売上/委託金/店舗利益(各52) + gap6 */
+#work-overlay .ws-col-hdr,
+#work-overlay .ws-row,
+#work-overlay .ws-subtotal{display:flex;align-items:center;gap:6px}
+#work-overlay .ws-col-hdr .ws-c-item,
+#work-overlay .ws-row .ws-c-item,
+#work-overlay .ws-subtotal .ws-c-item{flex:1;min-width:0}
+#work-overlay .ws-col-hdr .ws-c-pay,
+#work-overlay .ws-row .ws-c-pay,
 #work-overlay .ws-subtotal .ws-c-pay{width:50px;flex-shrink:0}
-#work-overlay .ws-subtotal .ws-c-sales{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#211C16;font-family:'Inter','Noto Sans JP',sans-serif;padding-right:.6rem}
-#work-overlay .ws-subtotal .ws-c-back{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#DC2626;font-family:'Inter','Noto Sans JP',sans-serif;padding-right:.6rem}
-#work-overlay .ws-subtotal .ws-c-shop{width:52px;flex-shrink:0;text-align:right;font-size:.6875rem;font-weight:700;color:#1D4ED8;font-family:'Inter','Noto Sans JP',sans-serif;padding-right:.6rem}
+#work-overlay .ws-col-hdr .ws-c-sales,
+#work-overlay .ws-col-hdr .ws-c-back,
+#work-overlay .ws-col-hdr .ws-c-shop,
+#work-overlay .ws-row .ws-c-sales,
+#work-overlay .ws-row .ws-c-back,
+#work-overlay .ws-row .ws-c-shop,
+#work-overlay .ws-subtotal .ws-c-sales,
+#work-overlay .ws-subtotal .ws-c-back,
+#work-overlay .ws-subtotal .ws-c-shop{width:52px;flex-shrink:0;text-align:right;font-family:'Inter','Noto Sans JP',sans-serif}
+#work-overlay .ws-col-hdr{padding:.2rem 0;font-size:.625rem;font-weight:700;color:#A89B88}
+#work-overlay .ws-col-hdr .ws-c-pay{text-align:center}
+#work-overlay .ws-col-hdr .ws-c-back{color:#DC2626}
+#work-overlay .ws-col-hdr .ws-c-shop{color:#1D4ED8}
+#work-overlay .ws-row{padding:.4375rem 0;border-bottom:1px solid #EDE9E1}
+#work-overlay .ws-row:last-child{border-bottom:none}
+#work-overlay .ws-row .ws-c-item{font-size:.75rem;color:#211C16}
+#work-overlay .ws-row .ws-c-pay{display:flex;justify-content:center}
+#work-overlay .ws-pay-badge{font-size:.625rem;font-weight:700;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:.15rem .45rem;color:#7A6E5E;white-space:nowrap}
+#work-overlay .ws-row .ws-c-sales{font-size:.6875rem;font-weight:700;color:#211C16}
+#work-overlay .ws-row .ws-c-back{font-size:.6875rem;font-weight:700;color:#DC2626}
+#work-overlay .ws-row .ws-c-shop{font-size:.6875rem;font-weight:700;color:#1D4ED8}
+#work-overlay .ws-subtotal{background:#F1EDE6;border-radius:8px;padding:.5rem 0;margin-top:.3rem}
+#work-overlay .ws-subtotal .ws-c-item{font-size:.75rem;font-weight:700;color:#211C16}
+#work-overlay .ws-subtotal .ws-c-sales{font-size:.6875rem;font-weight:700;color:#211C16}
+#work-overlay .ws-subtotal .ws-c-back{font-size:.6875rem;font-weight:700;color:#DC2626}
+#work-overlay .ws-subtotal .ws-c-shop{font-size:.6875rem;font-weight:700;color:#1D4ED8}
 #work-overlay .ws-subtotal-tag{font-size:.5625rem;background:#FF9124;color:#fff;border-radius:3px;padding:1px 4px;margin-left:4px;font-weight:700}
 #work-overlay .ws-addbtn{width:100%;background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;height:46px;font-size:.875rem;font-weight:700;color:#7A6E5E;cursor:pointer;font-family:inherit;margin-bottom:.75rem}
 #work-overlay .ws-fg{margin-bottom:.75rem}
@@ -7694,7 +7710,9 @@ async function openWorkSheet(shiftId,castName,date,castId){
           pay_option:payOption,
           opt_pays:rvOptPays,
           ext_count:rvExtCount,
-          ext_pays:extPays
+          ext_pays:extPays,
+          customer_no:rv.customer_no,
+          customer_name:(rv.customer_name||'').replace(/様\s*$/,'')
         })
       })
     } else {
@@ -7705,6 +7723,16 @@ async function openWorkSheet(shiftId,castName,date,castId){
   document.getElementById('work-overlay').classList.add('on')
 }
 
+// セッション見出し「N本目 No.xxxx 名前 様」のHTMLを生成（顧客情報があれば付与）
+function sessionNoHtml(no,custNo,custName){
+  const cn=(custName||'').replace(/様\s*$/,'')
+  const hasCust=(custNo!=null&&custNo!=='')||cn
+  if(!hasCust) return `${no}本目`
+  const parts=[]
+  if(custNo!=null&&custNo!=='') parts.push('No.'+escapeHtml(String(custNo)))
+  if(cn) parts.push(escapeHtml(cn)+' 様')
+  return `${no}本目 <span class="ws-card-sub">${parts.join(' ')}</span>`
+}
 function addSession(data=null){
   const currentNo=document.querySelectorAll('.session-block').length+1
   const idx=Date.now()+Math.random()
@@ -7712,6 +7740,9 @@ function addSession(data=null){
   div.className='session-block'
   div.id='session-'+idx
   div._overrides=data?.overrides||{}
+  // 顧客情報をブロックに保持（再採番・保存で参照）
+  if(data?.customer_no!=null&&data?.customer_no!=='') div.dataset.customerNo=String(data.customer_no)
+  if(data?.customer_name) div.dataset.customerName=data.customer_name.replace(/様\s*$/,'')
   const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')
   const shimeiTypes=['フリー','ネット指名','本指名']
   const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
@@ -7757,7 +7788,7 @@ function addSession(data=null){
   }
   div.innerHTML=`
     <div class="session-hdr ws-card-hdr">
-      <span class="session-no ws-card-no">${currentNo}本目${data?.customer_no||data?.customer_name?` <span class="ws-card-sub">${data?.customer_no?'No.'+escapeHtml(String(data.customer_no))+' ':''}${escapeHtml(data?.customer_name||'')}${data?.customer_name?' 様':''}</span>`:''}</span>
+      <span class="session-no ws-card-no">${sessionNoHtml(currentNo,data?.customer_no,data?.customer_name)}</span>
       <button class="session-del ws-card-del" onclick="removeSession(this)">削除</button>
     </div>
     <div class="session-inner">
@@ -7786,7 +7817,7 @@ function toggleOptPayW(chk){
 function removeSession(btn){
   btn.closest('.session-block').remove()
   document.querySelectorAll('.session-block').forEach((b,i)=>{
-    const no=b.querySelector('.session-no');if(no) no.textContent=(i+1)+'本目'
+    const no=b.querySelector('.session-no');if(no) no.innerHTML=sessionNoHtml(i+1,b.dataset.customerNo,b.dataset.customerName)
   })
   calcTotal2()
 }
@@ -8273,7 +8304,9 @@ async function saveWork(){
     const payOption=options.some(o=>o.pay==='カード')?'カード':'現金'
     const sesCash=sessionSalesBase-sesCardBase
     const ovKeys=Object.keys(ov)
-    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,ext_back:extBackTotalEff,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(ovKeys.length?{overrides:ov}:{})})
+    const custNoSave=block.dataset.customerNo!=null&&block.dataset.customerNo!==''?block.dataset.customerNo:null
+    const custNameSave=block.dataset.customerName||null
+    sessions.push({course_id:cid,course_name:c.name,shimei_type:stype,course_back:cback,shimei_back:sback,options,opt_back:optBack,discounts,extensions,ext_back:extBackTotalEff,sales:sessionSales,card_base:sesCardBase,card_fee:sesCardFee,cardBase:sesCardBase,card:sesCardSurcharge+sesCardBase,cash:sesCash,pay_course:payCourse,pay_shimei:payShimei,pay_option:payOption,...(custNoSave?{customer_no:custNoSave}:{}),...(custNameSave?{customer_name:custNameSave}:{}),...(ovKeys.length?{overrides:ov}:{})})
     totalSales+=sessionSales;totalBack+=sessionBack;totalCount++
   })
   const hoshoSave=parseInt(document.getElementById('w-hosho')?.value)||0
