@@ -219,12 +219,13 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-owner-salary .sal2-badge.done{color:#2FA36B;background:#EAF7F0}
 #p-owner-salary .sal2-badge.pending{color:#FF9124;background:#FFF1E2}
 #p-owner-salary .sal2-detail-lbl2{font-size:.68rem;font-weight:700;color:#A89B88;letter-spacing:.05em}
-#p-owner-salary .sal2-session-row{display:flex;align-items:baseline;gap:.4rem;border-bottom:1px solid #EDE9E1;padding:.625rem 0;flex-wrap:wrap}
+#p-owner-salary .sal2-session-row{display:flex;align-items:center;gap:10px;border-bottom:1px solid #EDE9E1;padding:10px 0}
 #p-owner-salary .sal2-session-row:last-child{border-bottom:none}
-#p-owner-salary .sal2-session-no{font-size:.68rem;color:#A89B88;flex-shrink:0}
-#p-owner-salary .sal2-session-course{font-size:.8125rem;font-weight:700;color:#211C16}
-#p-owner-salary .sal2-session-meta{font-size:.68rem;color:#A89B88}
-#p-owner-salary .sal2-session-amt{font-family:'Inter','Noto Sans JP',sans-serif;font-size:.8125rem;font-weight:700;color:#211C16;margin-left:auto}
+#p-owner-salary .sal2-session-no{font-size:11px;font-weight:600;color:#A89B88;flex-shrink:0}
+#p-owner-salary .sal2-session-mid{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+#p-owner-salary .sal2-session-course{font-size:13px;font-weight:600;color:#211C16;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#p-owner-salary .sal2-session-meta{font-size:11px;color:#A89B88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#p-owner-salary .sal2-session-amt{font-family:'Inter','Noto Sans JP',sans-serif;font-size:13px;font-weight:600;color:#211C16;flex-shrink:0;white-space:nowrap}
 #p-owner-salary .sal2-sum-row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #EDE9E1;padding:.5rem 0}
 #p-owner-salary .sal2-sum-row:last-child{border-bottom:none}
 #p-owner-salary .sal2-sum-lbl{font-size:.75rem;color:#7A6E5E}
@@ -8814,10 +8815,16 @@ async function loadOwnerSalary(){
       const discStr=discArr.length?'　割引：'+discArr.map(dd=>escapeHtml(dd.name)+'('+fmt(dd.amount)+')').join('、'):''
       // 支払方法
       const pay=s.payment||''
+      const metaParts=[shimei?escapeHtml(shimei):'', ...optArr.map(o=>typeof o==='string'?escapeHtml(o):escapeHtml(o.name||'')).filter(Boolean), pay?escapeHtml(pay):'', ...discArr.map(dd=>escapeHtml(dd.name)+'('+fmt(dd.amount)+')')].filter(Boolean)
+      const metaStr=metaParts.join(' ・ ')
+      const amt=s.sales?fmt(s.sales):''
       return `<div class="sal2-session-row">`
         +`<span class="sal2-session-no">${i+1}本目</span>`
+        +`<div class="sal2-session-mid">`
         +`<span class="sal2-session-course">${escapeHtml(s.course_name||'')}</span>`
-        +`<span class="sal2-session-meta">${shimei?escapeHtml(shimei):''}${optStr}${pay?'　'+escapeHtml(pay):''}${discStr}</span>`
+        +(metaStr?`<span class="sal2-session-meta">${metaStr}</span>`:'')
+        +`</div>`
+        +(amt?`<span class="sal2-session-amt">${amt}</span>`:'')
         +`</div>`
     }).join(''):''
     return `<div class="sal2-cast-card">
