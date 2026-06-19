@@ -11391,11 +11391,6 @@ function renderMonthlyCast(area,castStats,fmt2){
     name,total:s.count||0,free:s.free||0,net_shimei:s.net_shimei||0,hon_shimei:s.hon_shimei||0,
     sales:s.sales||0,disc:s.disc||0,net:s.net||0,hosho:s.hosho||0
   })).sort((a,b)=>b.sales-a.sales)
-  const thBase='padding:0 4px 7px;text-align:center;font-size:9px;font-weight:700;color:#A89B88;background:var(--surface2);white-space:nowrap;border-bottom:2px solid var(--border)'
-  const th=(l,col='')=>`<th style="${thBase}${col?';color:'+col:''}">${l}</th>`
-  const CA2=(v,bold=false,col='')=>`<td style="padding:8px 4px;text-align:center;font-size:9.5px;font-weight:${bold?'700':'600'};white-space:nowrap;font-variant-numeric:tabular-nums;${col?'color:'+col:''}">${v}</td>`
-  const CB2=(v,bold=false,col='')=>CA2(v,bold,col)
-  const cell=(v,bold=false,col='')=>CA2(v,bold,col)
   const hasDisc=rows.some(r=>r.disc>0)
   const totSales=rows.reduce((s,r)=>s+r.sales,0)
   const totDisc=rows.reduce((s,r)=>s+r.disc,0)
@@ -11416,38 +11411,46 @@ function renderMonthlyCast(area,castStats,fmt2){
         <div class="mo-rank-bar-track"><div class="mo-rank-bar-fill" style="width:${Math.round(r.sales/maxSales*100)}%"></div></div>
       </div>
     </div>`).join('')
-  let html=rankingHtml+`<div class="mo-section-title">セラピスト別明細</div><div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--border);max-height:70vh">
-    <table style="width:100%;border-collapse:collapse;font-size:.68rem;table-layout:auto">
-      <thead><tr style="background:var(--surface2)">
-        <th style="padding:0 6px 7px;text-align:left;font-size:9px;font-weight:700;color:#A89B88;border-bottom:2px solid var(--border);position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px;width:60px">キャスト</th>
-        ${th('本数')}${th('フリー')}${th('ネット')}${th('本指')}${th('総売上')}${hasDisc?th('割引','var(--rtx)'):''}${th('純売上')}${th('委託金','var(--rtx)')}${th('保証')}
-      </tr></thead>
-      <tbody>
-        ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:8px 6px;position:sticky;left:0;background:#ffffff;font-weight:700;font-size:10px;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</td>
-          ${CB2(r.total,true)}${CB2(r.free)}${CB2(r.net_shimei)}${CB2(r.hon_shimei)}
-          ${cell('¥'+(r.sales+r.disc).toLocaleString(),true)}
-          ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'var(--rtx)'):''}
-          ${cell('¥'+r.sales.toLocaleString())}
-          ${cell('¥'+r.net.toLocaleString(),false,'var(--rtx)')}
-          ${cell(r.hosho>0?'¥'+r.hosho.toLocaleString():'-',false,'var(--rtx)')}
-        </tr>`).join('')}
-      </tbody>
-      <tfoot><tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--accent);font-size:.68rem">
-        <td style="padding:8px 6px;position:sticky;left:0;background:var(--surface2);z-index:1">合計</td>
-        ${CB2(totTotal,true)}
-        ${CB2(totFree)}
-        ${CB2(totNetS)}
-        ${CB2(totHon)}
-        ${CA2('¥'+(totSales+totDisc).toLocaleString(),true)}
-        ${hasDisc?CA2(totDisc>0?'-¥'+totDisc.toLocaleString():'-',false,'var(--rtx)'):''}
-        ${CA2('¥'+totSales.toLocaleString(),true)}
-        ${CA2('¥'+totNet.toLocaleString(),false,'var(--rtx)')}
-        ${CA2(totHosho>0?'¥'+totHosho.toLocaleString():'-',false,'var(--rtx)')}
-      </tr></tfoot>
-    </table>
-  </div>
-  <div style="font-size:.68rem;color:var(--text3);flex-wrap:wrap;display:flex;gap:.5rem;margin-top:.4rem"><span>保証=最低保証支払額</span></div>`
+  // 日別明細(.md-table)と同一デザインで描画（列幅はfixedで揃える）
+  const cols=[
+    {l:'キャスト',w:78,l1:true},
+    {l:'本数',w:38},{l:'フリー',w:42},{l:'ネット',w:42},{l:'本指',w:38},
+    {l:'総売上',w:66},
+    ...(hasDisc?[{l:'割引',w:58,c:'red'}]:[]),
+    {l:'純売上',w:66},{l:'委託金',w:62,c:'red'},{l:'保証',w:60,c:'red'}
+  ]
+  const totalW=cols.reduce((s,c)=>s+c.w,0)
+  const colgroup=`<colgroup>${cols.map(c=>`<col style="width:${c.w}px">`).join('')}</colgroup>`
+  const thead=`<thead><tr>${cols.map(c=>`<th class="${c.l1?'l sticky ':''}${c.c||''}">${c.l}</th>`).join('')}</tr></thead>`
+  const Y=n=>'¥'+Number(n).toLocaleString()
+  const yen=(v,cls='')=>`<td class="${cls}">${v}</td>`
+  const dash=(v,positive,cls)=>`<td class="${positive?cls:'mute'}">${positive?v:'—'}</td>`
+  const rowCells=r=>[
+    yen(r.total),yen(r.free),yen(r.net_shimei),yen(r.hon_shimei),
+    yen(Y(r.sales+r.disc)),
+    ...(hasDisc?[dash('-'+Y(r.disc),r.disc>0,'red')]:[]),
+    yen(Y(r.sales)),
+    yen(Y(r.net),'red'),
+    dash(Y(r.hosho),r.hosho>0,'red')
+  ].join('')
+  const bodyRows=rows.map(r=>`<tr class="md-day"><td class="l sticky">${escapeHtml(r.name)}</td>${rowCells(r)}</tr>`).join('')
+  const totCells=[
+    yen(totTotal),yen(totFree),yen(totNetS),yen(totHon),
+    yen(Y(totSales+totDisc)),
+    ...(hasDisc?[dash('-'+Y(totDisc),totDisc>0,'red')]:[]),
+    yen(Y(totSales)),
+    yen(Y(totNet),'red'),
+    dash(Y(totHosho),totHosho>0,'red')
+  ].join('')
+  const totRow=`<tr class="md-total"><td class="l sticky">合計</td>${totCells}</tr>`
+  const scrollSvg=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 8 22 12 18 16"/><polyline points="6 8 2 12 6 16"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
+  const tableStyle=`width:${totalW}px;min-width:${totalW}px;table-layout:fixed`
+  let html=rankingHtml+`
+  <div class="md-card" style="margin-top:18px">
+    <div class="md-titlerow"><span class="md-title">セラピスト別明細</span><span class="md-hint">${scrollSvg}横にスクロール</span></div>
+    <div class="md-scroll"><table class="md-table" style="${tableStyle}">${colgroup}${thead}<tbody>${bodyRows}${totRow}</tbody></table></div>
+    <div class="md-foot">保証=最低保証支払額</div>
+  </div>`
   area.innerHTML=html
 }
 
