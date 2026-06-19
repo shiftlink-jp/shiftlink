@@ -11391,10 +11391,10 @@ function renderMonthlyCast(area,castStats,fmt2){
     name,total:s.count||0,free:s.free||0,net_shimei:s.net_shimei||0,hon_shimei:s.hon_shimei||0,
     sales:s.sales||0,disc:s.disc||0,net:s.net||0,hosho:s.hosho||0
   })).sort((a,b)=>b.sales-a.sales)
-  const thBase='padding:.3rem .1rem;text-align:center;font-size:.6rem;background:var(--surface2);white-space:nowrap'
+  const thBase='padding:0 4px 7px;text-align:center;font-size:9px;font-weight:700;color:#A89B88;background:var(--surface2);white-space:nowrap;border-bottom:2px solid var(--border)'
   const th=(l,col='')=>`<th style="${thBase}${col?';color:'+col:''}">${l}</th>`
-  const CA2=(v,bold=false,col='')=>`<td style="padding:.12rem .06rem;text-align:center"><div style="background:#fff;border-radius:6px;padding:.25rem .15rem;text-align:center;font-size:.68rem;min-width:52px;${bold?'font-weight:700;':''}${col?'color:'+col:''}">${v}</div></td>`
-  const CB2=(v,bold=false,col='')=>`<td style="padding:.12rem .06rem;text-align:center"><div style="background:#fff;border-radius:6px;padding:.25rem .15rem;text-align:center;font-size:.68rem;min-width:28px;${bold?'font-weight:700;':''}${col?'color:'+col:''}">${v}</div></td>`
+  const CA2=(v,bold=false,col='')=>`<td style="padding:8px 4px;text-align:center;font-size:9.5px;font-weight:${bold?'700':'600'};white-space:nowrap;font-variant-numeric:tabular-nums;${col?'color:'+col:''}">${v}</td>`
+  const CB2=(v,bold=false,col='')=>CA2(v,bold,col)
   const cell=(v,bold=false,col='')=>CA2(v,bold,col)
   const hasDisc=rows.some(r=>r.disc>0)
   const totSales=rows.reduce((s,r)=>s+r.sales,0)
@@ -11419,12 +11419,12 @@ function renderMonthlyCast(area,castStats,fmt2){
   let html=rankingHtml+`<div class="mo-section-title">セラピスト別明細</div><div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--border);max-height:70vh">
     <table style="width:100%;border-collapse:collapse;font-size:.68rem;table-layout:auto">
       <thead><tr style="background:var(--surface2)">
-        <th style="padding:.3rem .35rem;text-align:left;font-size:.6rem;position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px;width:60px">キャスト</th>
+        <th style="padding:0 6px 7px;text-align:left;font-size:9px;font-weight:700;color:#A89B88;border-bottom:2px solid var(--border);position:sticky;left:0;top:0;z-index:3;background:var(--surface2);min-width:60px;width:60px">キャスト</th>
         ${th('本数')}${th('フリー')}${th('ネット')}${th('本指')}${th('総売上')}${hasDisc?th('割引','var(--rtx)'):''}${th('純売上')}${th('委託金','var(--rtx)')}${th('保証')}
       </tr></thead>
       <tbody>
         ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:.25rem .35rem;position:sticky;left:0;background:#ffffff;font-weight:600;font-size:.7rem;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</td>
+          <td style="padding:8px 6px;position:sticky;left:0;background:#ffffff;font-weight:700;font-size:10px;white-space:nowrap;z-index:1;width:60px;max-width:80px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</td>
           ${CB2(r.total,true)}${CB2(r.free)}${CB2(r.net_shimei)}${CB2(r.hon_shimei)}
           ${cell('¥'+(r.sales+r.disc).toLocaleString(),true)}
           ${hasDisc?cell(r.disc>0?'-¥'+r.disc.toLocaleString():'-',false,'var(--rtx)'):''}
@@ -11434,7 +11434,7 @@ function renderMonthlyCast(area,castStats,fmt2){
         </tr>`).join('')}
       </tbody>
       <tfoot><tr style="background:var(--surface2);font-weight:700;border-top:2px solid var(--accent);font-size:.68rem">
-        <td style="padding:.25rem .35rem;position:sticky;left:0;background:var(--surface2);z-index:1">合計</td>
+        <td style="padding:8px 6px;position:sticky;left:0;background:var(--surface2);z-index:1">合計</td>
         ${CB2(totTotal,true)}
         ${CB2(totFree)}
         ${CB2(totNetS)}
