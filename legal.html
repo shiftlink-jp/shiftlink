@@ -3,72 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>利用規約・プライバシーポリシー | シフトリンク</title>
+<title>規約・ポリシー | ShiftLink</title>
 <style>
-body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.8; }
-h1 { color: #1a1612; border-bottom: 2px solid #b8975a; padding-bottom: 10px; }
-h2 { color: #1a1612; margin-top: 40px; }
-a { color: #b8975a; }
-.back { display: inline-block; margin-bottom: 20px; color: #b8975a; text-decoration: none; }
+  :root{
+    --ink:#211C16; --sub:#7A6E5E; --mute:#A89B88; --line:#EDE9E1;
+    --accent:#FF9124; --bg:#FFFFFF; --soft:#FAF8F4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Noto Sans JP','Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto}
+  /* ヘッダー */
+  .lp-header{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .lp-back{width:34px;height:34px;flex-shrink:0;border-radius:17px;background:var(--soft);
+    display:flex;align-items:center;justify-content:center;color:var(--sub);text-decoration:none}
+  .lp-back svg{width:18px;height:18px}
+  .lp-htitle{font-size:16px;font-weight:700;color:var(--ink)}
+  /* 本文 */
+  .lp-content{display:flex;flex-direction:column;gap:18px;padding:18px 22px 56px}
+  .lp-titleblk{display:flex;flex-direction:column;gap:4px}
+  .lp-title{font-size:22px;font-weight:700;color:var(--ink);margin:0}
+  .lp-date{font-size:11px;color:var(--mute)}
+  .lp-intro{font-size:12px;color:var(--sub);line-height:1.8;margin:0}
+  .lp-sec{display:flex;flex-direction:column;gap:6px}
+  .lp-h{font-size:14px;font-weight:700;color:var(--ink);margin:0}
+  .lp-b{font-size:12px;color:var(--sub);line-height:1.85;margin:0}
+  .lp-divider{height:1px;background:var(--line);margin:10px 0}
 </style>
 </head>
 <body>
-<a class="back" href="./index.html">← ログイン画面に戻る</a>
-<h1>利用規約・プライバシーポリシー</h1>
-<p>最終更新日：2026年5月11日</p>
+<div class="wrap">
+  <div class="lp-header">
+    <a class="lp-back" href="./index.html" aria-label="戻る">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </a>
+    <span class="lp-htitle">規約・ポリシー</span>
+  </div>
 
-<h2>第1条（サービスについて）</h2>
-<p>シフトリンク（ShiftLink）は、メンズエステ店舗の業務管理を目的としたWebアプリケーションです。店舗オーナーおよびセラピストが利用できます。</p>
+  <div class="lp-content">
+    <!-- 利用規約 -->
+    <div class="lp-titleblk">
+      <h1 class="lp-title">利用規約</h1>
+      <span class="lp-date">最終更新日：2026年6月19日</span>
+    </div>
+    <p class="lp-intro">本利用規約（以下「本規約」といいます。）は、ShiftLink（以下「当社」といいます。）が提供するシフト・予約・売上管理サービス「ShiftLink」（以下「本サービス」といいます。）の利用条件を定めるものです。ユーザーの皆さまには、本規約に従って本サービスをご利用いただきます。</p>
 
-<h2>第2条（利用資格）</h2>
-<p>本サービスは、店舗オーナーから招待を受けたユーザーのみが利用できます。不正なアクセスや第三者へのアカウント共有は禁止します。</p>
+    <div class="lp-sec">
+      <h2 class="lp-h">第1条（適用）</h2>
+      <p class="lp-b">本規約は、ユーザーと当社との間の本サービスの利用に関わる一切の関係に適用されるものとします。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第2条（利用登録）</h2>
+      <p class="lp-b">登録希望者が本規約に同意の上、当社の定める方法によって利用登録を申請し、当社がこれを承認することによって利用登録が完了するものとします。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第3条（アカウント管理）</h2>
+      <p class="lp-b">ユーザーは、自己の責任において、本サービスのPINおよびログイン情報を適切に管理するものとします。第三者による不正利用の防止に努めてください。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第4条（禁止事項）</h2>
+      <p class="lp-b">ユーザーは、本サービスの利用にあたり、法令または公序良俗に違反する行為、当社や第三者の権利を侵害する行為、本サービスの運営を妨害する行為等をしてはなりません。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第5条（本サービスの停止等）</h2>
+      <p class="lp-b">当社は、システムの保守点検、天災その他やむを得ない事由がある場合、ユーザーへ事前に通知することなく本サービスの全部または一部の提供を停止できるものとします。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第6条（免責事項）</h2>
+      <p class="lp-b">当社は、本サービスに事実上または法律上の瑕疵がないことを保証しておりません。本サービスに起因してユーザーに生じた損害について、当社は一切の責任を負いません。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第7条（規約の変更）</h2>
+      <p class="lp-b">当社は、必要と判断した場合には、ユーザーへ通知することにより、いつでも本規約を変更することができるものとします。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第8条（準拠法・裁判管轄）</h2>
+      <p class="lp-b">本規約の解釈にあたっては日本法を準拠法とし、本サービスに関して紛争が生じた場合には、当社の本店所在地を管轄する裁判所を専属的合意管轄とします。</p>
+    </div>
 
-<h2>第3条（禁止事項）</h2>
-<p>以下の行為を禁止します。</p>
-<ul>
-<li>本サービスを不正な目的で使用すること</li>
-<li>他のユーザーに迷惑をかける行為</li>
-<li>システムへの不正アクセス・改ざん</li>
-<li>本サービスの情報を無断で第三者に提供すること</li>
-</ul>
+    <div class="lp-divider"></div>
 
-<h2>第4条（有料プランと自動更新）</h2>
-<p>本サービスの有料プランは月額課金のサブスクリプション方式です。</p>
-<ul>
-<li><strong>トライアル期間：</strong>初回登録後14日間は無料でご利用いただけます。トライアル期間中に支払い方法を登録しない場合、期間終了後サービスは一時停止されます。</li>
-<li><strong>自動更新：</strong>有料プランは毎月自動的に更新されます。解約しない限り、毎月の更新日に課金されます。</li>
-<li><strong>解約：</strong>サービス内の設定画面、またはお問い合わせにより、いつでも解約できます。解約後は次回更新日まで引き続きご利用いただけます。更新日以降の課金は発生しません。</li>
-<li><strong>返金：</strong>課金済み期間の日割り返金は原則として行いません。ただし、当社の責に帰すべき事由によるサービス障害が長期間続いた場合はこの限りではありません。</li>
-</ul>
+    <!-- プライバシーポリシー -->
+    <div class="lp-titleblk">
+      <h1 class="lp-title">プライバシーポリシー</h1>
+      <span class="lp-date">最終更新日：2026年6月19日</span>
+    </div>
+    <p class="lp-intro">当社は、本サービスにおける個人情報の取扱いについて、以下のとおりプライバシーポリシー（以下「本ポリシー」といいます。）を定めます。</p>
 
-<h2>第5条（免責事項）</h2>
-<p>システム障害・通信障害等により生じた損害について、運営者は責任を負いません。</p>
-
-<h2>第6条（サービスの変更・終了）</h2>
-<p>運営者は、事前通知なくサービスの内容を変更・終了する場合があります。</p>
-
-<h2>プライバシーポリシー</h2>
-
-<h2>収集する情報</h2>
-<p>本サービスでは以下の情報を収集します。</p>
-<ul>
-<li>氏名・ニックネーム</li>
-<li>ログイン情報（PIN等）</li>
-<li>シフト・予約に関するデータ</li>
-</ul>
-
-<h2>情報の利用目的</h2>
-<p>収集した情報は、本サービスの提供・改善のみに使用します。第三者への提供は行いません。</p>
-
-<h2>情報の管理</h2>
-<p>収集した情報はSupabase（セキュアなクラウドデータベース）で管理し、適切なセキュリティ対策を講じます。</p>
-
-<h2>お問い合わせ</h2>
-<p>本規約に関するお問い合わせは、店舗オーナーまでご連絡ください。</p>
-
-<div style="margin-top:30px; padding-top:20px; border-top:1px solid #ddd;">
-<a href="./tokutei.html" style="color:#b8975a">特定商取引法に基づく表示</a>
+    <div class="lp-sec">
+      <h2 class="lp-h">第1条（収集する情報）</h2>
+      <p class="lp-b">当社は、ユーザー登録情報（氏名・連絡先等）、予約・売上等の業務データ、端末情報、利用ログ等を取得することがあります。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第2条（利用目的）</h2>
+      <p class="lp-b">取得した情報は、本サービスの提供・維持・改善、お問い合わせへの対応、不正利用の防止、利用状況の分析のために利用します。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第3条（第三者提供）</h2>
+      <p class="lp-b">当社は、法令に基づく場合を除き、あらかじめユーザーの同意を得ることなく、個人情報を第三者に提供しません。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第4条（安全管理措置）</h2>
+      <p class="lp-b">当社は、個人情報の漏えい、滅失またはき損の防止その他の安全管理のために、必要かつ適切な措置を講じます。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第5条（外部サービスの利用）</h2>
+      <p class="lp-b">本サービスは、決済・通知・データ保管等のために外部サービスを利用する場合があります。これらにおける個人情報の取扱いは、各社の定めに従います。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第6条（開示・訂正・削除）</h2>
+      <p class="lp-b">ユーザーは、当社の保有する自己の個人情報について、開示・訂正・追加・削除・利用停止等を求めることができます。</p>
+    </div>
+    <div class="lp-sec">
+      <h2 class="lp-h">第7条（お問い合わせ窓口）</h2>
+      <p class="lp-b">本ポリシーに関するお問い合わせは、当社所定の窓口までご連絡ください。内容を確認の上、合理的な期間内に対応いたします。</p>
+    </div>
+  </div>
 </div>
-<p style="margin-top:20px; color:#999; font-size:0.9em;">運営者：シフトリンク運営事務局</p>
 </body>
 </html>

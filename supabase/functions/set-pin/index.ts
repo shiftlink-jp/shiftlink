@@ -98,6 +98,16 @@ serve(async (req) => {
     });
     if (rpcErr) throw rpcErr;
 
+    // オーナー要望により、キャスト管理画面のバッジに現在のPIN数字を表示するため、
+    // 旧 casts.pin 列にも同じ数字を反映する（auth_pins=bcrypt は不可逆で読めないため）。
+    // ※平文保存のため、DBを直接閲覧できる者にはPINが見える点に留意（利便性優先の運用判断）。
+    if (target !== "owner") {
+      const cid = cast_id ?? (typeof target === "number" ? target : null);
+      const { error: upErr } = await admin
+        .from("casts").update({ pin: pinStr }).eq("id", cid).eq("store_id", store_id);
+      if (upErr) throw upErr;
+    }
+
     return json({ ok: true, principal }, 200, origin);
   } catch (e) {
     return json({ error: String((e as Error).message ?? e) }, 500, origin);

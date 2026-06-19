@@ -30,6 +30,10 @@ const ALLOWED_ORIGINS = [
   "https://app.shiftlink.jp",
   "https://shiftlink-app.jp",
   "https://www.shiftlink-app.jp",
+  // ローカル開発/動作確認用（CORSのみ許可。送信にはログイン本人確認が引き続き必須）
+  "http://localhost:3100",
+  "http://localhost:3200",
+  "http://localhost:3300",
 ];
 
 // Vercel プレビュー URL は kyoukano プロジェクト配下のみ許可

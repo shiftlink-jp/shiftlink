@@ -3,74 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>特定商取引法に基づく表示 | シフトリンク</title>
+<title>特定商取引法に基づく表示 | ShiftLink</title>
 <style>
-body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.8; }
-h1 { color: #1a1612; border-bottom: 2px solid #b8975a; padding-bottom: 10px; }
-a { color: #b8975a; }
-.back { display: inline-block; margin-bottom: 20px; color: #b8975a; text-decoration: none; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ddd; padding: 12px 16px; text-align: left; vertical-align: top; }
-th { background: #f9f7f4; width: 30%; font-weight: 600; color: #1a1612; }
-td { background: #fff; }
-.note { margin-top: 30px; font-size: 0.85em; color: #888; }
+  :root{
+    --ink:#211C16; --sub:#7A6E5E; --mute:#A89B88; --line:#EDE9E1;
+    --accent:#FF9124; --bg:#FFFFFF; --soft:#FAF8F4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Noto Sans JP','Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto}
+  /* ヘッダー */
+  .lp-header{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .lp-back{width:34px;height:34px;flex-shrink:0;border-radius:17px;background:var(--soft);
+    display:flex;align-items:center;justify-content:center;color:var(--sub);text-decoration:none}
+  .lp-back svg{width:18px;height:18px}
+  .lp-htitle{font-size:15px;font-weight:700;color:var(--ink)}
+  /* 本文 */
+  .lp-content{display:flex;flex-direction:column;gap:16px;padding:18px 22px 56px}
+  .lp-titleblk{display:flex;flex-direction:column;gap:4px}
+  .lp-title{font-size:21px;font-weight:700;color:var(--ink);margin:0}
+  .lp-note{font-size:11px;color:var(--mute);line-height:1.7;margin:0}
+  .lp-list{display:flex;flex-direction:column}
+  .lp-row{display:flex;flex-direction:column;gap:3px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .lp-row:last-child{border-bottom:none}
+  .lp-l{font-size:11px;font-weight:700;color:var(--mute)}
+  .lp-v{font-size:13px;color:var(--ink);line-height:1.7;margin:0}
+  .lp-v a{color:var(--accent);text-decoration:none}
 </style>
 </head>
 <body>
-<a class="back" href="./index.html">← ログイン画面に戻る</a>
-<h1>特定商取引法に基づく表示</h1>
+<div class="wrap">
+  <div class="lp-header">
+    <a class="lp-back" href="./index.html" aria-label="戻る">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </a>
+    <span class="lp-htitle">特定商取引法に基づく表示</span>
+  </div>
 
-<table>
-<tr>
-  <th>販売事業者名</th>
-  <td>SHIFT LINK</td>
-</tr>
-<tr>
-  <th>代表者</th>
-  <td>今野　蓮</td>
-</tr>
-<tr>
-  <th>所在地</th>
-  <td>〒150-0012　東京都渋谷区広尾1丁目2番地1号　ヒカリビル4階</td>
-</tr>
-<tr>
-  <th>電話番号</th>
-  <td>080-6967-1421</td>
-</tr>
-<tr>
-  <th>メールアドレス</th>
-  <td>shiftlink.jp@gmail.com</td>
-</tr>
-<tr>
-  <th>販売価格</th>
-  <td>月額 ¥14,800（税込）</td>
-</tr>
-<tr>
-  <th>支払い方法</th>
-  <td>クレジットカード（Stripe決済）</td>
-</tr>
-<tr>
-  <th>支払い時期</th>
-  <td>初回登録時に14日間の無料トライアルを提供。トライアル終了後、毎月自動更新にて課金されます。</td>
-</tr>
-<tr>
-  <th>サービス開始時期</th>
-  <td>決済完了後、即時ご利用いただけます。</td>
-</tr>
-<tr>
-  <th>返品・キャンセルについて</th>
-  <td>トライアル期間中（14日間）は無料でキャンセル可能です。課金開始後の日割り返金は原則として行いません。サブスクリプションはいつでも解約でき、解約後は次回更新日まで引き続きご利用いただけます。</td>
-</tr>
-<tr>
-  <th>動作環境</th>
-  <td>Google Chrome、Safari、Microsoft Edge等の最新版ブラウザ（スマートフォン・PC対応）</td>
-</tr>
-</table>
+  <div class="lp-content">
+    <div class="lp-titleblk">
+      <h1 class="lp-title">特定商取引法に基づく表示</h1>
+      <p class="lp-note">本ページは特定商取引法第11条に基づく表示です。記載のない事項は、お客様からのご請求があれば遅滞なく開示いたします。</p>
+    </div>
 
-<p class="note">本ページの内容は、特定商取引に関する法律第11条に基づき表示しています。</p>
-
-<div style="margin-top: 20px;">
-  <a href="./legal.html">利用規約・プライバシーポリシー</a>
+    <div class="lp-list">
+      <div class="lp-row"><span class="lp-l">販売事業者</span><p class="lp-v">株式会社●●（バーチャルオフィス登録後に記載）</p></div>
+      <div class="lp-row"><span class="lp-l">運営統括責任者</span><p class="lp-v">●● ●●</p></div>
+      <div class="lp-row"><span class="lp-l">所在地</span><p class="lp-v">●●（請求があれば遅滞なく開示します）</p></div>
+      <div class="lp-row"><span class="lp-l">電話番号</span><p class="lp-v">●●（請求があれば遅滞なく開示します）</p></div>
+      <div class="lp-row"><span class="lp-l">メールアドレス</span><p class="lp-v"><a href="mailto:support@shiftlink.jp">support@shiftlink.jp</a></p></div>
+      <div class="lp-row"><span class="lp-l">販売URL</span><p class="lp-v"><a href="https://app.shiftlink.jp">https://app.shiftlink.jp</a></p></div>
+      <div class="lp-row"><span class="lp-l">販売価格</span><p class="lp-v">各プランの料金ページに表示する金額（月額制・税込）</p></div>
+      <div class="lp-row"><span class="lp-l">商品代金以外の必要料金</span><p class="lp-v">消費税、決済時の通信料、決済手数料等</p></div>
+      <div class="lp-row"><span class="lp-l">お支払い方法</span><p class="lp-v">クレジットカード決済（Stripe）</p></div>
+      <div class="lp-row"><span class="lp-l">お支払い時期</span><p class="lp-v">お申込み時、および以後毎月の課金日にカード決済を行います。</p></div>
+      <div class="lp-row"><span class="lp-l">サービスの提供時期</span><p class="lp-v">決済完了後、直ちにご利用いただけます。</p></div>
+      <div class="lp-row"><span class="lp-l">返品・キャンセル</span><p class="lp-v">デジタルサービスの性質上、決済後の返金は原則として承っておりません。解約は次回更新日の前日までにお手続きいただくことで、翌期以降の更新を停止します。</p></div>
+      <div class="lp-row"><span class="lp-l">動作環境</span><p class="lp-v">最新版の各種ブラウザ（Google Chrome、Safari 等）を推奨します。</p></div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
