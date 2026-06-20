@@ -2411,7 +2411,7 @@ if("serviceWorker" in navigator && !_isSaaS){
             <div id="rv-existing-area">
               <div class="rvf-lbl">顧客番号</div>
               <div style="display:flex;gap:.5rem">
-                <input class="rvf-input" id="rv-cust-id" type="number" placeholder="番号入力" style="flex:1" oninput="autoFillCustomer()">
+                <input class="rvf-input" id="rv-cust-id" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="番号入力" style="flex:1" oninput="autoFillCustomer()">
                 <span id="rv-cust-name" style="display:flex;align-items:center;font-size:.85rem;color:var(--text3);min-width:80px"></span>
               </div>
               <div id="rv-cust-warn" style="display:none;font-size:.75rem;color:var(--rtx);margin-top:.3rem;padding:.3rem .5rem;background:var(--rbg);border-radius:6px;border:1px solid var(--rbd)">顧客番号が未登録です。</div>
