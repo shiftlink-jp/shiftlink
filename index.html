@@ -8180,7 +8180,7 @@ async function loadToday(){
           <div class="rv-row-bar" style="background:${isServing?'var(--accent)':'#b8893a'}"></div>
           <div class="rv-row-info">
             <div class="rv-row-cust">${custNoPrefix}${escapeHtml(r.customer_name||'')}${visitBadge}${noCustBadge}</div>
-            <div class="rv-row-sub">${escapeHtml(r.course||'')}${s.room?' ・ '+escapeHtml(s.room):''}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
+            <div class="rv-row-sub">${escapeHtml(r.course||'')}${r.shimei_type&&r.shimei_type!=='なし'?' ・ '+escapeHtml(r.shimei_type):''}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
           </div>
           ${statusBadge}
         </div>`
