@@ -829,6 +829,7 @@ tr:last-child td{border-bottom:none}
 .room-card-v2-status{font-size:.75rem;font-weight:700;margin-bottom:.2rem}
 .room-card-v2-status.using{color:var(--accent)}
 .room-card-v2-status.free{color:var(--green)}
+.room-card-v2-status.scheduled{color:#a8997a}
 .room-card-v2-sub{font-size:.6875rem;color:var(--text3);margin-top:auto}
 /* シフトタブ（Pencil: Owner Shift） */
 .shift-cal-card{background:#fff;border-radius:16px;border:1px solid var(--border);padding:1rem;margin-bottom:.85rem}
@@ -8061,17 +8062,25 @@ async function loadToday(){
   let roomsInUse=0
   allRooms.forEach(r=>{
     const ss=rm[r]
-    if(ss&&ss.length){
-      roomsInUse++
-      const castNameTxt=ss.map(s=>escapeHtml(s.casts?.name||'?')).join('・')
-      const endTimeTxt=ss.map(s=>s.end_time?.slice(0,5)||'').filter(Boolean).join('・')
+    // 出勤打刻でまだ退勤していないシフトがあるか（=使用中）／全員未出勤なら出勤予定
+    const activeSs=(ss||[]).filter(s=>!s.clock_out_at)
+    const anyClockedIn=activeSs.some(s=>s.clock_in_at)
+    if(activeSs.length){
+      // まだ退勤していないシフトがある → 出勤済みなら使用中、未出勤なら出勤予定
+      if(anyClockedIn) roomsInUse++
+      const using=anyClockedIn
+      const dotColor=using?'var(--accent)':'#c9bfa8'
+      const statusCls=using?'using':'scheduled'
+      const statusTxt=using?'使用中':'出勤予定'
+      const castNameTxt=activeSs.map(s=>escapeHtml(s.casts?.name||'?')).join('・')
+      const endTimeTxt=activeSs.map(s=>s.end_time?.slice(0,5)||'').filter(Boolean).join('・')
       rh+=`<div class="room-card-v2" onclick="openGanttModal('${jsEsc(r)}')">
         <div class="room-card-v2-hdr">
           <div class="room-card-v2-name">${escapeHtml(r)}</div>
-          <div class="room-card-v2-dot" style="background:var(--accent)"></div>
+          <div class="room-card-v2-dot" style="background:${dotColor}"></div>
         </div>
         <div class="room-card-v2-cast"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${castNameTxt}</div>
-        <div class="room-card-v2-status using">使用中</div>
+        <div class="room-card-v2-status ${statusCls}">${statusTxt}</div>
         <div class="room-card-v2-sub">${endTimeTxt?'〜 '+endTimeTxt:''}</div>
       </div>`
     } else {
