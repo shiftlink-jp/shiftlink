@@ -5496,12 +5496,13 @@ async function castOpenCustHistory(customerNo, custName, directCustId) {
       </div>`).join('')+'</div>'
     : `<div class="ch-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><div class="ch-empty-t">メモはまだありません</div><div class="ch-empty-s">「メモを書く」から追加できます</div></div>`
 
-  // セクション2: 来店履歴
-  document.getElementById('ch-count').textContent = allVisits.length ? allVisits.length+'件' : ''
+  // セクション2: 来店履歴（当日分は除外）
+  const histVisits = allVisits.filter(v=>v.visit_date !== today())
+  document.getElementById('ch-count').textContent = histVisits.length ? histVisits.length+'件' : ''
   const userSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
   const calSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>'
-  document.getElementById('ch-visit-area').innerHTML = allVisits.length
-    ? '<div class="ch-list">'+allVisits.map(v=>{
+  document.getElementById('ch-visit-area').innerHTML = histVisits.length
+    ? '<div class="ch-list">'+histVisits.map(v=>{
         const opts=v.options?v.options.split(',').filter(Boolean).join('・'):''
         const det=[v.course||'', (v.shimei_type&&v.shimei_type!=='なし')?v.shimei_type:'', opts?'OP:'+opts:''].filter(Boolean).join(' ・ ')
         return `<div class="ch-card">
