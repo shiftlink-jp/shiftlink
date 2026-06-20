@@ -840,6 +840,9 @@ tr:last-child td{border-bottom:none}
 .room-card-v2-status.free{color:var(--green)}
 .room-card-v2-status.scheduled{color:#a8997a}
 .room-card-v2-sub{font-size:.6875rem;color:var(--text3)}
+.rv-visit-badge{display:inline-block;font-size:.625rem;font-weight:700;line-height:1;border-radius:5px;padding:2px 6px;margin-left:.4rem;vertical-align:middle}
+.rv-visit-badge.new{color:#fff;background:var(--accent)}
+.rv-visit-badge.revisit{color:#6b6150;background:var(--surface2);border:1px solid var(--rbd)}
 /* シフトタブ（Pencil: Owner Shift） */
 .shift-cal-card{background:#fff;border-radius:16px;border:1px solid var(--border);padding:1rem;margin-bottom:.85rem}
 .shift-cal-nav{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.6rem}
@@ -8160,6 +8163,10 @@ async function loadToday(){
       const noCustNo=!r.customer_no
       const noCustBadge=noCustNo?`<span style="font-size:.6rem;color:var(--rtx);background:var(--rbg);border:1px solid var(--rbd);border-radius:4px;padding:1px 5px;margin-left:.3rem">番号未登録</span>`:''
       const custNoPrefix=r.customer_no?`No.${escapeHtml(String(r.customer_no))} `:''
+      // 来店区分バッジ（予約登録時の入力 is_new で判定。未入力は非表示）
+      const isNewRv=r.is_new===true||r.is_new==='true'
+      const isRevisitRv=r.is_new===false||r.is_new==='false'
+      const visitBadge=isNewRv?`<span class="rv-visit-badge new">新規</span>`:(isRevisitRv?`<span class="rv-visit-badge revisit">再訪</span>`:'')
       // 接客中判定：チェックイン済みでチェックアウト未済の予約
       const isServing=!!checkin&&!checkout
       const statusBadge=isServing
@@ -8172,7 +8179,7 @@ async function loadToday(){
           </div>
           <div class="rv-row-bar" style="background:${isServing?'var(--accent)':'#b8893a'}"></div>
           <div class="rv-row-info">
-            <div class="rv-row-cust">${custNoPrefix}${escapeHtml(r.customer_name||'')}${noCustBadge}</div>
+            <div class="rv-row-cust">${custNoPrefix}${escapeHtml(r.customer_name||'')}${visitBadge}${noCustBadge}</div>
             <div class="rv-row-sub">${escapeHtml(r.course||'')}${s.room?' ・ '+escapeHtml(s.room):''}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
           </div>
           ${statusBadge}
