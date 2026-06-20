@@ -5006,7 +5006,7 @@ async function renderInlineShiftList(){
       const roomTag=s.room?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;border:1.5px solid;background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${escapeHtml(s.room)}</span>`:''
       const rvCount=rvByShift[s.id]||0
       const isToday=s.date===td
-      const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">${isToday?'予約':'事前予約'}${rvCount}件</span>`:''
+      const rvTag=rvCount>0?`<span style="font-size:.6rem;padding:1px 7px;border-radius:99px;font-weight:600;background:var(--surface2);color:var(--text3);border:1.5px solid var(--border)">予約${rvCount}件</span>`:''
       const rvBtn=s.status==='approved'&&rvCount>0?`<button class="btn btn-gold btn-xs" onclick="openShiftReservations(${s.id},'${escapeHtml(jsEsc(me.name||''))}')">予約確認</button>`:''
       const editBtn=s.status!=='rejected'?`<button class="btn btn-gray btn-xs" onclick="openCastShiftEdit(${s.id},'${s.date}','${s.start_time?.slice(0,5)||'13:00'}','${s.end_time?.slice(0,5)||'22:00'}','${escapeHtml(jsEsc(s.note||''))}')">訂正・取消</button>`:''
       return `<div class="cs2-item">
