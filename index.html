@@ -8646,7 +8646,9 @@ async function loadGanttModal(){
       const gapStartStr=minToTimeStr(rawStartMin)
       const fSY=timeToY(gapStartStr)
       const fEY=timeToY(r.checkin_time?.slice(0,5))
-      if(fSY!==null&&fEY!==null&&fEY-fSY>10){
+      // 本日で、すでに現在時刻を過ぎて終わっている空き枠は表示しない
+      const isPastGap=(ganttModalDate===todayStr)&&fEY!==null&&fEY<=nowY
+      if(!isPastGap&&fSY!==null&&fEY!==null&&fEY-fSY>10){
         const fH=fEY-fSY
         layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${fSY+2}px;height:${fH-4}px;background:#fff;border-radius:10px;border:1.5px solid #EDE9E1;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;text-align:center;padding:0 8px">
           <span style="font-size:13px;font-weight:700;color:#7A6E5E;white-space:nowrap">空き ${pureGapMin}分</span>
