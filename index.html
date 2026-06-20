@@ -8629,7 +8629,7 @@ async function loadGanttModal(){
       .filter(r=>r.checkin_time)
       .map(r=>({...r,checkout_time:r.checkout_time||(s.end_time||r.checkin_time)}))
       .sort((a,b)=>a.checkin_time.localeCompare(b.checkin_time))
-    const nowMinForFree=ganttModalDate===todayStr?now.getHours()*60+now.getMinutes():null
+    const nowMinForFree=ganttModalDate===todayStr?(now.getHours()<START_H?now.getHours()*60+now.getMinutes()+1440:now.getHours()*60+now.getMinutes()):null
     let prevEnd=s.start_time?.slice(0,5)||''
     ;[...sorted2,{checkin_time:s.end_time?.slice(0,5),checkout_time:s.end_time?.slice(0,5)}].forEach((r,fi)=>{
       const fSMin=timeStrToMin(prevEnd)
@@ -8642,8 +8642,8 @@ async function loadGanttModal(){
       const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
       const pureGapMin=Math.max(0,fEMin-effectiveStartMin)
       const fitCourse=COURSE_LABELS.find(([mc])=>pureGapMin>=mc)
-      // 空き枠はインターバル（前予約の退室後 intervalMin 分）と重ならないよう、その終了後から表示
-      const gapStartStr=minToTimeStr(rawStartMin)
+      // 空き枠はインターバル後から表示。さらに予約を過ぎている場合は現在時刻から表示
+      const gapStartStr=minToTimeStr(effectiveStartMin)
       const fSY=timeToY(gapStartStr)
       const fEY=timeToY(r.checkin_time?.slice(0,5))
       // 本日で、すでに現在時刻を過ぎて終わっている空き枠は表示しない
