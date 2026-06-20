@@ -896,6 +896,9 @@ tr:last-child td{border-bottom:none}
 .sac-room-badge{display:flex;align-items:center;gap:5px;background:#FFF1E2;border-radius:8px;padding:6px 10px;white-space:nowrap}
 .sac-room-dot{width:7px;height:7px;border-radius:50%;background:#FF9124;flex-shrink:0}
 .sac-room-name{font-size:13px;font-weight:700;color:#FF9124}
+.sac-room-select{font-size:13px;font-weight:700;color:#FF9124;background:transparent;border:none;outline:none;cursor:pointer;font-family:inherit;padding:0 2px;-webkit-appearance:none;appearance:none}
+.sac-room-badge:has(.sac-room-select.sac-room-conflict){background:#FDE7E5}
+.sac-room-select.sac-room-conflict{color:#D9534F}
 .sac-warn{background:#FFF8F0;border:1px solid #FFD4A8;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .sac-warn-title{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#B86000}
 .sac-warn-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#B86000;padding:0 2px}
@@ -7876,7 +7879,7 @@ async function autoAssignRooms(dateFilter){
   }
   if(!assignments.length){toast('振り分け可能なルームがありません（ルーム数不足）');return}
   _autoAssignDateFilter=dateFilter
-  _pendingAutoAssignData={assignments,unassignable}
+  _pendingAutoAssignData={assignments,unassignable,roomed:roomed.map(a=>({date:a.date,room:a.room,start_time:a.start_time||'00:00',end_time:a.end_time||'23:59'}))}
   // Pencilデザインの確認シートを表示
   const overlay=document.getElementById('auto-assign-confirm-overlay')
   if(!overlay){
@@ -7902,7 +7905,7 @@ async function autoAssignRooms(dateFilter){
           <span class="sac-cast-time">${a.start_time?.slice(0,5)||''}〜${a.end_time?.slice(0,5)||''}</span>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A89B88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        <div class="sac-room-badge"><div class="sac-room-dot"></div><span class="sac-room-name">${escapeHtml(a.room)}</span></div>
+        <div class="sac-room-badge"><div class="sac-room-dot"></div><select class="sac-room-select" data-shiftid="${a.shiftId}" onchange="validateAutoAssignRooms()">${rooms.map(r=>`<option value="${escapeHtml(r)}" ${r===a.room?'selected':''}>${escapeHtml(r)}</option>`).join('')}</select></div>
       </div>`
     })
     bodyHtml+=`</div></div>`
@@ -7923,6 +7926,30 @@ async function autoAssignRooms(dateFilter){
   }
   document.getElementById('sac-body').innerHTML=bodyHtml
   overlay.classList.add('on')
+  validateAutoAssignRooms()
+}
+
+// 時刻→分（深夜跨ぎ対応）／時間帯の重なり判定
+function _aaToMins(t){const[h,m]=(t||'00:00').slice(0,5).split(':').map(Number);const v=h*60+m;return v<360?v+1440:v}
+function _aaOverlap(s1,e1,s2,e2){const a=_aaToMins(s1),b=_aaToMins(e1),c=_aaToMins(s2),d=_aaToMins(e2);return a<d&&b>c}
+// 自動振り分け確認シートのルーム重複を検出・ハイライト。重複しているselect配列を返す。
+function validateAutoAssignRooms(){
+  if(!_pendingAutoAssignData) return []
+  const roomed=_pendingAutoAssignData.roomed||[]
+  const cur=[...document.querySelectorAll('.sac-room-select')].map(sel=>{
+    const a=_pendingAutoAssignData.assignments.find(x=>String(x.shiftId)===sel.dataset.shiftid)
+    return{sel,room:sel.value,date:a?.date,start:a?.start_time,end:a?.end_time}
+  })
+  const conflicts=new Set()
+  cur.forEach((x,i)=>{
+    let bad=roomed.some(r=>r.date===x.date&&r.room===x.room&&_aaOverlap(x.start,x.end,r.start_time,r.end_time))
+    cur.forEach((y,j)=>{if(i!==j&&x.date===y.date&&x.room===y.room&&_aaOverlap(x.start,x.end,y.start,y.end)) bad=true})
+    if(bad) conflicts.add(x.sel)
+  })
+  cur.forEach(x=>x.sel.classList.toggle('sac-room-conflict',conflicts.has(x.sel)))
+  const warnEl=document.getElementById('sac-dup-warn')
+  if(warnEl) warnEl.style.display=conflicts.size?'flex':'none'
+  return [...conflicts]
 }
 
 async function _executeAutoAssign(assignments,dateFilter){
@@ -7938,6 +7965,15 @@ async function _executeAutoAssign(assignments,dateFilter){
 
 async function confirmAutoAssign(){
   if(!_pendingAutoAssignData) return
+  // 重複チェック：重複があれば確認を挟む
+  if(validateAutoAssignRooms().length){
+    if(!confirm('同じ時間帯に同じルームが重複しています。このまま確定しますか？')) return
+  }
+  // 手動で変更されたルームを反映
+  document.querySelectorAll('.sac-room-select').forEach(sel=>{
+    const a=_pendingAutoAssignData.assignments.find(x=>String(x.shiftId)===sel.dataset.shiftid)
+    if(a) a.room=sel.value
+  })
   closeSheet('auto-assign-confirm')
   await _executeAutoAssign(_pendingAutoAssignData.assignments,_autoAssignDateFilter)
   _pendingAutoAssignData=null
@@ -12140,6 +12176,10 @@ function urlBase64ToUint8Array(b64) {
     </div>
     <div id="sac-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:50vh"></div>
     <div style="padding:0 20px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px">
+      <div id="sac-dup-warn" style="display:none;align-items:center;gap:7px;background:#FFF1E2;border:1px solid #FFD9A8;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;color:#B86000">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF9124" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        同じ時間帯に同じルームが重複しています（赤色の箇所）
+      </div>
       <button id="sac-confirm-btn" class="sac-confirm-btn" onclick="confirmAutoAssign()">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         振り分けを確定する
