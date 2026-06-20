@@ -1686,6 +1686,7 @@ tr:last-child td{border-bottom:none}
 
 /* 予約カード */
 #p-cast-today .ct-rv-card{background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:16px;margin-bottom:14px}
+#p-cast-today .ct-rv-card.is-past{background:#F4F2EF;border-color:#E5E1DB;opacity:.6}
 #p-cast-today .ct-rv-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.4rem}
 #p-cast-today .ct-rv-name{font-size:16px;font-weight:700;color:#211C16;display:flex;align-items:center;flex-wrap:wrap}
 #p-cast-today .ct-rv-time{font-family:'Inter','Noto Sans JP',sans-serif;font-size:14px;font-weight:700;color:#211C16;white-space:nowrap}
@@ -5361,6 +5362,10 @@ function timeStrToMin2(t) {
 // 予約配列を深夜2時区切りで時間順ソートする共通関数
 function sortRvsByTime(rvs) {
   return [...(rvs||[])].sort((a, b) => {
+    // 退店済み（room_out_at あり）は一番下にまとめる
+    const pa = a.room_out_at ? 1 : 0;
+    const pb = b.room_out_at ? 1 : 0;
+    if (pa !== pb) return pa - pb;
     const ta = timeStrToMin2(a.checkin_time?.slice(0,5)) ?? 9999;
     const tb = timeStrToMin2(b.checkin_time?.slice(0,5)) ?? 9999;
     return ta - tb;
