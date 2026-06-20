@@ -902,6 +902,10 @@ tr:last-child td{border-bottom:none}
 .rv-cast-name-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 .rv-room-badge{font-size:.62rem;font-weight:700;border-radius:999px;padding:2px 9px;border:1.5px solid;white-space:nowrap}
 .rv-cast-shift{font-size:.6875rem;color:var(--text3);margin-top:.1rem}
+.rv-att-pill{font-size:.62rem;font-weight:700;border-radius:999px;padding:2px 9px;border:1.5px solid transparent;white-space:nowrap;color:#fff}
+.rv-att-pill.scheduled{background:#C9BFA8}
+.rv-att-pill.working{background:#1E9E4A}
+.rv-att-pill.done{background:#8A97AD}
 .rv-cast-badge{font-size:.6875rem;font-weight:700;color:var(--text2);background:var(--surface2);border-radius:999px;padding:3px 9px;white-space:nowrap}
 .rv-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-top:1px solid var(--border)}
 .rv-row-time{width:44px;flex-shrink:0}
@@ -8179,12 +8183,13 @@ async function loadToday(){
         }
       }
     }
-    const attLbl=attSt==='working'?'出勤中':attSt==='done'?'退勤済み':'出勤予定'
+    const attLbl=attSt==='working'?'● 出勤中':attSt==='done'?'退勤済み':'出勤予定'
+    const attBadge=`<span class="rv-att-pill ${attSt}">${attLbl}</span>`
     html+=`<div class="rv-cast-card">
       <div class="rv-cast-hdr">
         <div>
-          <div class="rv-cast-name-row"><span class="rv-cast-name">${escapeHtml(s.casts?.name||'?')}</span>${s.room?(rc=>`<span class="rv-room-badge" style="background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${escapeHtml(s.room)}</span>`)(getRoomColor(s.room)):''}</div>
-          <div class="rv-cast-shift">出勤 ${s.start_time?.slice(0,5)||''} – ${s.end_time?.slice(0,5)||''}（${attLbl}）${intervalDisplay?' '+intervalDisplay:''}${s.note?' ／ '+escapeHtml(s.note):''}</div>
+          <div class="rv-cast-name-row"><span class="rv-cast-name">${escapeHtml(s.casts?.name||'?')}</span>${s.room?(rc=>`<span class="rv-room-badge" style="background:${rc.bg};color:${rc.tx};border-color:${rc.bd}">${escapeHtml(s.room)}</span>`)(getRoomColor(s.room)):''}${attBadge}</div>
+          <div class="rv-cast-shift">出勤 ${s.start_time?.slice(0,5)||''} – ${s.end_time?.slice(0,5)||''}${intervalDisplay?' '+intervalDisplay:''}${s.note?' ／ '+escapeHtml(s.note):''}</div>
         </div>
         <div class="rv-cast-badge">${shiftRvs.length}件</div>
       </div>
