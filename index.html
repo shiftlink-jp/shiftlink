@@ -47,6 +47,9 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#ffffff;overflow-x:hidden}
 body{font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;font-size:16px;color:var(--text);line-height:1.5;-webkit-text-size-adjust:100%}
+/* フォーム部品はフォント未指定だとブラウザ標準書体になるため、本文フォントを継承させて全画面で統一 */
+input,textarea,select,button{font-family:inherit}
+input::placeholder,textarea::placeholder{font-family:inherit}
 
 /* SCREENS */
 .screen{display:none;min-height:100vh;flex-direction:column;background:#ffffff}
@@ -1297,7 +1300,7 @@ tr:last-child td{border-bottom:none}
 #cast-overlay .ca2-submit{width:100%;background:#FF9124;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:12px;height:52px;box-shadow:0 4px 12px rgba(255,145,36,.35);cursor:pointer;font-family:inherit;margin-top:.25rem}
 
 /* --- #fee-overlay / #store-overlay 共通カードパターン（既存 .fee-sec 等は別クラス名で上書き） --- */
-#fee-overlay .f2-title{font-size:17px;font-weight:700;color:#211C16;margin-bottom:.3rem}
+#fee-overlay .f2-title,#store-overlay .f2-title{font-size:17px;font-weight:700;color:#211C16;margin-bottom:.3rem}
 #fee-overlay .f2-desc,#store-overlay .f2-desc{font-size:12px;color:#A89B88;margin-bottom:.85rem}
 #fee-overlay .f2-card,#store-overlay .f2-card{background:#FAF8F4;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0;margin-bottom:.85rem}
 #fee-overlay .f2-card.f2-card-trial{background:#E9F6EF;border:1px solid #BFE6D2}
@@ -11391,13 +11394,63 @@ function renderMonthlyDaily(area,dailyRows,tot){
   </div>`
 }
 
-// 売上 日別明細：印刷 / PDF 書き出し（PDFはブラウザの印刷ダイアログで「PDFに保存」を選ぶ）
+// 売上 日別明細：印刷 / PDF 書き出し
 function printMonthlyDaily(){ window.print() }
-function pdfMonthlyDaily(){
-  const orig=document.title
-  document.title='売上_日別明細_'+(monthlyMonth||'')
-  window.print()
-  setTimeout(()=>{document.title=orig},1500)
+
+// 外部スクリプトを動的に読み込む（PDF生成用ライブラリ。初回のみ取得し以降はキャッシュ）
+function loadScriptOnce(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){ res(); return }
+    const s=document.createElement('script')
+    s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error('読込失敗'))
+    document.head.appendChild(s)
+  })
+}
+
+// 日別明細テーブルを画像化してPDFファイルとして保存（ボタン一発でダウンロード）
+async function pdfMonthlyDaily(){
+  const table=document.getElementById('daily-print-table')
+  if(!table){ toast('明細が見つかりません'); return }
+  try{
+    toast('PDFを作成中…',6000)
+    // html2canvas（要素を画像化）と jsPDF（PDF生成）をCDNから読み込む
+    if(!window.html2canvas) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
+    if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+    const canvas=await window.html2canvas(table,{scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0})
+    const img=canvas.toDataURL('image/png')
+    const {jsPDF}=window.jspdf
+    // 横長テーブルが多いので横向き・A4
+    const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'})
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight()
+    const margin=24, headerH=26
+    // 見出し
+    pdf.setFontSize(13)
+    pdf.text('売上 日別明細  '+(monthlyMonth||''), margin, margin+12)
+    // 画像を幅いっぱいに収め、はみ出す高さは複数ページに分割
+    const iw=pw-margin*2
+    const fullH=canvas.height*iw/canvas.width
+    const contentTop=margin+headerH
+    const pageContentH=ph-contentTop-margin
+    let heightLeft=fullH, position=contentTop
+    pdf.addImage(img,'PNG',margin,position,iw,fullH)
+    heightLeft-=pageContentH
+    while(heightLeft>0){
+      pdf.addPage()
+      position=contentTop-(fullH-heightLeft)
+      pdf.addImage(img,'PNG',margin,position,iw,fullH)
+      heightLeft-=pageContentH
+    }
+    pdf.save('売上_日別明細_'+(monthlyMonth||'')+'.pdf')
+    toast('PDFを保存しました')
+  }catch(e){
+    console.error(e)
+    // 通信エラー等でライブラリが読めない場合は従来の印刷ダイアログにフォールバック
+    toast('PDF作成に失敗。印刷ダイアログを開きます')
+    const orig=document.title
+    document.title='売上_日別明細_'+(monthlyMonth||'')
+    window.print()
+    setTimeout(()=>{document.title=orig},1500)
+  }
 }
 
 // ── キャスト成績表：白背景セル ──
