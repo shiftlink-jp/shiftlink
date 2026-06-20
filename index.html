@@ -3361,9 +3361,8 @@ async function renderPinCastPicker(){
 let roomList=[]
 function getROOMS(){ return roomList.map(r=>r.name) }
 function getRoomColor(room){
-  const r=roomList.find(x=>x.name===room)
-  if(r) return {bg:r.color_bg,tx:r.color_tx,bd:r.color_bd,card:r.color_card}
-  return {bg:'var(--pbg)',tx:'var(--ptx)',bd:'var(--pbd)',card:'var(--pbg)'}
+  // 全ルーム共通のオレンジで統一（ルームごとの色分けは廃止）
+  return {bg:'#FFF1E2',tx:'#C2620A',bd:'#FF9124',card:'#FFF1E2'}
 }
 // ルームボタンHTML動的生成
 function buildRoomButtons(sid){
@@ -8554,8 +8553,7 @@ async function loadGanttModal(){
   // --- セラピストごとに「予約状況カード＋予約を登録」＋専用チャートをスタック表示 ---
   let sectionsHtml=''
   targetShifts.forEach((s,si)=>{
-    const rc=getRoomColor(s.room||ganttModalRoom)
-    const color=(rc.bd&&!rc.bd.startsWith('var('))?rc.bd:CAST_COLORS[si%CAST_COLORS.length]
+    const color='linear-gradient(160deg,#FFB257 0%,#F4790F 100%)'
     const shiftRvs=rvByShift[s.id]||[]
     const intervalMin=intervalBycastMod[s.cast_id]||0
     const rvCount=shiftRvs.length
