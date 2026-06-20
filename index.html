@@ -469,6 +469,13 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-salary .ws-col-hdr .ws-c-shop{color:#1D4ED8}
 #p-salary .ws-row{padding:9px 10px;border-bottom:1px solid #EDE9E1}
 #p-salary .ws-row .ws-c-item{font-size:13px;color:#211C16;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 長いコース名/オプション名は1行に収まらないため、名前を上段に出し数値類を下段に配置 */
+#p-salary .ws-row.ws-row-long{grid-template-areas:"name name name name name" ". pay sales back shop";row-gap:5px}
+#p-salary .ws-row.ws-row-long .ws-c-item{grid-area:name;white-space:normal;overflow:visible;line-height:1.35}
+#p-salary .ws-row.ws-row-long .ws-c-pay{grid-area:pay}
+#p-salary .ws-row.ws-row-long .ws-c-sales{grid-area:sales}
+#p-salary .ws-row.ws-row-long .ws-c-back{grid-area:back}
+#p-salary .ws-row.ws-row-long .ws-c-shop{grid-area:shop}
 #p-salary .ws-c-pay{display:flex;justify-content:center;align-items:center}
 #p-salary .ws-pay-badge{display:inline-flex;align-items:center;gap:3px;height:22px;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:0 7px;color:#7A6E5E;font-size:10px;font-weight:600;white-space:nowrap}
 #p-salary .ws-pay-badge svg{width:11px;height:11px;flex-shrink:0}
@@ -6055,7 +6062,7 @@ async function loadMySalary(){
             const saleV=(cardOn&&row.sale>0)?row.sale+calcCardSurcharge(row.sale):row.sale
             dispSaleTotal2+=saleV
             const shopV=(saleV&&row.back!=null)?saleV-row.back:null
-            return `<div class="ws-row">
+            return `<div class="ws-row${(row.name||'').length>=7?' ws-row-long':''}">
             <div class="ws-c-item">${escapeHtml(row.name)}</div>
             <div class="ws-c-pay">${row.pay?wsPayBadge(cardOn?'card':'cash'):''}</div>
             <div class="ws-c-sales">${saleV?fmt(saleV):'—'}</div>
@@ -6202,7 +6209,7 @@ async function loadMySalary(){
         const saleV=(cardOn&&r.sale>0)?r.sale+calcCardSurcharge(r.sale):r.sale
         dispSaleTotal+=saleV
         const shopV=(saleV&&r.back!=null)?saleV-r.back:null
-        return `<div class="ws-row">
+        return `<div class="ws-row${(r.name||'').length>=7?' ws-row-long':''}">
           <div class="ws-c-item">${escapeHtml(r.name)}</div>
           <div class="ws-c-pay">${r.pay?wsPayBadge(cardOn?'card':'cash'):''}</div>
           <div class="ws-c-sales">${saleV?fmt(saleV):'—'}</div>
