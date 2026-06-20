@@ -851,12 +851,16 @@ tr:last-child td{border-bottom:none}
 .shift-cal-dow{font-size:.68rem;color:var(--text3);font-weight:600;text-align:center;padding:.3rem 0}
 .shift-cal-dow.sat{color:var(--blue)}
 .shift-cal-dow.sun{color:var(--rtx)}
-.shift-cal-cell{height:42px;text-align:center;vertical-align:middle;cursor:pointer;position:relative;padding:0}
+.shift-cal-cell{height:60px;text-align:center;vertical-align:top;cursor:pointer;position:relative;padding:5px 0 0}
 .shift-cal-num{font-family:'Inter','Noto Sans JP',sans-serif;font-size:.8125rem;color:var(--text)}
 .shift-cal-num.sat{color:var(--blue)}
 .shift-cal-num.sun{color:var(--rtx)}
-.shift-cal-today{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700}
+.shift-cal-today{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:.8125rem}
 .shift-cal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0}
+.shift-cal-badges{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:4px}
+.shift-cal-badge{font-family:'Noto Sans JP',sans-serif;font-size:.5625rem;font-weight:700;line-height:1;border-radius:999px;padding:2px 6px;white-space:nowrap}
+.shift-cal-badge.att{background:#FFF1E2;color:#D9760A}
+.shift-cal-badge.book{background:#EAF2FD;color:#2E6FD6}
 .shift-cal-legend{display:flex;gap:1rem;justify-content:center;margin-top:.6rem;font-size:.6875rem;color:var(--text2)}
 .shift-cal-legend .leg-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:.25rem}
 .shift-room-sec-row{display:flex;align-items:baseline;justify-content:space-between;margin:1.1rem 0 .6rem}
@@ -2183,7 +2187,8 @@ if("serviceWorker" in navigator && !_isSaaS){
         </div>
         <div id="owner-cal-grid"></div>
         <div class="shift-cal-legend">
-          <div><span class="leg-dot" style="background:var(--accent)"></span>承認済</div>
+          <div><span class="leg-dot" style="background:#D9760A"></span>出勤数</div>
+          <div><span class="leg-dot" style="background:#2E6FD6"></span>予約数</div>
           <div><span class="leg-dot" style="background:var(--blue)"></span>申請中</div>
         </div>
       </div>
@@ -7491,19 +7496,21 @@ async function loadOwnerCal(){
   for(let d=1;d<=last;d++){
     if(col2===7){cal+='</tr><tr>';col2=0}
     const ds=ownerCalMonth+'-'+String(d).padStart(2,'0')
+    const attCount=approvedDates[ds]||0
+    const bookCount=reservationByDate[ds]||0
     const hasPending=pendingDates[ds]>0
-    const hasApproved=approvedDates[ds]>0
     const dow2=new Date(ds).getDay()
     const isToday2=ds===td
     const dowCls2=dow2===6?'sat':dow2===0?'sun':''
-    let dotColor2=''
-    if(hasPending)dotColor2='var(--blue)'
-    else if(hasApproved)dotColor2='var(--accent)'
     const numHtml2=isToday2
       ? `<span class="shift-cal-today">${d}</span>`
       : `<span class="shift-cal-num ${dowCls2}">${d}</span>`
-    const dotHtml2=dotColor2?`<div class="shift-cal-dot" style="background:${dotColor2}"></div>`:''
-    cal+=`<td onclick="ownerSelectDay('${ds}')" class="shift-cal-cell">${numHtml2}${dotHtml2}</td>`
+    let badges2=''
+    if(attCount>0)badges2+=`<span class="shift-cal-badge att">出勤${attCount}</span>`
+    if(bookCount>0)badges2+=`<span class="shift-cal-badge book">予約${bookCount}</span>`
+    const pendDot2=hasPending?`<div class="shift-cal-dot" style="background:var(--blue)"></div>`:''
+    const badgeHtml2=badges2?`<div class="shift-cal-badges">${badges2}</div>`:pendDot2
+    cal+=`<td onclick="ownerSelectDay('${ds}')" class="shift-cal-cell">${numHtml2}${badgeHtml2}</td>`
     col2++
   }
   while(col2<7&&col2>0){cal+=`<td class="shift-cal-cell"></td>`;col2++}
