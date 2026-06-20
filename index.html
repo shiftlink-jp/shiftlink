@@ -8641,7 +8641,9 @@ async function loadGanttModal(){
       const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
       const pureGapMin=Math.max(0,fEMin-effectiveStartMin)
       const fitCourse=COURSE_LABELS.find(([mc])=>pureGapMin>=mc)
-      const fSY=timeToY(prevEnd)
+      // 空き枠はインターバル（前予約の退室後 intervalMin 分）と重ならないよう、その終了後から表示
+      const gapStartStr=minToTimeStr(rawStartMin)
+      const fSY=timeToY(gapStartStr)
       const fEY=timeToY(r.checkin_time?.slice(0,5))
       if(fSY!==null&&fEY!==null&&fEY-fSY>10){
         const fH=fEY-fSY
