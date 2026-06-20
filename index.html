@@ -830,16 +830,16 @@ tr:last-child td{border-bottom:none}
 .today-sec-row .sec{margin:0}
 .today-sec-sub{font-size:.6875rem;color:var(--text3)}
 .room-grid-v2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
-.room-card-v2{background:var(--surface2);border-radius:12px;padding:.875rem;min-height:121px;display:flex;flex-direction:column;cursor:pointer}
-.room-card-v2-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.room-card-v2{background:var(--surface2);border-radius:12px;padding:.875rem;min-height:121px;display:flex;flex-direction:column;gap:.45rem;cursor:pointer}
+.room-card-v2-hdr{display:flex;align-items:center;justify-content:space-between}
 .room-card-v2-name{font-size:.8125rem;font-weight:700;color:var(--text)}
 .room-card-v2-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.room-card-v2-cast{display:flex;align-items:center;gap:.3rem;font-size:.875rem;font-weight:700;color:var(--text);margin-bottom:.15rem}
-.room-card-v2-status{font-size:.75rem;font-weight:700;margin-bottom:.2rem}
+.room-card-v2-cast{display:flex;align-items:center;gap:.3rem;font-size:.875rem;font-weight:700;color:var(--text)}
+.room-card-v2-status{font-size:.75rem;font-weight:700}
 .room-card-v2-status.using{color:var(--accent)}
 .room-card-v2-status.free{color:var(--green)}
 .room-card-v2-status.scheduled{color:#a8997a}
-.room-card-v2-sub{font-size:.6875rem;color:var(--text3);margin-top:auto}
+.room-card-v2-sub{font-size:.6875rem;color:var(--text3)}
 /* シフトタブ（Pencil: Owner Shift） */
 .shift-cal-card{background:#fff;border-radius:16px;border:1px solid var(--border);padding:1rem;margin-bottom:.85rem}
 .shift-cal-nav{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.6rem}
@@ -8084,7 +8084,7 @@ async function loadToday(){
       const statusCls=using?'using':'scheduled'
       const statusTxt=using?'使用中':'出勤予定'
       const castNameTxt=activeSs.map(s=>escapeHtml(s.casts?.name||'?')).join('・')
-      const endTimeTxt=activeSs.map(s=>s.end_time?.slice(0,5)||'').filter(Boolean).join('・')
+      const timeTxt=activeSs.map(s=>{const st=s.start_time?.slice(0,5)||'';const et=s.end_time?.slice(0,5)||'';return st||et?`${st}〜${et}`:''}).filter(Boolean).join('・')
       rh+=`<div class="room-card-v2" onclick="openGanttModal('${jsEsc(r)}')">
         <div class="room-card-v2-hdr">
           <div class="room-card-v2-name">${escapeHtml(r)}</div>
@@ -8092,7 +8092,7 @@ async function loadToday(){
         </div>
         <div class="room-card-v2-cast"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${castNameTxt}</div>
         <div class="room-card-v2-status ${statusCls}">${statusTxt}</div>
-        <div class="room-card-v2-sub">${endTimeTxt?'〜 '+endTimeTxt:''}</div>
+        <div class="room-card-v2-sub">${timeTxt||''}</div>
       </div>`
     } else {
       rh+=`<div class="room-card-v2" onclick="openGanttModal('${jsEsc(r)}')">
