@@ -5275,7 +5275,7 @@ function buildCastAttHtml(shifts) {
         + '<span class="ct-att-time">⏱ 出勤 ' + inT + '〜</span>'
         + '<button onclick="castClockReset(' + s.id + ',\'clock_in_at\')" class="ct-att-undo">出勤取消</button></div>'
         + '<div class="ct-att-actions two">'
-        + '<button onclick="castClockOut(' + s.id + ')" class="ct-att-btn out">↩ 退勤する</button>'
+        + '<button onclick="castClockOut(' + s.id + ')" class="ct-att-btn out"><svg class="ei" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg> 退勤する</button>'
         + '<button onclick="castSendSOS()" class="ct-att-btn sos"><svg class="ei" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> 緊急SOS</button></div>';
     } else {
       badge = '<span class="ct-att-pill scheduled">出勤予定</span>';
