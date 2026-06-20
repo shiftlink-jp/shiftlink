@@ -11077,11 +11077,19 @@ async function renderMonthlyContent(){
   }
   const {data:storeRaw}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
   let sd=storeRaw||{}
-  // 当月にgoal未設定なら前月のnext_goal_*を参照して表示
-  if(!sd.goal_sales&&!sd.goal_count){
+  // 当月の経費が空かどうか（広告/家賃/光熱費/固定費/変動費/カスタムのいずれにも値が無い）
+  const hasVals=o=>o&&Object.values(o).some(v=>v!=null&&v!=='')
+  const expenseEmpty=!(hasVals(sd.ad_expenses)||hasVals(sd.rent_expenses)||hasVals(sd.utility_expenses)||hasVals(sd.fixed_expenses)||hasVals(sd.variable_expenses)||((sd.custom_expenses||[]).length>0))
+  const goalEmpty=!sd.goal_sales&&!sd.goal_count
+  // 当月にgoal未設定 or 経費が空なら前月レコードを参照して引き継ぎ表示
+  if(goalEmpty||expenseEmpty){
     const pm=m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`
-    const{data:prevSd}=await withStoreFilter(sb.from('monthly_sales').select('next_goal_sales,next_goal_count')).eq('month',pm).maybeSingle()
-    if(prevSd?.next_goal_sales||prevSd?.next_goal_count) sd={...sd,goal_sales:prevSd.next_goal_sales,goal_count:prevSd.next_goal_count}
+    const{data:prevSd}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',pm).maybeSingle()
+    if(prevSd){
+      if(goalEmpty&&(prevSd.next_goal_sales||prevSd.next_goal_count)) sd={...sd,goal_sales:prevSd.next_goal_sales,goal_count:prevSd.next_goal_count}
+      // 当月の経費が空なら前月の経費項目・金額・合計をそのまま引き継いで表示（毎月1から入力する手間を省く）
+      if(expenseEmpty) sd={...sd,ad_expenses:prevSd.ad_expenses,rent_expenses:prevSd.rent_expenses,utility_expenses:prevSd.utility_expenses,fixed_expenses:prevSd.fixed_expenses,variable_expenses:prevSd.variable_expenses,custom_expenses:prevSd.custom_expenses,total_ad_expense:prevSd.total_ad_expense,total_rent:prevSd.total_rent,total_utility:prevSd.total_utility,total_fixed:prevSd.total_fixed,total_variable:prevSd.total_variable,total_expenses:prevSd.total_expenses}
+    }
   }
   const {data:dailyNotesRaw}=await withStoreFilter(sb.from('daily_notes').select('date,inquiry_count')).gte('date',monthlyMonth+'-01').lt('date',nextYM(monthlyMonth)+'-01')
   const inquiryByDate={};(dailyNotesRaw||[]).forEach(n=>{inquiryByDate[n.date]=n.inquiry_count||0})
@@ -11738,19 +11746,26 @@ async function loadMonthlySalesForm(){
   const [y,m]=monthlyMonth.split('-').map(Number)
   document.getElementById('mse-title').textContent=y+'年'+m+'月 経費・目標・集客'
   const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
-  const ad=data?.ad_expenses||{},rent=data?.rent_expenses||{},util=data?.utility_expenses||{}
-  const fixed=data?.fixed_expenses||{},vari=data?.variable_expenses||{}
+  // 当月の経費が実質空かどうか（広告/家賃/光熱費/固定費/変動費/カスタムのいずれにも値が無い）
+  const hasVals=o=>o&&Object.values(o).some(v=>v!=null&&v!=='')
+  const expenseEmpty=!(hasVals(data?.ad_expenses)||hasVals(data?.rent_expenses)||hasVals(data?.utility_expenses)||hasVals(data?.fixed_expenses)||hasVals(data?.variable_expenses)||((data?.custom_expenses||[]).length>0))
+  // 当月レコードが無い・目標未設定・経費が空のいずれかなら、前月レコードを取得して引き継ぐ
+  let prev={}
+  if(!data || (data.goal_sales==null&&data.goal_count==null) || expenseEmpty){
+    const pm=m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`
+    const{data:pd}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',pm).maybeSingle()
+    prev=pd||{}
+  }
+  // 経費の項目・金額は当月を優先し、当月の経費が空なら前月分をそのまま引き継いでプリフィル（毎月1から入力する手間を省く）
+  const expSrc=(data && !expenseEmpty)?data:prev
+  const ad=expSrc?.ad_expenses||{},rent=expSrc?.rent_expenses||{},util=expSrc?.utility_expenses||{}
+  const fixed=expSrc?.fixed_expenses||{},vari=expSrc?.variable_expenses||{}
+  const customExpenses=expSrc?.custom_expenses||[]
+  // 集客ルート・実績は当月のデータのみ（引き継がない）
   const routes=data?.acquisition_routes||{}
-  const customExpenses=data?.custom_expenses||[]
+  const prevGoal=prev
   const setvN=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=Number(v).toLocaleString()}
   const setvR=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v}
-  // 当月にgoalが未設定なら前月のnext_goal_*をプリフィル
-  let prevGoal={}
-  if(data?.goal_sales==null&&data?.goal_count==null){
-    const pm=m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`
-    const{data:pd}=await withStoreFilter(sb.from('monthly_sales').select('next_goal_sales,next_goal_count,next_goal_recruit')).eq('month',pm).maybeSingle()
-    prevGoal=pd||{}
-  }
   setvN('mse-goal-sales',data?.goal_sales??prevGoal.next_goal_sales);setvR('mse-goal-count',data?.goal_count??prevGoal.next_goal_count);setvR('mse-goal-recruit',data?.goal_recruit??prevGoal.next_goal_recruit);setvR('mse-actual-recruit',data?.actual_recruit)
   setvN('mse-next-goal-sales',data?.next_goal_sales);setvR('mse-next-goal-count',data?.next_goal_count);setvR('mse-next-goal-recruit',data?.next_goal_recruit)
   setvN('mse-ad-panda',ad.aroma_panda);setvN('mse-ad-estelove',ad.esute_love);setvN('mse-ad-ranking',ad.ranking)
