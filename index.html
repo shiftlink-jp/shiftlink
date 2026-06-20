@@ -458,8 +458,14 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-salary .sal3-empty{background:#fff;border:1px solid #EDE9E1;border-radius:14px;text-align:center;padding:1.5rem;color:#A89B88;font-size:.85rem}
 /* === 委託金入力シートと同じ明細テーブル（売上/委託金/店舗利益） === */
 #p-salary .ws-col-hdr,
-#p-salary .ws-row,
 #p-salary .ws-subtotal{display:grid;grid-template-columns:minmax(0,1fr) 46px 58px 58px 58px;gap:5px;align-items:center}
+/* 明細行は2段：項目名を上段全幅、下段は支払バッジ(左詰め)＋売上/委託金/店舗利益 */
+#p-salary .ws-row{display:grid;grid-template-columns:minmax(0,1fr) 46px 58px 58px 58px;column-gap:5px;row-gap:3px;align-items:center;grid-template-areas:"name name name name name" "pay pay sales back shop"}
+#p-salary .ws-row .ws-c-item{grid-area:name;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
+#p-salary .ws-row .ws-c-pay{grid-area:pay;justify-content:flex-start}
+#p-salary .ws-row .ws-c-sales{grid-area:sales}
+#p-salary .ws-row .ws-c-back{grid-area:back}
+#p-salary .ws-row .ws-c-shop{grid-area:shop}
 #p-salary .ws-c-sales,
 #p-salary .ws-c-back,
 #p-salary .ws-c-shop{text-align:right;font-family:'Inter','Noto Sans JP',sans-serif;white-space:nowrap}
@@ -468,14 +474,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-salary .ws-col-hdr .ws-c-back{color:#DC2626}
 #p-salary .ws-col-hdr .ws-c-shop{color:#1D4ED8}
 #p-salary .ws-row{padding:9px 10px;border-bottom:1px solid #EDE9E1}
-#p-salary .ws-row .ws-c-item{font-size:13px;color:#211C16;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 長いコース名/オプション名は1行に収まらないため、名前を上段に出し数値類を下段に配置 */
-#p-salary .ws-row.ws-row-long{grid-template-areas:"name name name name name" ". pay sales back shop";row-gap:5px}
-#p-salary .ws-row.ws-row-long .ws-c-item{grid-area:name;white-space:normal;overflow:visible;line-height:1.35}
-#p-salary .ws-row.ws-row-long .ws-c-pay{grid-area:pay}
-#p-salary .ws-row.ws-row-long .ws-c-sales{grid-area:sales}
-#p-salary .ws-row.ws-row-long .ws-c-back{grid-area:back}
-#p-salary .ws-row.ws-row-long .ws-c-shop{grid-area:shop}
+#p-salary .ws-row .ws-c-item{font-size:13px;color:#211C16;min-width:0}
 #p-salary .ws-c-pay{display:flex;justify-content:center;align-items:center}
 #p-salary .ws-pay-badge{display:inline-flex;align-items:center;gap:3px;height:22px;background:#fff;border:1px solid #EDE9E1;border-radius:999px;padding:0 7px;color:#7A6E5E;font-size:10px;font-weight:600;white-space:nowrap}
 #p-salary .ws-pay-badge svg{width:11px;height:11px;flex-shrink:0}
@@ -6062,7 +6061,7 @@ async function loadMySalary(){
             const saleV=(cardOn&&row.sale>0)?row.sale+calcCardSurcharge(row.sale):row.sale
             dispSaleTotal2+=saleV
             const shopV=(saleV&&row.back!=null)?saleV-row.back:null
-            return `<div class="ws-row${(row.name||'').length>=7?' ws-row-long':''}">
+            return `<div class="ws-row">
             <div class="ws-c-item">${escapeHtml(row.name)}</div>
             <div class="ws-c-pay">${row.pay?wsPayBadge(cardOn?'card':'cash'):''}</div>
             <div class="ws-c-sales">${saleV?fmt(saleV):'—'}</div>
@@ -6209,7 +6208,7 @@ async function loadMySalary(){
         const saleV=(cardOn&&r.sale>0)?r.sale+calcCardSurcharge(r.sale):r.sale
         dispSaleTotal+=saleV
         const shopV=(saleV&&r.back!=null)?saleV-r.back:null
-        return `<div class="ws-row${(r.name||'').length>=7?' ws-row-long':''}">
+        return `<div class="ws-row">
           <div class="ws-c-item">${escapeHtml(r.name)}</div>
           <div class="ws-c-pay">${r.pay?wsPayBadge(cardOn?'card':'cash'):''}</div>
           <div class="ws-c-sales">${saleV?fmt(saleV):'—'}</div>
