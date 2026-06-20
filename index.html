@@ -3370,15 +3370,20 @@ function buildRoomButtons(sid){
 const DEFAULT_FEE = {back_50:6000,back_80:8000,back_100:9000,back_130:11000,back_ext30:3000,shimei_free:0,shimei_net:1000,shimei_hon:1000,op_gokueki:1000,op_isho:2000,op_isho2:3000,shop_shimei_free:0,shop_shimei_net:1000,shop_shimei_hon:2000,shop_op_gokueki:2000,shop_op_isho:3000,shop_op_isho2:3000,misc_0:0,misc_1:1000,misc_3:2000,misc_c0:1,misc_c1:2,misc_c2:3,misc_enabled:true,trial_days:0,trial_b50:null,trial_b80:null,trial_b100:null,trial_b130:null,trial_bext:null,trial_shimei_free:null,trial_shimei_net:null,trial_shimei_hon:null,trial_op_gokueki:null,trial_op_isho:null,trial_op_isho2:null}
 
 // 営業時間プルダウン用（storeSettingsから動的取得、フォールバック11:00〜翌2:00）
-function buildTimeOptions(selectedVal=''){
+function buildTimeOptions(selectedVal='',fullDay=false){
   const ss=storeSettings||{}
-  const startH=parseInt((ss.open_time||'11:00').split(':')[0])
-  const closeH=parseInt((ss.close_time||'02:00').split(':')[0])
   const times=[]
-  for(let h=startH;h<=23;h++) for(let m=0;m<60;m+=30) times.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
-  for(let h=0;h<=closeH;h++) for(let m=0;m<60;m+=30){
-    if(h===closeH&&m>0) break
-    times.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+  if(fullDay){
+    // 営業時間設定用：0:00〜23:30の24時間すべてを選択肢に
+    for(let h=0;h<=23;h++) for(let m=0;m<60;m+=30) times.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+  } else {
+    const startH=parseInt((ss.open_time||'11:00').split(':')[0])
+    const closeH=parseInt((ss.close_time||'02:00').split(':')[0])
+    for(let h=startH;h<=23;h++) for(let m=0;m<60;m+=30) times.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+    for(let h=0;h<=closeH;h++) for(let m=0;m<60;m+=30){
+      if(h===closeH&&m>0) break
+      times.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+    }
   }
   return times.map(t=>`<option value="${t}" ${t===selectedVal?'selected':''}>${t}</option>`).join('')
 }
@@ -10051,8 +10056,8 @@ async function openStoreSettings(){
     // 営業時間
     const otEl=document.getElementById('st-open-time')
     const ctEl=document.getElementById('st-close-time')
-    if(otEl) otEl.innerHTML=buildTimeOptions(ss.open_time||'11:00')
-    if(ctEl) ctEl.innerHTML=buildTimeOptions(ss.close_time||'02:00')
+    if(otEl) otEl.innerHTML=buildTimeOptions(ss.open_time||'11:00',true)
+    if(ctEl) ctEl.innerHTML=buildTimeOptions(ss.close_time||'02:00',true)
     // ルーム
     renderStoreRoomList()
     // カード手数料
