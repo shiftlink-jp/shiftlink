@@ -1661,6 +1661,7 @@ tr:last-child td{border-bottom:none}
 #p-cast-today .ct-att-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem}
 #p-cast-today .ct-att-title{font-size:14px;font-weight:700;color:#211C16}
 #p-cast-today .ct-att-range{font-family:'Inter','Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:#A89B88;margin-left:6px}
+#p-cast-today .ct-att-room-badge{display:inline-block;font-size:.68rem;font-weight:700;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 #p-cast-today .ct-att-pill{font-size:.72rem;border-radius:999px;padding:.18rem .7rem;font-weight:700;white-space:nowrap;flex-shrink:0}
 #p-cast-today .ct-att-pill.working{background:#1E9E4A;color:#fff}
 #p-cast-today .ct-att-pill.scheduled{background:#C9BFA8;color:#fff}
@@ -5248,6 +5249,7 @@ function buildCastAttHtml(shifts) {
   let h = '';
   shifts.forEach(s => {
     const range = (s.start_time ? String(s.start_time).slice(0, 5) : '') + '〜' + (s.end_time ? String(s.end_time).slice(0, 5) : '');
+    const roomBadge = s.room ? (rc => '<span class="ct-att-room-badge" style="background:' + rc.bg + ';color:' + rc.tx + ';border:1px solid ' + rc.bd + '">' + escapeHtml(s.room) + '</span>')(getRoomColor(s.room)) : '';
     const inT = fmtClock(s.clock_in_at), outT = fmtClock(s.clock_out_at);
     let badge, action;
     if (s.clock_out_at) {
@@ -5269,7 +5271,7 @@ function buildCastAttHtml(shifts) {
     }
     h += '<div class="ct-att-card">'
       + '<div class="ct-att-top">'
-      + '<div class="ct-att-title">本日のシフト<span class="ct-att-range">' + range + '</span></div>'
+      + '<div class="ct-att-title">本日のシフト<span class="ct-att-range">' + range + '</span>' + roomBadge + '</div>'
       + badge + '</div>' + action + '</div>';
   });
   return h;
