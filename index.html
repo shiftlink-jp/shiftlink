@@ -168,7 +168,7 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 
 /* Pencilデザイン: ページヘッダー（オーナー各タブ共通） */
 .pg-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;gap:.5rem}
-.pg-title{font-size:1.45rem;font-weight:700;color:var(--text);letter-spacing:.01em;white-space:nowrap}
+.pg-title{font-size:1.5rem;font-weight:700;color:var(--text);letter-spacing:.01em;white-space:nowrap}
 .pg-pill{display:inline-flex;align-items:center;gap:.35rem;background:var(--accent-f);color:var(--accent);border-radius:999px;padding:.35rem .7rem;font-size:.72rem;font-weight:600;white-space:nowrap}
 .pg-pill svg{width:14px;height:14px;flex-shrink:0}
 /* Owner Shift: 折りたたみセクションヘッダー（Pencil） */
@@ -2181,7 +2181,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <!-- 店舗：本日状況 -->
     <div class="panel" id="p-today">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
-        <div style="font-size:1.4rem;font-weight:700;letter-spacing:.01em">本日</div>
+        <div class="pg-title">本日</div>
         <div style="display:flex;align-items:center;gap:.35rem;background:var(--surface2);border-radius:12px;padding:.3rem .5rem">
           <button class="cal-nav-btn" onclick="todayNavMove(-1)" style="font-size:.9rem;padding:.1rem .35rem;background:none;border:none">‹</button>
           <div style="font-size:.82rem;font-weight:700;color:var(--text);min-width:6em;text-align:center" id="today-lbl">-</div>
@@ -2261,7 +2261,7 @@ if("serviceWorker" in navigator && !_isSaaS){
     <!-- 店舗：月次売上管理 -->
     <div class="panel" id="p-owner-monthly">
       <div class="no-print pg-hdr">
-        <div class="pg-title" style="font-size:1.3rem">売上</div>
+        <div class="pg-title">売上</div>
         <button class="mo-edit-pill" onclick="openMonthlySalesEdit()"><svg class="ei" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> 経費・目標</button>
       </div>
       <div class="no-print" style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
