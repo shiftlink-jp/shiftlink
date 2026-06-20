@@ -3411,11 +3411,13 @@ function getBusinessHours(){
   if(endH<=startH) endH+=24
   return{startH,endH,totalMin:(endH-startH)*60}
 }
-// 営業日判定：終了時刻前は前日の営業日扱い
+// 営業日判定：終了時刻前は前日の営業日扱い（30分単位で判定）
 function bizDay(){
   const jst=new Date(new Date().getTime()+9*60*60*1000)
-  const closeH=parseInt((storeSettings?.close_time||'02:00').split(':')[0])
-  if(jst.getUTCHours()<closeH){jst.setUTCDate(jst.getUTCDate()-1)}
+  const[ch,cm]=(storeSettings?.close_time||'02:00').split(':').map(Number)
+  const closeMin=ch*60+(cm||0)
+  const nowMin=jst.getUTCHours()*60+jst.getUTCMinutes()
+  if(nowMin<closeMin){jst.setUTCDate(jst.getUTCDate()-1)}
   return jst.toISOString().slice(0,10)
 }
 function toast(msg,dur=1800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),dur)}
