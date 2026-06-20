@@ -8499,7 +8499,7 @@ async function loadGanttModal(){
   const LABEL_W=36         // 時刻ラベル幅
   const GAP=8              // ラベルとチャートの間隔
   const OFFSET=LABEL_W+GAP // チャート本体の左オフセット
-  const HOUR_H=136          // 1時間あたりの高さ（縦スクロール前提で広め）
+  const HOUR_H=102          // 1時間あたりの高さ（縦スクロール前提で広め）
   const totalHours=END_H - START_H
   const chartH=totalHours*HOUR_H
 
@@ -8659,7 +8659,7 @@ async function loadGanttModal(){
     sectionsHtml+=actionRow+`<div style="position:relative;height:${chartH}px;margin:0 16px 20px">${gridHtml}${layersHtml}${nowLineHtml}</div>`
   })
 
-  area.style.cssText='flex:1;overflow-y:auto;padding-top:8px'
+  area.style.cssText='flex:1;overflow-y:auto;padding-top:8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain'
   area.innerHTML=sectionsHtml
 
   // 現在時刻ラインが見えるよう自動スクロール
