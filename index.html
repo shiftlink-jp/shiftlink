@@ -2547,9 +2547,10 @@ if("serviceWorker" in navigator && !_isSaaS){
     </div>
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg class="ei" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span><span class="f2-card-title">指名・オプションバック</span></div>
-      <div class="f2-row"><div class="f2-row-lbl">フリーバック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-free" min="0" step="100"><span class="f2-unit">円</span></div></div>
-      <div class="f2-row"><div class="f2-row-lbl">ネット指名バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-net" min="0" step="100"><span class="f2-unit">円</span></div></div>
-      <div class="f2-row"><div class="f2-row-lbl">本指名バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-hon" min="0" step="100"><span class="f2-unit">円</span></div></div>
+      <div class="f2-row"><div class="f2-row-lbl" id="f-shimei-free-lbl">フリーバック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-free" min="0" step="100"><span class="f2-unit">円</span></div></div>
+      <div class="f2-row"><div class="f2-row-lbl" id="f-shimei-net-lbl">ネット指名バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-net" min="0" step="100"><span class="f2-unit">円</span></div></div>
+      <div class="f2-row"><div class="f2-row-lbl" id="f-shimei-hon-lbl">本指名バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="f-shimei-hon" min="0" step="100"><span class="f2-unit">円</span></div></div>
+      <div id="fee-shimei-rows"></div>
       <div id="fee-option-rows"></div>
     </div>
     <div class="f2-card f2-card-trial">
@@ -2655,9 +2656,8 @@ if("serviceWorker" in navigator && !_isSaaS){
     </div>
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg></span><span class="f2-card-title">指名料金</span></div>
-      <div class="f2-row"><div class="f2-row-lbl">フリー指名</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="st-shimei-free" min="0" step="100"><span class="f2-unit">円</span></div></div>
-      <div class="f2-row"><div class="f2-row-lbl">ネット指名</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="st-shimei-net" min="0" step="100"><span class="f2-unit">円</span></div></div>
-      <div class="f2-row"><div class="f2-row-lbl">本指名</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input" id="st-shimei-hon" min="0" step="100"><span class="f2-unit">円</span></div></div>
+      <div id="store-shimei-list"></div>
+      <button class="f2-addrow-btn" onclick="addBlankShimei()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>指名を追加</button>
       <button class="f2-savebtn-sm" onclick="saveShimeiSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
     <div class="f2-card">
@@ -5376,9 +5376,7 @@ async function castOpenPayment(rvId) {
   const ss = storeSettings || {};
   const courseObj = (courseList||[]).find(c => c.name === r.course);
   const coursePrice = courseObj?.price || 0;
-  const shimeiPrice = r.shimei_type==='フリー' ? (ss.shimei_free||0)
-    : r.shimei_type==='ネット指名' ? (ss.shimei_net||1000)
-    : r.shimei_type==='本指名' ? (ss.shimei_hon||2000) : 0;
+  const shimeiPrice = getShimeiPrice(r.shimei_type);
   const optNames2 = r.options ? r.options.split(',').filter(Boolean) : [];
   const extCount = r.extension_count || 0;
   const extCourseObj = (courseList||[]).find(c => c.name&&c.name.includes('延長'));
@@ -5920,8 +5918,12 @@ async function loadMySalary(){
       }
       // 指名バック
       let sb2=0
-      if(shimeiType==='本指名') sb2=fee.shimei_hon||2000
-      else if(shimeiType==='ネット指名') sb2=fee.shimei_net||1000
+      const _se=resolveShimei(shimeiType)
+      if(_se){
+        if(_se.key==='hon') sb2=fee.shimei_hon||2000
+        else if(_se.key==='net') sb2=fee.shimei_net||1000
+        else if(_se.key!=='free') sb2=(fee.extra_shimei_backs||{})['shimei_'+_se.key]||0
+      }
       // OPバック：まずextra_op_backsから名前で検索
       let opDetails=[]
       ;(optNames||[]).forEach(o=>{
@@ -5993,7 +5995,7 @@ async function loadMySalary(){
           const op=opts.find(x=>x.name===o);return s+(op?.price||0)
         },0)
         // 指名料
-        const shimeiPrice=r.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
+        const shimeiPrice=getShimeiPrice(r.shimei_type)
         // 延長（extension_count × 延長コース価格）
         const extCourseObj2=courses.find(c=>c.name&&c.name.includes('延長'))
         const extTotal2=(r.extension_count||0)*(extCourseObj2?.price||0)
@@ -6044,14 +6046,14 @@ async function loadMySalary(){
           const rvOpts=r.options?r.options.split(',').filter(Boolean):[]
           let pj={};try{pj=JSON.parse(r.payment||'{}')}catch(e){}
           const payMethod=pj.course||'現金'
-          const hasShimei=r.shimei_type&&r.shimei_type!=='フリー'
+          const hasShimei=isPaidShimei(r.shimei_type)
           const est=calcBack(r.course,r.shimei_type,rvOpts)
           const custName=(r.customer_name||'').replace(/様\s*$/,'')||(r.customer_no&&custMap[r.customer_no]?custMap[r.customer_no].replace(/様\s*$/,''):'お客様')
           const payLabel=m=>m==='カード'?'カード':'現金'
           const optPay=pj.optPay||{}
           const courseObj3=courses.find(c=>c.name===r.course)
           const courseSale2=courseObj3?.price||0
-          const shimeiSale2=r.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):r.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
+          const shimeiSale2=getShimeiPrice(r.shimei_type)
           const rows=[]
           rows.push({cat:'コース',name:(r.course||'').replace(/コース$/,'').trim(),sale:courseSale2,back:est.cb,pay:payLabel(pj.course||'現金')})
           if(r.shimei_type) rows.push({cat:'指名料',name:r.shimei_type,sale:hasShimei?shimeiSale2:0,back:hasShimei?est.sb2:0,pay:payLabel(pj.shimei||'現金')})
@@ -6172,7 +6174,7 @@ async function loadMySalary(){
       const extBackTotal=s.ext_back!=null?s.ext_back:(s.extensions||[]).reduce((sum,e)=>sum+(e.back||0),0)
       const discFromBack=(s.discounts||[]).filter(d=>d.disc_type&&d.disc_type!=='shop').reduce((sum,d)=>sum+(d.amount||0),0)
       const sessionNet=courseBack+shimeiBack+optBack+extBackTotal-discFromBack
-      const hasShimei=s.shimei_type&&s.shimei_type!=='フリー'
+      const hasShimei=isPaidShimei(s.shimei_type)
       const sOptNames=(s.options||[]).map(o=>o.name).filter(Boolean)
       const exts=(s.extensions||[])
       const payMethod=s.pay_course||'現金'
@@ -6184,7 +6186,7 @@ async function loadMySalary(){
       const ov=s.overrides||{}
       const courseObj2=courses.find(c=>c.name===s.course_name)
       const courseSale=ov['course:price']!=null?ov['course:price']:(courseObj2?.price||0)
-      const shimeiSaleBase=s.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):s.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
+      const shimeiSaleBase=getShimeiPrice(s.shimei_type)
       const shimeiSale=ov['shimei:price']!=null?ov['shimei:price']:shimeiSaleBase
       const sRows=[]
       sRows.push({cat:'コース',name:(s.course_name||'').replace(/コース$/,'').trim(),sale:courseSale,back:courseBack,pay:payLbl(s.pay_course)})
@@ -6442,7 +6444,7 @@ async function openCustomerDetail(id){
     html+='<div class="empty">来店記録なし</div>'
   } else {
     visits.forEach(v=>{
-      const isHonshimei=v.shimei_type==='本指名'||v.shimei_type==='ネット指名'
+      const isHonshimei=isPaidShimei(v.shimei_type)
       html+=`<div class="cd-visit-row">
         <div class="cd-visit-date-col">
           <div class="cd-visit-date">${escapeHtml(v.visit_date||'')}</div>
@@ -6684,6 +6686,9 @@ async function openReservation(shiftId,castName,date){
   document.getElementById('rv-name').value=''
   document.getElementById('rv-cust-name').textContent=''
   document.getElementById('rv-is-new').value=''
+  // 指名プルダウンを動的生成（店舗設定の指名タイプに追従）
+  const _rvShimeiSel=document.getElementById('rv-shimei')
+  if(_rvShimeiSel) _rvShimeiSel.innerHTML='<option value="">-- 選択 --</option>'+getShimeiTypes().map(t=>`<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`).join('')
   document.getElementById('rv-shimei').value=''
   const _histArea=document.getElementById('rv-hist-area')
   if(_histArea) _histArea.style.display='none'
@@ -6927,7 +6932,8 @@ async function autoFillCustomer(){
         if((prevVisits||[]).length>=2){
           if(shimeiHint) shimeiHint.style.display='block'
           const shimeiSel=document.getElementById('rv-shimei')
-          if(shimeiSel&&!shimeiSel.value) shimeiSel.value='本指名'
+          const honName=(getShimeiTypes().find(x=>x.key==='hon')||{}).name||'本指名'
+          if(shimeiSel&&!shimeiSel.value) shimeiSel.value=honName
         }
       }
     }
@@ -8530,7 +8536,7 @@ async function loadGanttModal(){
       const custNo=r.customer_no?'No.'+r.customer_no+' ':''
       const name=custNo+(r.customer_name||'').replace(/様\s*$/,'')+' 様'
       const course=r.course||''
-      const shimeiBadge=(r.shimei_type&&r.shimei_type!=='フリー')?`<div style="background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px;flex-shrink:0"><span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap">${escapeHtml(r.shimei_type)}</span></div>`:''
+      const shimeiBadge=isPaidShimei(r.shimei_type)?`<div style="background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px;flex-shrink:0"><span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap">${escapeHtml(r.shimei_type)}</span></div>`:''
       layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${rY+2}px;height:${rH-4}px;background:${color};border-radius:10px;z-index:5;padding:8px 12px;box-sizing:border-box;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;gap:2px"
         onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${jsEsc(s.casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
@@ -8720,8 +8726,8 @@ function addSession(data=null){
   if(data?.customer_no!=null&&data?.customer_no!=='') div.dataset.customerNo=String(data.customer_no)
   if(data?.customer_name) div.dataset.customerName=data.customer_name.replace(/様\s*$/,'')
   const courseOpts='<option value="">-- コースを選択 --</option>'+courses.map(c=>`<option value="${c.id}" ${data?.course_id===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')
-  const shimeiTypes=['フリー','ネット指名','本指名']
-  const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${t}" ${data?.shimei_type===t?'selected':''}>${t}</option>`).join('')
+  const shimeiTypes=getShimeiTypes().map(t=>t.name)
+  const shimeiOpts='<option value="">-- 指名を選択 --</option>'+shimeiTypes.map(t=>`<option value="${escapeHtml(t)}" ${data?.shimei_type===t?'selected':''}>${escapeHtml(t)}</option>`).join('')
   // オプション一覧はDBから取得済みのoptsを使用
   // opt_paysマップを構築（opt_pays優先、なければoptionsのpayフィールド、最後にpay_option）
   const optPaysData=data?.opt_pays||{}
@@ -8915,28 +8921,53 @@ function isTrialPeriod(){
   if(sheetDate<sheetFee.joined_at) return false
   return trialWorkDays<=trialDays
 }
+// ===== 指名タイプ（動的化）=====
+// 既存3種(free/net/hon)は内部キーとして温存し、レガシー列と同期。
+// store_settings.shimei_list があればそれを、なければレガシー3種を返す（既存店舗は挙動不変）。
+function getShimeiTypes(){
+  const ss=storeSettings||{}
+  if(Array.isArray(ss.shimei_list)&&ss.shimei_list.length) return ss.shimei_list
+  return [
+    {key:'free',name:'フリー',sale:Number(ss.shimei_free)||0},
+    {key:'net',name:'ネット指名',sale:ss.shimei_net!=null?Number(ss.shimei_net):1000},
+    {key:'hon',name:'本指名',sale:ss.shimei_hon!=null?Number(ss.shimei_hon):2000}
+  ]
+}
+// 予約に保存された指名名(表示名)からタイプを引く。旧名フォールバック付き（名前変更後も旧予約を救済）。
+function resolveShimei(typeName){
+  if(!typeName||typeName==='なし') return null
+  const list=getShimeiTypes()
+  let e=list.find(x=>x.name===typeName); if(e) return e
+  const legacyKey={'フリー':'free','ネット指名':'net','本指名':'hon'}[typeName]
+  if(legacyKey){ e=list.find(x=>x.key===legacyKey); if(e) return e }
+  return null
+}
+// 課金対象の指名か（free=無料枠は対象外。従来の「!=='フリー'」判定の置き換え）
+function isPaidShimei(typeName){ const e=resolveShimei(typeName); return !!(e&&e.key!=='free') }
+
 function getShimeiBack(type){
   const trial=isTrialPeriod()
-  if(type==='フリー'){
+  const e=resolveShimei(type)
+  if(!e) return 0
+  if(e.key==='free'){
     if(trial && sheetFee.trial_shimei_free!=null) return sheetFee.trial_shimei_free
     return sheetFee.shimei_free||DEFAULT_FEE.shimei_free
   }
-  if(type==='ネット指名'){
+  if(e.key==='net'){
     if(trial && sheetFee.trial_shimei_net!=null) return sheetFee.trial_shimei_net
     return sheetFee.shimei_net||DEFAULT_FEE.shimei_net
   }
-  if(type==='本指名'){
+  if(e.key==='hon'){
     if(trial && sheetFee.trial_shimei_hon!=null) return sheetFee.trial_shimei_hon
     return sheetFee.shimei_hon||DEFAULT_FEE.shimei_hon
   }
-  return 0
+  // カスタム指名：cast_fees.extra_shimei_backs から取得
+  return (sheetFee.extra_shimei_backs||{})['shimei_'+e.key]||0
 }
 // 店舗側の指名料（お客様支払い額）
 function getShimeiPrice(type){
-  if(type==='フリー') return storeSettings.shimei_free||0
-  if(type==='ネット指名') return storeSettings.shimei_net||1000
-  if(type==='本指名') return storeSettings.shimei_hon||2000
-  return 0
+  const e=resolveShimei(type)
+  return e?(Number(e.sale)||0):0
 }
 function getCourseBack(courseId){
   const c=courses.find(x=>x.id===courseId);if(!c) return 0
@@ -9537,6 +9568,21 @@ async function openFeeSheet(castId,name){
   if(fsfEl) fsfEl.value=f.shimei_free??0
   if(fsnEl) fsnEl.value=f.shimei_net??300
   if(fshEl) fshEl.value=f.shimei_hon??500
+  // 既存3種のラベルを現在の指名名に追従＋カスタム指名のバック欄を動的生成
+  const shimeiAll=getShimeiTypes()
+  const nameOf=k=>{const e=shimeiAll.find(x=>x.key===k);return e?e.name:''}
+  const setLbl=(id,k,suffix)=>{const el=document.getElementById(id);if(el&&nameOf(k))el.textContent=nameOf(k)+suffix}
+  setLbl('f-shimei-free-lbl','free','バック');setLbl('f-shimei-net-lbl','net','バック');setLbl('f-shimei-hon-lbl','hon','バック')
+  const shimeiRows=document.getElementById('fee-shimei-rows')
+  if(shimeiRows){
+    const extraShimei=f.extra_shimei_backs||{}
+    const customs=shimeiAll.filter(t=>!['free','net','hon'].includes(t.key))
+    shimeiRows.innerHTML=customs.map(t=>{
+      const key='shimei_'+t.key
+      const val=extraShimei[key]??0
+      return `<div class="f2-row"><div class="f2-row-lbl">${escapeHtml(t.name)}バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input fee-shimei-back" data-key="${key}" value="${val}" min="0" step="100"><span class="f2-unit">円</span></div></div>`
+    }).join('')
+  }
   // 割引リスト読み込み
   await renderFeeDiscList()
   // 雑費設定読み込み
@@ -9662,6 +9708,9 @@ async function saveFee(){
   document.querySelectorAll('.fee-trial-course-back').forEach(el=>{ extraCourseBacks[el.dataset.key]=parseInt(el.value)||0 })
   const extraOpBacks = {}
   document.querySelectorAll('.fee-op-back').forEach(el=>{ extraOpBacks[el.dataset.key]=parseInt(el.value)||0 })
+  // カスタム指名バックを収集
+  const extraShimeiBacks = {}
+  document.querySelectorAll('.fee-shimei-back').forEach(el=>{ extraShimeiBacks[el.dataset.key]=parseInt(el.value)||0 })
   const extraTrialOpBacks = {}
   document.querySelectorAll('.fee-trial-op-back').forEach(el=>{
     const v=el.value===''?null:parseInt(el.value,10)
@@ -9680,6 +9729,7 @@ async function saveFee(){
     back_ext30:cext?extraCourseBacks['course_'+cext.id]:0,
     extra_course_backs:extraCourseBacks,
     extra_op_backs:extraOpBacks,
+    extra_shimei_backs:extraShimeiBacks,
     shimei_free:gv('f-shimei-free'),shimei_net:gv('f-shimei-net'),shimei_hon:gv('f-shimei-hon'),
     op_gokueki:op1?extraOpBacks['op_'+op1.id]:0,
     op_isho:op2?extraOpBacks['op_'+op2.id]:0,
@@ -9952,10 +10002,10 @@ async function loadOwnerSalary(){
       const shimeiBack=s.shimei_back||0
       const optBack=s.opt_back||0
       const exts=(s.extensions||[])
-      const hasShimei=s.shimei_type&&s.shimei_type!=='フリー'
+      const hasShimei=isPaidShimei(s.shimei_type)
       const courseObj2=courses.find(c=>c.name===s.course_name)
       const courseSale=courseObj2?.price||0
-      const shimeiSale=s.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):s.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
+      const shimeiSale=getShimeiPrice(s.shimei_type)
       const sRows=[]
       sRows.push({name:'コース料',sale:courseSale,back:courseBack,pay:payLbl(s.pay_course||s.payment)})
       if(s.shimei_type) sRows.push({name:s.shimei_type,sale:hasShimei?shimeiSale:0,back:hasShimei?shimeiBack:0,pay:payLbl(s.pay_shimei)})
@@ -10053,9 +10103,10 @@ async function openStoreSettings(){
   await renderStoreOptionList()
   const{data:ss}=await withStoreFilter(sb.from('store_settings').select('*')).maybeSingle()
   if(ss){
-    const sfEl=document.getElementById('st-shimei-free');if(sfEl) sfEl.value=ss.shimei_free||0
-    const snEl=document.getElementById('st-shimei-net');if(snEl) snEl.value=ss.shimei_net||1000
-    const shEl=document.getElementById('st-shimei-hon');if(shEl) shEl.value=ss.shimei_hon||2000
+    // 指名料金（動的リスト）。最新のss値をグローバルへ反映してから描画
+    storeSettings.shimei_list=ss.shimei_list
+    storeSettings.shimei_free=ss.shimei_free;storeSettings.shimei_net=ss.shimei_net;storeSettings.shimei_hon=ss.shimei_hon
+    renderStoreShimeiList()
     // 営業時間
     const otEl=document.getElementById('st-open-time')
     const ctEl=document.getElementById('st-close-time')
@@ -10117,6 +10168,35 @@ async function addBlankCourse(){
   await renderStoreCourseList(); await loadGlobalData()
   const inp=document.querySelector('#store-course-list .f2-itemrow2:last-child .f2-name-input')
   if(inp){inp.focus();inp.select();inp.scrollIntoView({block:'center'})}
+}
+const SHIMEI_TRASH_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>'
+function renderStoreShimeiList(){
+  const el=document.getElementById('store-shimei-list')
+  if(!el) return
+  const list=getShimeiTypes()
+  el.innerHTML=list.map(t=>{
+    const isBuiltin=['free','net','hon'].includes(t.key)
+    const trash=isBuiltin?'':`<button class="f2-trash" onclick="this.closest('.f2-itemrow2').remove()" aria-label="削除">${SHIMEI_TRASH_SVG}</button>`
+    return `<div class="f2-itemrow2" data-key="${escapeHtml(t.key)}">
+      <input type="text" class="f2-name-input st-shimei-name" value="${escapeHtml(t.name)}">
+      <div class="f2-numbox"><input type="number" class="f2-num-input st-shimei-sale" style="width:90px" value="${Number(t.sale)||0}" min="0" step="100"><span class="f2-unit">円</span></div>
+      ${trash}
+    </div>`
+  }).join('')
+}
+function addBlankShimei(){
+  const el=document.getElementById('store-shimei-list')
+  if(!el) return
+  const key='c'+Date.now()
+  const div=document.createElement('div')
+  div.className='f2-itemrow2'
+  div.dataset.key=key
+  div.innerHTML=`<input type="text" class="f2-name-input st-shimei-name" value="新規指名">
+    <div class="f2-numbox"><input type="number" class="f2-num-input st-shimei-sale" style="width:90px" value="0" min="0" step="100"><span class="f2-unit">円</span></div>
+    <button class="f2-trash" onclick="this.closest('.f2-itemrow2').remove()" aria-label="削除">${SHIMEI_TRASH_SVG}</button>`
+  el.appendChild(div)
+  const inp=div.querySelector('.st-shimei-name')
+  if(inp){inp.focus();inp.select();div.scrollIntoView({block:'center'})}
 }
 async function addBlankExt(){
   const{error}=await sb.from('courses').insert(withStoreId({name:'延長30分',price:0,duration:30}))
@@ -10247,13 +10327,32 @@ async function addStoreOption(){
 }
 
 async function saveShimeiSettings(){
-  const shimei_free=parseInt(document.getElementById('st-shimei-free')?.value)||0
-  const shimei_net=parseInt(document.getElementById('st-shimei-net')?.value)||0
-  const shimei_hon=parseInt(document.getElementById('st-shimei-hon')?.value)||0
-  const{error}=await withStoreFilter(sb.from('store_settings').update({shimei_free,shimei_net,shimei_hon}))
+  const rows=[...document.querySelectorAll('#store-shimei-list .f2-itemrow2')]
+  const list=[]
+  const seen=new Set()
+  for(const r of rows){
+    let key=r.dataset.key||('c'+Date.now()+Math.floor(Math.random()*1000))
+    if(seen.has(key)) key='c'+Date.now()+Math.floor(Math.random()*1000)
+    seen.add(key)
+    const name=r.querySelector('.st-shimei-name')?.value.trim()
+    const sale=parseInt(r.querySelector('.st-shimei-sale')?.value)||0
+    if(!name) continue
+    list.push({key,name,sale})
+  }
+  if(!list.length){toast('指名は最低1つ必要です');return}
+  // レガシー列も同期（既存の売上・バック計算との後方互換）
+  const byKey=k=>list.find(x=>x.key===k)
+  const payload={
+    shimei_list:list,
+    shimei_free:byKey('free')?byKey('free').sale:(storeSettings.shimei_free||0),
+    shimei_net:byKey('net')?byKey('net').sale:(storeSettings.shimei_net||0),
+    shimei_hon:byKey('hon')?byKey('hon').sale:(storeSettings.shimei_hon||0)
+  }
+  const{error}=await withStoreFilter(sb.from('store_settings').update(payload))
   if(error){toast('エラー: '+error.message);return}
   toast('指名料金を保存しました')
   await loadGlobalData()
+  renderStoreShimeiList()
 }
 
 // 料金設定シートからオーナーPINを変更
@@ -10334,13 +10433,7 @@ async function openShiftReservations(shiftId, castName){
     // 金額計算
     const courseObj = (courseList||[]).find(c=>c.name===r.course)
     const coursePrice = courseObj?.price||0
-    const shimeiPrice = (()=>{
-      const ss = storeSettings||{}
-      if(r.shimei_type==='フリー') return ss.shimei_free||0
-      if(r.shimei_type==='ネット指名') return ss.shimei_net||1000
-      if(r.shimei_type==='本指名') return ss.shimei_hon||2000
-      return 0
-    })()
+    const shimeiPrice = getShimeiPrice(r.shimei_type)
     const optTotal = opts.reduce((s,n)=>{const o=(optList||[]).find(x=>x.name===n);return s+(o?.price||0)},0)
     const discTotal = discs.reduce((s,n)=>{const d=(discList||[]).find(x=>x.name===n);return s+(d?.amount||0)},0)
     const extCount = r.extension_count||0
@@ -10419,7 +10512,7 @@ async function openRvDetail(rvId, shiftId, castName){
   const courseObj = (courseList||[]).find(c=>c.name===r.course)
   const coursePrice = courseObj?.price||0
   const ss = storeSettings||{}
-  const shimeiPrice = r.shimei_type==='フリー'?(ss.shimei_free||0):r.shimei_type==='ネット指名'?(ss.shimei_net||1000):r.shimei_type==='本指名'?(ss.shimei_hon||2000):0
+  const shimeiPrice = getShimeiPrice(r.shimei_type)
   const optTotal = opts.reduce((s,n)=>{const o=(optList||[]).find(x=>x.name===n);return s+(o?.price||0)},0)
   const discTotal = discs.reduce((s,n)=>{const d=(discListAll||[]).find(x=>x.name===n);return s+(d?.amount||0)},0)
   const extCount=r.extension_count||0
@@ -11130,7 +11223,7 @@ async function renderMonthlyContent(){
     let pj={}; try{pj=JSON.parse(r.payment||'{}')}catch(e){}
     const courseObj=(courseList||[]).find(c=>c.name===r.course)
     const cp=courseObj?.price||0
-    const sp=r.shimei_type==='フリー'?(ss.shimei_free||0):r.shimei_type==='ネット指名'?(ss.shimei_net||1000):r.shimei_type==='本指名'?(ss.shimei_hon||2000):0
+    const sp=getShimeiPrice(r.shimei_type)
     const opts2=r.options?r.options.split(',').filter(Boolean):[]
     const op=opts2.reduce((s,n)=>{const o=(optList||[]).find(x=>x.name===n);return s+(o?.price||0)},0)
     const discs2=r.discount?r.discount.split(',').filter(Boolean):[]
@@ -11165,9 +11258,10 @@ async function renderMonthlyContent(){
     const castId=shiftCastMap[r.shift_id]
     const castName=getName(castId)
     if(!rvsByCast[castName]) rvsByCast[castName]={free:0,net:0,hon:0}
-    if(r.shimei_type==='フリー') rvsByCast[castName].free++
-    else if(r.shimei_type==='ネット指名') rvsByCast[castName].net++
-    else if(r.shimei_type==='本指名') rvsByCast[castName].hon++
+    const _sk0=(resolveShimei(r.shimei_type)||{}).key
+    if(_sk0==='free') rvsByCast[castName].free++
+    else if(_sk0==='net') rvsByCast[castName].net++
+    else if(_sk0==='hon') rvsByCast[castName].hon++
     // 日付×キャスト別に予約を集計（立替金計算用）
     const dk=d+'|'+castId
     if(!rvsByDateCast[dk]) rvsByDateCast[dk]=[]
@@ -11193,9 +11287,9 @@ async function renderMonthlyContent(){
     let card=0,cardBase=0,cash=0,cardFee=0,rvFree=0,rvNet=0,rvHon=0,newCount=0,repeatCount=0
     if(dayWorks.length){
       dayWorks.forEach(w=>{const b=workCardBreakdown(w);cash+=b.cash;card+=b.billed;cardBase+=b.base;cardFee+=b.fee})
-      dayRvs.forEach(r=>{if(r.shimei_type==='フリー')rvFree++;else if(r.shimei_type==='ネット指名')rvNet++;else if(r.shimei_type==='本指名')rvHon++;if(r.is_new)newCount++;else repeatCount++})
+      dayRvs.forEach(r=>{const _k=(resolveShimei(r.shimei_type)||{}).key;if(_k==='free')rvFree++;else if(_k==='net')rvNet++;else if(_k==='hon')rvHon++;if(r.is_new)newCount++;else repeatCount++})
     } else {
-      dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;cardFee+=calcCardFee(am.cardBase||0);if(am.shimei==='フリー')rvFree++;else if(am.shimei==='ネット指名')rvNet++;else if(am.shimei==='本指名')rvHon++;if(am.isNew)newCount++;else repeatCount++})
+      dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;cardFee+=calcCardFee(am.cardBase||0);const _k=(resolveShimei(am.shimei)||{}).key;if(_k==='free')rvFree++;else if(_k==='net')rvNet++;else if(_k==='hon')rvHon++;if(am.isNew)newCount++;else repeatCount++})
     }
     const profit=gross_work-net
     // キャストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
@@ -11250,7 +11344,7 @@ async function renderMonthlyContent(){
   let compCourse=0,compOpt=0,compShimei=0,compOther=0
   works.forEach(w=>{(w.sessions||[]).forEach(s=>{
     const co=courses.find(c=>c.name===s.course_name);const courseSale=co?.price||0
-    const shimeiSale=s.shimei_type==='本指名'?(storeSettings.shimei_hon||2000):s.shimei_type==='ネット指名'?(storeSettings.shimei_net||1000):0
+    const shimeiSale=getShimeiPrice(s.shimei_type)
     let optSale=0;(s.options||[]).forEach(o=>{const op=opts.find(x=>x.name===o.name)||opts.find(x=>o.name&&(o.name.includes(x.name)||x.name.includes(o.name)));let p=op?.price||0;if(!p){if(o.name&&o.name.includes('極液'))p=storeSettings.shop_op_gokueki||2000;else if(o.name&&o.name.includes('衣装')&&o.name.includes('②'))p=storeSettings.shop_op_isho2||3000;else if(o.name&&o.name.includes('衣装'))p=storeSettings.shop_op_isho||3000;}optSale+=p})
     compCourse+=courseSale;compShimei+=shimeiSale;compOpt+=optSale
     const other=(s.sales||0)-(courseSale+shimeiSale+optSale);if(other>0)compOther+=other
