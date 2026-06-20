@@ -8944,6 +8944,11 @@ function resolveShimei(typeName){
 }
 // 課金対象の指名か（free=無料枠は対象外。従来の「!=='フリー'」判定の置き換え）
 function isPaidShimei(typeName){ const e=resolveShimei(typeName); return !!(e&&e.key!=='free') }
+// 内部キー(free/net/hon)から現在の表示名を取得（レポート見出し等の固定ラベル置換用）
+function shimeiName(key){
+  const e=getShimeiTypes().find(x=>x.key===key)
+  return e?e.name:({free:'フリー',net:'ネット指名',hon:'本指名'}[key]||key)
+}
 
 function getShimeiBack(type){
   const trial=isTrialPeriod()
@@ -11406,9 +11411,9 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     </div>`
   html+=`<div class="mo-section-title">指名内訳</div>
   <div class="mo-shimei-grid" style="margin-bottom:.6rem">
-      <div class="mo-shimei-card"><div class="mo-shimei-label">フリー</div><div class="mo-shimei-value">${tot.free}本</div></div>
-      <div class="mo-shimei-card"><div class="mo-shimei-label">ネット指名</div><div class="mo-shimei-value">${tot.net_shimei}本</div></div>
-      <div class="mo-shimei-card"><div class="mo-shimei-label">本指名</div><div class="mo-shimei-value">${tot.hon_shimei}本</div></div>
+      <div class="mo-shimei-card"><div class="mo-shimei-label">${escapeHtml(shimeiName('free'))}</div><div class="mo-shimei-value">${tot.free}本</div></div>
+      <div class="mo-shimei-card"><div class="mo-shimei-label">${escapeHtml(shimeiName('net'))}</div><div class="mo-shimei-value">${tot.net_shimei}本</div></div>
+      <div class="mo-shimei-card"><div class="mo-shimei-label">${escapeHtml(shimeiName('hon'))}</div><div class="mo-shimei-value">${tot.hon_shimei}本</div></div>
     </div>`
   if(total_expenses>0){
     html+=`<div class="card" style="margin-bottom:.55rem">
@@ -11436,7 +11441,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
     {l:'総売上',w:60},{l:'割引',w:48,c:'red'},{l:'純売上',w:62},{l:'現金売上',w:62},
     {l:'カード',w:56},{l:'手数料',w:50,c:'red'},{l:'委託金',w:58,c:'red'},{l:'立替金',w:54,c:'red'},
     {l:'店舗利益',w:58,c:'blue'},{l:'現金残',w:56,c:'blue'},{l:'客単価',w:56},
-    {l:'出勤',w:34},{l:'フリー',w:38},{l:'ネット',w:38},{l:'本指',w:32},{l:'合計',w:32},{l:'総数',w:32}
+    {l:'出勤',w:34},{l:shimeiName('free'),w:44},{l:shimeiName('net'),w:50},{l:shimeiName('hon'),w:50},{l:'合計',w:32},{l:'総数',w:32}
   ]
   const COL=cols.length
   const colgroup=`<colgroup>${cols.map(c=>`<col style="width:${c.w}px">`).join('')}</colgroup>`
@@ -11613,7 +11618,7 @@ function renderMonthlyCast(area,castStats,fmt2){
   // 日別明細(.md-table)と同一デザインで描画（列幅はfixedで揃える）
   const cols=[
     {l:'キャスト',w:78,l1:true},
-    {l:'本数',w:38},{l:'フリー',w:42},{l:'ネット',w:42},{l:'本指',w:38},
+    {l:'本数',w:38},{l:shimeiName('free'),w:48},{l:shimeiName('net'),w:52},{l:shimeiName('hon'),w:52},
     {l:'総売上',w:66},
     ...(hasDisc?[{l:'割引',w:58,c:'red'}]:[]),
     {l:'純売上',w:66},{l:'委託金',w:62,c:'red'},{l:'保証',w:60,c:'red'}
@@ -11839,7 +11844,7 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const lastMD=lastRow.dateStr?(()=>{const pp=lastRow.dateStr.split('-');return (+pp[1])+'/'+(+pp[2])})():''
   const yManen=v=>v===0?'0':String(Math.round(v/10000))
   // 指名内訳
-  const shimeiData=[{label:'フリー',value:tot.free},{label:'ネット指名',value:tot.net_shimei},{label:'本指名',value:tot.hon_shimei}].filter(d=>d.value>0)
+  const shimeiData=[{label:shimeiName('free'),value:tot.free},{label:shimeiName('net'),value:tot.net_shimei},{label:shimeiName('hon'),value:tot.hon_shimei}].filter(d=>d.value>0)
   // 来店内訳
   const newV=sd.new_customers!=null?sd.new_customers:tot.newCount
   const repV=sd.repeat_customers!=null?sd.repeat_customers:tot.repeatCount
@@ -11899,6 +11904,8 @@ async function loadMonthlySalesForm(){
   setvR('mse-route-ekon',routes.esute_kon);setvR('mse-route-panda',routes.panda);setvR('mse-route-elove',routes.esute_love);setvR('mse-route-rank',routes.ranking);setvR('mse-route-japan',routes.japan);setvR('mse-route-zero',routes.zerotwo);setvR('mse-route-hp',routes.hp);setvR('mse-route-sns',routes.sns);setvR('mse-route-other',routes.other)
   setvR('mse-new-cust',data?.new_customers);setvR('mse-repeat-cust',data?.repeat_customers)
   setvR('mse-shimei-free',data?.shimei_free);setvR('mse-shimei-net',data?.shimei_net);setvR('mse-shimei-hon',data?.shimei_hon)
+  // 指名ラベルを現在の指名名に追従
+  ;['free','net','hon'].forEach(k=>{const el=document.getElementById('mse-shimei-'+k+'-lbl');if(el)el.textContent=shimeiName(k)})
   const cArea=document.getElementById('mse-custom-expense-area')
   if(cArea){cArea.innerHTML=customExpenses.map((e,i)=>buildCustomExpenseRow(i,e.category,e.label,e.amount)).join('');customExpenseCount=customExpenses.length}
 }
@@ -12088,9 +12095,9 @@ init()
       </div>
       <div class="mse-card">
         <div class="mse-card-head"><div class="mse-card-icon"><svg class="ei" viewBox="0 0 24 24"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-4 0"/><path d="M14 10V9a2 2 0 0 0-4 0v1"/><path d="M10 9.5V4a2 2 0 0 0-4 0v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div><div class="mse-card-title">指名内訳</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>フリー</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-free" placeholder="0"><span class="mse-unit">本</span></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>ネット指名</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-net" placeholder="0"><span class="mse-unit">本</span></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>本指名</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-hon" placeholder="0"><span class="mse-unit">本</span></div></div>
+        <div class="mse-row"><div class="mse-name-box"><span id="mse-shimei-free-lbl">フリー</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-free" placeholder="0"><span class="mse-unit">本</span></div></div>
+        <div class="mse-row"><div class="mse-name-box"><span id="mse-shimei-net-lbl">ネット指名</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-net" placeholder="0"><span class="mse-unit">本</span></div></div>
+        <div class="mse-row"><div class="mse-name-box"><span id="mse-shimei-hon-lbl">本指名</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box mse-amt-narrow"><input type="number" id="mse-shimei-hon" placeholder="0"><span class="mse-unit">本</span></div></div>
       </div>
     </div>
     <button id="mse-save-btn" class="mse-save-btn" onclick="saveMonthlySales()">保存する</button>
