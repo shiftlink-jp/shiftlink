@@ -5837,9 +5837,16 @@ async function confirmExtend() {
 
 // ── キャスト：シフト訂正 ──
 let castShiftEditId = null
+let castShiftEditDate = null
+
+function fmtMD(ymd){
+  const p=String(ymd||'').split('-')
+  return p.length===3 ? (+p[1])+'月'+(+p[2])+'日' : (ymd||'')
+}
 
 function openCastShiftEdit(id, date, start, end, note){
   castShiftEditId = id
+  castShiftEditDate = date
   document.getElementById('cast-shift-edit-title').textContent = date + ' のシフトを訂正'
   document.getElementById('cse-start').innerHTML = buildTimeOptions(start)
   document.getElementById('cse-end').innerHTML = buildTimeOptions(end)
@@ -5859,10 +5866,11 @@ async function saveCastShiftEdit(){
   const{error} = await withStoreFilter(sb.from('shifts').update(updatePayload)).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
+  const mdStr=fmtMD(curShift?.date||castShiftEditDate)
   const notifyTitle=wasApproved?'シフト訂正（要再承認）':'シフト訂正'
   const notifyBody=wasApproved
-    ? me.name+'さんが承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
-    : me.name+'さんがシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
+    ? me.name+'さんが'+mdStr+'の承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
+    : me.name+'さんが'+mdStr+'のシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
   await sendPushNotification(0, notifyTitle, notifyBody);
   toast(wasApproved?'訂正しました（再承認待ちに戻しました）':'シフトを訂正しました')
   closeSheet('cast-shift-edit')
@@ -5875,7 +5883,7 @@ async function deleteCastShift(){
   const{error} = await withStoreFilter(sb.from('shifts').delete()).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
-  await sendPushNotification(0, 'シフト取消', me.name+'さんがシフトを取消しました');
+  await sendPushNotification(0, 'シフト取消', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフトを取消しました');
   toast('シフトを取消しました')
   closeSheet('cast-shift-edit')
   loadCal()
