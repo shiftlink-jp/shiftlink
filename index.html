@@ -5233,7 +5233,7 @@ function renderCastTodayCards(rvs, attHtml) {
       <div class="ct-rv-bottom">${payBtn}${histBtn}</div>`;
     html += `<div class="${cardCls}">
       <div class="ct-rv-top">
-        <div class="ct-rv-name">${r.customer_no?'No.'+escapeHtml(String(r.customer_no))+'　':''}${escapeHtml(r.customer_name || '（名前なし）')}様</div>
+        <div class="ct-rv-name">${r.customer_no?'No.'+escapeHtml(String(r.customer_no))+'　':''}${escapeHtml((r.customer_name || '（名前なし）').replace(/様\s*$/,''))} 様</div>
         <div class="ct-rv-time">${r.checkin_time?.slice(0,5)||'?'}〜${r.checkout_time?.slice(0,5)||'?'}</div>
       </div>
       <div class="ct-rv-badges">${newLabel}${statusBadge}</div>
@@ -10986,7 +10986,7 @@ async function loadCastMemoPage(){
   area.innerHTML = `<div class="cm2-section-label">本日の担当（${visRvs.length}件）</div>`
   + visRvs.map(r=>`<div class="cm2-card">
     <div class="cm2-card-hd">
-      <div class="cm2-card-name">${r.customer_no?`No.${escapeHtml(String(r.customer_no))} `:''}${escapeHtml(r.customer_name||'氏名未設定')}様</div>
+      <div class="cm2-card-name">${r.customer_no?`No.${escapeHtml(String(r.customer_no))} `:''}${escapeHtml((r.customer_name||'氏名未設定').replace(/様\s*$/,''))} 様</div>
       ${r.checkin_time?`<span class="cm2-card-time">${r.checkin_time.slice(0,5)}-${r.checkout_time?.slice(0,5)||'?'}</span>`:''}
     </div>
     <div class="cm2-card-sub">${[r.shimei_type,r.course,r.options].filter(Boolean).map(escapeHtml).join(' / ')}</div>
