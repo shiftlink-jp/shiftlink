@@ -2,6 +2,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 
+// Deno(Edge)環境では署名検証にWebCrypto(非同期)を使う必要がある。
+// 同期版 constructEvent は動かないため、SubtleCryptoProvider + constructEventAsync を使う。
+const cryptoProvider = Stripe.createSubtleCryptoProvider()
+
 serve(async (req) => {
   const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2024-06-20' })
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -15,7 +19,7 @@ serve(async (req) => {
   // 1. シグネチャ検証（失敗時は400）
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
+    event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret, undefined, cryptoProvider)
   } catch (e) {
     console.error('Webhook signature failed:', e.message)
     return new Response(JSON.stringify({ error: 'Invalid signature' }), {

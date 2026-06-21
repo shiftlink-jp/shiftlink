@@ -1948,7 +1948,7 @@ if("serviceWorker" in navigator && !_isSaaS){
       <label class="lbl">店舗名</label>
       <input class="linput" type="text" id="saas-store-name" placeholder="例: リラクゼーション○○">
       <label class="lbl" style="margin-top:.75rem">店舗ID（英数字・URL用）</label>
-      <input class="linput" type="text" id="saas-store-slug" placeholder="例: relaxation-abc" pattern="[a-z0-9-]+" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')">
+      <input class="linput" type="text" id="saas-store-slug" placeholder="例: relaxation-abc" pattern="[a-z0-9-]+" inputmode="latin" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" oninput="sanitizeSlugInput(this)">
       <label class="lbl" style="margin-top:.75rem">メールアドレス</label>
       <input class="linput" type="email" id="saas-signup-email" placeholder="owner@example.com" autocomplete="email">
       <label class="lbl" style="margin-top:.75rem">パスワード（8文字以上）</label>
@@ -1974,7 +1974,8 @@ if("serviceWorker" in navigator && !_isSaaS){
     <p style="color:#888;font-size:.85rem;margin:0 0 1.5rem;line-height:1.6" id="saas-trial-msg">引き続きShiftLinkをご利用いただくには、プランをアップグレードしてください。</p>
     <div style="background:#fdf6ec;border-radius:12px;padding:1.2rem;margin-bottom:1.5rem;text-align:left">
       <div style="font-weight:700;font-size:1rem;color:#333;margin-bottom:.5rem"><svg class="ei" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> スタンダードプラン</div>
-      <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">¥20,000<span style="font-size:.75rem;font-weight:400;color:#888">/月（税込）</span></div>
+      <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">¥14,800<span style="font-size:.75rem;font-weight:400;color:#888">/月（税抜）</span></div>
+      <div style="font-size:.7rem;color:#999;margin-top:2px">税込 ¥16,280</div>
       <ul style="margin:.8rem 0 0;padding-left:1.2rem;font-size:.8rem;color:#555;line-height:1.8">
         <li>14日間の無料トライアル付き</li>
         <li>セラピスト無制限</li>
@@ -4065,6 +4066,20 @@ async function doSaasLogin(){
   }finally{
     btn.disabled=false; btn.textContent='ログイン'
   }
+}
+
+// 店舗ID欄: 英数字とハイフンのみに整えつつ、カーソル位置を保つ（日本語IME・iOSでの暴発を防止）
+function sanitizeSlugInput(el){
+  const before=el.value
+  const caret=el.selectionStart
+  const after=before.toLowerCase().replace(/[^a-z0-9-]/g,'')
+  if(after===before) return
+  // カーソルより前で削除された文字数を数えてカーソル位置を補正
+  const head=before.slice(0,caret)
+  const removed=head.length-head.toLowerCase().replace(/[^a-z0-9-]/g,'').length
+  el.value=after
+  const pos=Math.max(0,caret-removed)
+  try{ el.setSelectionRange(pos,pos) }catch(_){}
 }
 
 async function doSaasSignup(){
