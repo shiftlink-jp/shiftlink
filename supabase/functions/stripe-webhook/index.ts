@@ -48,6 +48,21 @@ serve(async (req) => {
     if (error) throw new Error(`DB update failed: ${error.message}`)
   }
 
+  // invoiceからsubscription IDを取り出す（API版差異を吸収）
+  // 旧: invoice.subscription / 新(2025+): invoice.parent.subscription_details.subscription / 行レベル
+  const getInvoiceSubId = (invoice: any): string | null => {
+    const norm = (v: any) => (v ? (typeof v === 'string' ? v : v.id) : null)
+    return (
+      norm(invoice.subscription) ||
+      norm(invoice.parent?.subscription_details?.subscription) ||
+      norm(
+        invoice.lines?.data
+          ?.map((l: any) => l.parent?.subscription_item_details?.subscription || l.subscription)
+          .find(Boolean),
+      )
+    )
+  }
+
   // 2. イベント処理（エラーでも200を返す）
   try {
     switch (event.type) {
@@ -68,8 +83,9 @@ serve(async (req) => {
       }
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice
-        if (invoice.subscription) {
-          await updateStore(invoice.subscription as string, {
+        const subId = getInvoiceSubId(invoice)
+        if (subId) {
+          await updateStore(subId, {
             subscription_status: 'active',
           })
         }
@@ -77,8 +93,9 @@ serve(async (req) => {
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        if (invoice.subscription) {
-          await updateStore(invoice.subscription as string, {
+        const subId = getInvoiceSubId(invoice)
+        if (subId) {
+          await updateStore(subId, {
             subscription_status: 'past_due',
           })
         }
