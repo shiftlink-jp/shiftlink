@@ -11551,7 +11551,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
   const Y=n=>'¥'+Ns(n)
   // Pencil「日別明細」列定義（順序厳守）: 日付/総売上/割引/純売上/現金売上/カード/手数料/委託金/立替金/店舗利益/現金残/客単価/出勤/フリー/ネット/本指/合計/総数
   const cols=[
-    {l:'日付',w:52},
+    {l:'日付',w:64},
     {l:'総売上',w:60},{l:'割引',w:48,c:'red'},{l:'純売上',w:62},{l:'現金売上',w:62},
     {l:'カード',w:56},{l:'手数料',w:50,c:'red'},{l:'委託金',w:58,c:'red'},{l:'立替金',w:54,c:'red'},
     {l:'粗利益',w:58,c:'blue'},{l:'現金残',w:56,c:'blue'},{l:'客単価',w:56},
@@ -11563,9 +11563,9 @@ function renderMonthlyDaily(area,dailyRows,tot){
   // 値セル群を組む（i は cols のインデックス＝1始まり）
   const cells=arr=>arr.map((x,vi)=>`<td class="${x[1]||''}" style="min-width:${cols[vi+1].w}px">${x[0]}</td>`).join('')
 
-  const dlbl=r=>{const p=(r.dateStr||'').split('-');return p.length===3?(+p[1])+'/'+(+p[2]):r.day}
+  const dlbl=r=>{const p=(r.dateStr||'').split('-');const md=p.length===3?(+p[1])+'/'+(+p[2]):r.day;return r.dow?md+'('+r.dow+')':md}
   const makeRow=r=>{
-    if(r.noData) return `<tr class="md-day"><td class="l sticky" style="min-width:52px">${dlbl(r)}</td>${cols.slice(1).map(()=>`<td class="mute">—</td>`).join('')}</tr>`
+    if(r.noData) return `<tr class="md-day"><td class="l sticky" style="min-width:64px">${dlbl(r)}</td>${cols.slice(1).map(()=>`<td class="mute">—</td>`).join('')}</tr>`
     const castRows=r.castRows||[]
     const hasAdv=r.advance>0
     const cashNeg=r.cashRemain<0
@@ -11587,7 +11587,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
       [r.inquiry>0?Ns(r.inquiry):'—', r.inquiry>0?'':'mute']
     ]
     let html=`<tr class="md-day${hasAdv?' adv':''}${multiCast?' expandable':''}"${multiCast?' onclick="toggleCastSub(this)"':''}>`
-    html+=`<td class="l sticky" style="min-width:52px">${dlbl(r)}${multiCast?' ▾':''}</td>`
+    html+=`<td class="l sticky" style="min-width:64px">${dlbl(r)}${multiCast?' ▾':''}</td>`
     html+=cells(vals)
     html+='</tr>'
     if(multiCast){
@@ -11605,7 +11605,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
           [cNeg?'▲¥'+N(c.cashRemain):Y(c.cashRemain), cNeg?'red':'blue'],
           ['—','mute'],['',''],['',''],['',''],['',''],['',''],['','']
         ]
-        html+=`<tr class="md-cast cast-sub" style="display:none"><td class="l sticky" style="min-width:52px">${c.castName}</td>${cells(cv)}</tr>`
+        html+=`<tr class="md-cast cast-sub" style="display:none"><td class="l sticky" style="min-width:64px">${c.castName}</td>${cells(cv)}</tr>`
       })
     }
     return html
@@ -11627,7 +11627,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
     [tot.attendance||0,''],[tot.free||0,''],[tot.net_shimei||0,''],[tot.hon_shimei||0,''],[tot.count||0,''],
     [tot.inquiry>0?Ns(tot.inquiry):'—', tot.inquiry>0?'':'mute']
   ]
-  const totRow=`<tr class="md-total"><td class="l sticky" style="min-width:52px">合計</td>${cells(tvals)}</tr>`
+  const totRow=`<tr class="md-total"><td class="l sticky" style="min-width:64px">合計</td>${cells(tvals)}</tr>`
 
   const scrollSvg=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 8 22 12 18 16"/><polyline points="6 8 2 12 6 16"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
   const printerSvg=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V2h12v7"/><rect width="12" height="8" x="6" y="14"/></svg>`
