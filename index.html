@@ -1894,7 +1894,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v30';
+const SW_VER = 'v31';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -11922,8 +11922,9 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
   </div>`
   const fixedItems=(customExpenses||[]).filter(e=>e.type==='fixed')
   const varItems=(customExpenses||[]).filter(e=>e.type==='variable')
+  const groupByCat=items=>{const m={},order=[];items.forEach(e=>{const c=e.category||'その他';if(!(c in m)){m[c]=0;order.push(c)}m[c]+=e.amount||0});return order.map(c=>({category:c,amount:m[c]}))}
   let fixedRows=''
-  fixedItems.forEach(e=>{fixedRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount,'fixed')})
+  groupByCat(fixedItems).forEach(c=>{fixedRows+=row(mseExpenseIcon(c.category),c.category,c.amount,'fixed')})
   const fixedSum=fixedItems.reduce((s,e)=>s+(e.amount||0),0)
   // 変動費（カード手数料を先頭に固定）
   const feeRow=`<div class="mex-row fee">
@@ -11935,7 +11936,7 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     <span class="mex-amt">${fmt2(cardFee)}</span>
   </div>`
   let varRows=feeRow
-  varItems.forEach(e=>{varRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount,'variable')})
+  groupByCat(varItems).forEach(c=>{varRows+=row(mseExpenseIcon(c.category),c.category,c.amount,'variable')})
   const varSum=cardFee+varItems.reduce((s,e)=>s+(e.amount||0),0)
   const grand=fixedSum+varSum
   const pct=v=>grand>0?Math.round(v/grand*100):0
