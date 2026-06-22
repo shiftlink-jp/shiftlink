@@ -1104,6 +1104,41 @@ tr:last-child td{border-bottom:none}
 #p-owner-monthly .me-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:46px;background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;color:#7A6E5E;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:1rem}
 #p-owner-monthly .me-add svg{width:15px;height:15px}
 #p-owner-monthly .me-empty{padding:24px 0;text-align:center;font-size:13px;color:#A89B88}
+/* ── Pencil: Monthly 経費 v2（固定費/変動費） ── */
+#p-owner-monthly .mex-total{background:#FAF8F4;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
+#p-owner-monthly .mex-total-head{display:flex;align-items:center;justify-content:space-between}
+#p-owner-monthly .mex-total-l{font-size:12px;font-weight:600;color:#A89B88;margin-bottom:3px}
+#p-owner-monthly .mex-total-v{font-family:'Inter','Noto Sans JP',sans-serif;font-size:30px;font-weight:700;color:#211C16;line-height:1.1}
+#p-owner-monthly .mex-bar{display:flex;gap:2px;height:10px;border-radius:999px;overflow:hidden}
+#p-owner-monthly .mex-bar-fixed{background:#3B82F6;min-width:2px}
+#p-owner-monthly .mex-bar-var{background:#FF9124;min-width:2px}
+#p-owner-monthly .mex-legend{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#p-owner-monthly .mex-leg{display:flex;align-items:center;gap:8px}
+#p-owner-monthly .mex-leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+#p-owner-monthly .mex-leg-n{font-size:11px;color:#7A6E5E}
+#p-owner-monthly .mex-leg-r{display:flex;align-items:center;gap:6px}
+#p-owner-monthly .mex-leg-a{font-family:'Inter','Noto Sans JP',sans-serif;font-size:15px;font-weight:700;color:#211C16}
+#p-owner-monthly .mex-leg-p{font-family:'Inter',sans-serif;font-size:11px;font-weight:700}
+#p-owner-monthly .mex-sec{margin-bottom:18px}
+#p-owner-monthly .mex-sec-label{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding:0 2px}
+#p-owner-monthly .mex-sec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#p-owner-monthly .mex-sec-t{font-size:13px;font-weight:700;color:#211C16}
+#p-owner-monthly .mex-sec-s{font-size:10px;color:#A89B88}
+#p-owner-monthly .mex-list{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:2px 16px;margin-bottom:8px}
+#p-owner-monthly .mex-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EDE9E1;cursor:pointer}
+#p-owner-monthly .mex-row:last-child{border-bottom:none}
+#p-owner-monthly .mex-row.fee{background:#FFFBF6;cursor:default;margin:0 -16px;padding:12px 16px}
+#p-owner-monthly .mex-ic{width:34px;height:34px;flex-shrink:0;border-radius:10px;background:#FAF8F4;display:flex;align-items:center;justify-content:center;color:#7A6E5E}
+#p-owner-monthly .mex-ic.accent{background:#FFF1E2;color:#FF9124}
+#p-owner-monthly .mex-ic svg{width:16px;height:16px}
+#p-owner-monthly .mex-name{flex:1;min-width:0;font-size:14px;font-weight:600;color:#211C16;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#p-owner-monthly .mex-nwrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+#p-owner-monthly .mex-ntop{display:flex;align-items:center;gap:6px}
+#p-owner-monthly .mex-badge{font-size:9px;font-weight:700;color:#FF9124;background:#FFF1E2;border-radius:999px;padding:2px 7px;flex-shrink:0}
+#p-owner-monthly .mex-sub{font-size:10px;color:#A89B88}
+#p-owner-monthly .mex-amt{font-family:'Inter','Noto Sans JP',sans-serif;font-size:14px;font-weight:700;color:#211C16;white-space:nowrap;flex-shrink:0}
+#p-owner-monthly .mex-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:42px;background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;color:#7A6E5E;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+#p-owner-monthly .mex-add svg{width:14px;height:14px}
 /* ── Pencil: Monthly グラフ ── */
 #p-owner-monthly .gr-card{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:18px;margin-bottom:18px}
 #p-owner-monthly .gr-card.bars{padding:16px}
@@ -11458,7 +11493,7 @@ async function renderMonthlyContent(){
   const total_ad=sd.total_ad_expense||0,total_rent=sd.total_rent||0,total_util=sd.total_utility||0
   const total_fixed=sd.total_fixed||0,total_vari=sd.total_variable||0
   const total_custom=customExpenses.reduce((s,e)=>s+(e.amount||0),0)
-  const total_expenses=(sd.total_expenses||(total_fixed+total_vari+total_custom))+(tot.cardFee||0)
+  const total_expenses=total_rent+total_util+total_ad+total_fixed+total_vari+total_custom+(tot.cardFee||0)
 
   monthlyCachedData={dailyRows,tot,sd,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,castStats}
   renderMonthlyFromCache()
@@ -11787,30 +11822,55 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     'x':'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
   }
   const svg=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`
-  const expRow=(icon,name,amount)=>`<div class="me-row" onclick="openMonthlySalesEdit()">
-    <span class="me-ic">${svg(icon)}</span>
-    <span class="me-name">${escapeHtml(name)}</span>
-    <span class="me-amt">${fmt2(amount)}</span>
-    <button class="me-x" onclick="event.stopPropagation();openMonthlySalesEdit()" aria-label="編集">${svg('x')}</button>
+  cardFee=cardFee||0
+  const row=(icon,name,amount)=>`<div class="mex-row" onclick="openMonthlySalesEdit()">
+    <span class="mex-ic">${svg(icon)}</span>
+    <span class="mex-name">${escapeHtml(name)}</span>
+    <span class="mex-amt">${fmt2(amount)}</span>
   </div>`
-  const feeRow=`<div class="me-row" style="cursor:default">
-    <span class="me-ic">${svg('credit-card')}</span>
-    <span class="me-name">カード手数料 <span style="font-size:.6rem;color:var(--text3);font-weight:600">自動計算</span></span>
-    <span class="me-amt">${fmt2(cardFee||0)}</span>
+  const customFixed=[],customVar=[]
+  ;(customExpenses||[]).forEach(e=>{(e.category==='固定費'?customFixed:customVar).push(e)})
+  const sumCustom=arr=>arr.reduce((s,e)=>s+(e.amount||0),0)
+  // 固定費
+  let fixedRows=''
+  if(total_rent>0) fixedRows+=row('building-2','家賃',total_rent)
+  if(total_util>0) fixedRows+=row('zap','光熱費',total_util)
+  if(total_ad>0) fixedRows+=row('megaphone','広告費',total_ad)
+  if(total_fixed>0) fixedRows+=row('file-text','固定費',total_fixed)
+  customFixed.forEach(e=>{fixedRows+=row('ellipsis',e.label||e.category||'その他',e.amount)})
+  const fixedSum=total_rent+total_util+total_ad+total_fixed+sumCustom(customFixed)
+  // 変動費（カード手数料を先頭に固定）
+  const feeRow=`<div class="mex-row fee">
+    <span class="mex-ic accent">${svg('credit-card')}</span>
+    <span class="mex-nwrap">
+      <span class="mex-ntop"><span class="mex-name" style="flex:0 1 auto">カード手数料</span><span class="mex-badge">自動</span></span>
+      <span class="mex-sub">カード売上から自動反映</span>
+    </span>
+    <span class="mex-amt">${fmt2(cardFee)}</span>
   </div>`
-  let rows=feeRow
-  if(total_rent>0) rows+=expRow('building-2','家賃',total_rent)
-  if(total_util>0) rows+=expRow('zap','光熱費',total_util)
-  if(total_ad>0) rows+=expRow('megaphone','広告費',total_ad)
-  if(fixed.card_fee) rows+=expRow('credit-card','決済手数料',fixed.card_fee)
-  if(total_fixed>0) rows+=expRow('file-text','固定費',total_fixed)
-  if(total_vari>0) rows+=expRow('package','変動費',total_vari)
-  if(customExpenses.length){customExpenses.forEach(e=>{rows+=expRow('ellipsis','['+e.category+'] '+e.label,e.amount)})}
-  const listHtml=rows?`<div class="me-list">${rows}</div>`:`<div class="me-list"><div class="me-empty">この月の経費はまだ登録されていません</div></div>`
+  let varRows=feeRow
+  if(total_vari>0) varRows+=row('package','変動費',total_vari)
+  customVar.forEach(e=>{varRows+=row('ellipsis',e.label||e.category||'その他',e.amount)})
+  const varSum=cardFee+total_vari+sumCustom(customVar)
+  const grand=fixedSum+varSum
+  const pct=v=>grand>0?Math.round(v/grand*100):0
+  const legend=(color,label,sum)=>`<div class="mex-leg"><span class="mex-leg-dot" style="background:${color}"></span><div><div class="mex-leg-n">${label}</div><div class="mex-leg-r"><span class="mex-leg-a">${fmt2(sum)}</span><span class="mex-leg-p" style="color:${color}">${pct(sum)}%</span></div></div></div>`
   area.innerHTML=`
-    <div class="me-total"><span class="me-total-l">今月の経費合計</span><span class="me-total-v">${fmt2(total_expenses)}</span></div>
-    ${listHtml}
-    <button class="me-add" onclick="openMonthlySalesEdit()">${svg('plus')}経費を追加</button>`
+    <div class="mex-total">
+      <div class="mex-total-head"><div><div class="mex-total-l">今月の経費合計</div><div class="mex-total-v">${fmt2(grand)}</div></div></div>
+      <div class="mex-bar"><div class="mex-bar-fixed" style="flex:${fixedSum}"></div><div class="mex-bar-var" style="flex:${varSum}"></div></div>
+      <div class="mex-legend">${legend('#3B82F6','固定費',fixedSum)}${legend('#FF9124','変動費',varSum)}</div>
+    </div>
+    <div class="mex-sec">
+      <div class="mex-sec-label"><span class="mex-sec-dot" style="background:#3B82F6"></span><span class="mex-sec-t">固定費</span><span class="mex-sec-s">毎月ほぼ一定</span></div>
+      ${fixedRows?`<div class="mex-list">${fixedRows}</div>`:''}
+      <button class="mex-add" onclick="openMonthlySalesEdit()">${svg('plus')}固定費を追加</button>
+    </div>
+    <div class="mex-sec">
+      <div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div>
+      <div class="mex-list">${varRows}</div>
+      <button class="mex-add" onclick="openMonthlySalesEdit()">${svg('plus')}変動費を追加</button>
+    </div>`
 }
 
 
