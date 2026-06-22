@@ -14,19 +14,19 @@
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#ff8c00">
 <!-- SEO -->
-<meta name="description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・キャスト管理システム。スマホ対応PWAで、いつでもどこでも店舗業務を一元管理できます。">
+<meta name="description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・セラピスト管理システム。スマホ対応PWAで、いつでもどこでも店舗業務を一元管理できます。">
 
 <!-- OGP (LINE・Slack共有時のプレビュー) -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="ShiftLink | メンズエステ店舗管理システム">
-<meta property="og:description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・キャスト管理システム。スマホ対応PWAで店舗業務を一元管理。">
+<meta property="og:description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・セラピスト管理システム。スマホ対応PWAで店舗業務を一元管理。">
 <meta property="og:image" content="https://qgcgkrcrfzonmmygcdju.supabase.co/storage/v1/object/public/icons/icon-512.png">
 <meta property="og:site_name" content="ShiftLink">
 <meta property="og:locale" content="ja_JP">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ShiftLink | メンズエステ店舗管理システム">
-<meta name="twitter:description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・キャスト管理システム。">
+<meta name="twitter:description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・セラピスト管理システム。">
 <meta name="twitter:image" content="https://qgcgkrcrfzonmmygcdju.supabase.co/storage/v1/object/public/icons/icon-512.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -974,7 +974,7 @@ tr:last-child td{border-bottom:none}
 .cast-nm{font-size:.92rem;font-weight:600;margin-bottom:.4rem;white-space:nowrap}
 .cast-btns{display:flex;flex-wrap:wrap;gap:.35rem}
 
-/* Pencilデザイン: キャスト管理カード */
+/* Pencilデザイン: セラピスト管理カード */
 .cast-card{background:var(--surface);border-radius:14px;padding:14px;border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:.75rem}
 .cast-card-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.7rem;flex-wrap:wrap}
 .cast-card .cast-nm{font-size:.95rem;font-weight:700;margin-bottom:0;white-space:nowrap}
@@ -1017,7 +1017,7 @@ tr:last-child td{border-bottom:none}
   .item{padding:.9rem 1rem}
   .it{font-size:.93rem}
   .is{font-size:.78rem}
-  /* キャスト一覧を2列グリッドに */
+  /* セラピスト一覧を2列グリッドに */
   #cast-area{display:grid;grid-template-columns:1fr 1fr;gap:0 1.5rem}
   .cast-row{border-bottom:1px solid var(--border)}
   .cast-btns{flex-wrap:nowrap}
@@ -1270,7 +1270,7 @@ tr:last-child td{border-bottom:none}
     background:#fff!important;
     border-bottom:1px solid #999!important;
   }
-  /* キャスト内訳行は印刷時は出さない（日付・合計金額などの行のみ印刷） */
+  /* セラピスト内訳行は印刷時は出さない（日付・合計金額などの行のみ印刷） */
   #daily-print-table .cast-sub{display:none!important}
   /* 改ページ時に行の途中で切れないように */
   #daily-print-table tr{page-break-inside:avoid}
@@ -1403,7 +1403,7 @@ tr:last-child td{border-bottom:none}
 #p-owner-monthly .mex-edit{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #EDE9E1;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#7A6E5E;cursor:pointer;font-family:inherit;flex-shrink:0}
 #p-owner-monthly .mex-edit svg{width:12px;height:12px}
 
-/* ===== キャスト管理タブ + キャスト追加/委託金設定/店舗料金設定シート Pencilデザイン反映 (2026-06) ===== */
+/* ===== セラピスト管理タブ + セラピスト追加/委託金設定/店舗料金設定シート Pencilデザイン反映 (2026-06) ===== */
 /* --- #p-owner-cast --- */
 #p-owner-cast .pg-title{font-size:24px;font-weight:700;color:#211C16}
 #p-owner-cast .cc2-addbtn{background:#FF9124;color:#fff;font-size:13px;font-weight:700;border:none;border-radius:999px;padding:.6rem 1.1rem;white-space:nowrap;box-shadow:0 4px 12px rgba(255,145,36,.30);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
@@ -1428,7 +1428,7 @@ tr:last-child td{border-bottom:none}
 #p-owner-cast .cc2-act.cc2-leave{background:linear-gradient(115deg,#FF6B6B 0%,#DC2626 100%);color:#fff;box-shadow:0 4px 10px rgba(220,38,38,.25)}
 #p-owner-cast .cc2-addbtn svg,#p-owner-cast .cc2-toolbtn svg{width:15px;height:15px;flex-shrink:0}
 
-/* --- #cast-overlay (キャスト追加) --- */
+/* --- #cast-overlay (セラピスト追加) --- */
 #cast-overlay .ca2-title{font-size:17px;font-weight:700;color:#211C16;margin-bottom:.9rem}
 #cast-overlay .ca2-notice{display:flex;gap:8px;background:#FBF4E7;border-radius:12px;padding:12px;margin-bottom:1rem;font-size:12px;line-height:1.6;color:#7A6E5E}
 #cast-overlay .ca2-notice .ca2-notice-icon{flex-shrink:0;font-size:14px}
@@ -1770,7 +1770,7 @@ tr:last-child td{border-bottom:none}
 #my-memo-log-area .mml-item-text{font-size:13px;color:#7A6E5E;line-height:1.5;white-space:pre-wrap}
 #my-memo-log-area .mml-empty{font-size:.8rem;color:#A89B88}
 
-/* --- #inactive-overlay (退店済みのキャスト) Pencilデザイン反映 (2026-06) --- */
+/* --- #inactive-overlay (退店済みのセラピスト) Pencilデザイン反映 (2026-06) --- */
 #inactive-overlay .ina2-title{margin-bottom:.75rem}
 #inactive-overlay .ina2-notice{display:flex;gap:8px;align-items:flex-start;background:#FAF8F4;border-radius:10px;padding:12px 14px;margin-bottom:1rem;font-size:12px;line-height:1.5;color:#7A6E5E}
 #inactive-overlay .ina2-notice-icon{flex-shrink:0;width:15px;height:15px;margin-top:1px;color:#A89B88}
@@ -1966,7 +1966,7 @@ if("serviceWorker" in navigator && !_isSaaS){
           window._pendingPushSubChange = e.data.subscription;
           // #8: 旧subの削除もここ(ログイン済みセッション)で行う。SWはanon直書きしない。
           const oldEndpoint = e.data.oldEndpoint || null;
-          // ログイン中ユーザーのDB登録を即座に更新（オーナー・キャスト両対応）
+          // ログイン中ユーザーのDB登録を即座に更新（オーナー・セラピスト両対応）
           try {
             if (typeof me !== 'undefined' && me && me.is_owner && typeof sb !== 'undefined' && typeof withStoreId === 'function') {
               const newSub = e.data.subscription;
@@ -2240,7 +2240,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
   <div class="app-body" id="app-body">
 
-    <!-- キャスト：シフト申請 -->
+    <!-- セラピスト：シフト申請 -->
     <!-- カレンダーパネル -->
     <div class="panel on" id="p-shift">
       <div class="cs2-hdr-title">シフト</div>
@@ -2262,7 +2262,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <div id="shift-inline-list" style="margin-top:1.1rem"></div>
     </div>
 
-    <!-- キャスト：委託金確認 -->
+    <!-- セラピスト：委託金確認 -->
     <div class="panel" id="p-salary">
       <div class="sal3-hdr-title">委託金</div>
       <div class="sal3-tabs">
@@ -2279,7 +2279,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <div id="sal-daily-area"></div>
     </div>
 
-    <!-- キャスト：接客メモ -->
+    <!-- セラピスト：接客メモ -->
     <div class="panel" id="p-cast-memo">
       <div class="cm2-hdr">メモ</div>
       <!-- 当日予約一覧（常時表示） -->
@@ -2301,7 +2301,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
     </div>
 
-    <!-- キャスト：本日 -->
+    <!-- セラピスト：本日 -->
     <div class="panel" id="p-cast-today">
       <div class="ct-hdr">
         <div class="ct-hdr-title">本日の予約</div>
@@ -2420,7 +2420,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
     <!-- 顧客追加/編集シート -->
 
-    <!-- キャストメモ入力シート -->
+    <!-- セラピストメモ入力シート -->
 
     <!-- 予約登録シート -->
 
@@ -2439,18 +2439,18 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="no-print mo-tabbar">
         <button id="monthly-tab-summary" class="mo-tab-btn mo-on" onclick="monthlyTabSwitch('summary')"><svg class="ei" viewBox="0 0 24 24"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>月まとめ</button>
         <button id="monthly-tab-daily" class="mo-tab-btn" onclick="monthlyTabSwitch('daily')"><svg class="ei" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>日別</button>
-        <button id="monthly-tab-cast" class="mo-tab-btn" onclick="monthlyTabSwitch('cast')"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>キャスト</button>
+        <button id="monthly-tab-cast" class="mo-tab-btn" onclick="monthlyTabSwitch('cast')"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>セラピスト</button>
         <button id="monthly-tab-expense" class="mo-tab-btn" onclick="monthlyTabSwitch('expense')"><svg class="ei" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>経費</button>
         <button id="monthly-tab-chart" class="mo-tab-btn" onclick="monthlyTabSwitch('chart')"><svg class="ei" viewBox="0 0 24 24"><path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"/><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/></svg>グラフ</button>
       </div>
       <div id="monthly-area"><div class="spin">読み込み中...</div></div>
     </div>
 
-    <!-- 店舗：キャスト管理 -->
+    <!-- 店舗：セラピスト管理 -->
     <div class="panel" id="p-owner-cast">
       <div class="pg-hdr">
-        <div class="pg-title">キャスト管理</div>
-        <button class="cc2-addbtn" onclick="openAddCast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>キャスト追加</button>
+        <div class="pg-title">セラピスト管理</div>
+        <button class="cc2-addbtn" onclick="openAddCast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>セラピスト追加</button>
       </div>
       <div class="cc2-toolrow">
         <button class="cc2-toolbtn" onclick="openInactiveSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>退店済み</button>
@@ -2466,7 +2466,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
   </div>
   <div class="tbar no-print" id="tbar">
-    <!-- キャスト用 -->
+    <!-- セラピスト用 -->
     <button class="tbar-btn on cast-tab" onclick="tab('cast-today')"><span class="tbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>本日</button>
     <button class="tbar-btn cast-tab" onclick="tab('shift')"><span class="tbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span>シフト</button>
     <button class="tbar-btn cast-tab" onclick="tab('salary')"><span class="tbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span>委託金</button>
@@ -2506,7 +2506,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <input type="hidden" id="ce-id">
           <div><div class="cf-lbl">名前</div><input class="cf-input" id="ce-name" placeholder="○○様" onblur="finalizeKatakana(this)"></div>
           <div><div class="cf-lbl">電話番号<span class="cf-lbl-opt">任意</span></div><input class="cf-input" id="ce-phone" type="tel" placeholder="090-0000-0000" oninput="autoHyphen(this)"></div>
-          <div><div class="cf-lbl">NGキャスト<span class="cf-lbl-opt">複数選択可・任意</span></div><div class="cf-ng-wrap" id="ce-ng-chips"></div></div>
+          <div><div class="cf-lbl">NGセラピスト<span class="cf-lbl-opt">複数選択可・任意</span></div><div class="cf-ng-wrap" id="ce-ng-chips"></div></div>
           <div><div class="cf-lbl">ステータス</div>
             <div class="cf-ban-wrap">
               <div class="cf-ban-display" id="ce-banned-display">
@@ -2669,15 +2669,15 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ===== キャスト追加シート ===== -->
+<!-- ===== セラピスト追加シート ===== -->
 <div class="overlay" id="cast-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
     <button class="sh-close" onclick="closeSheet('cast')"><svg class="ei" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <div class="ca2-title">キャストを追加</div>
-    <div class="ca2-notice"><span class="ca2-notice-icon"><svg class="ei" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span><span>追加すると標準の委託金設定が自動で作成されます。後から各キャストの設定で変更できます。</span></div>
+    <div class="ca2-title">セラピストを追加</div>
+    <div class="ca2-notice"><span class="ca2-notice-icon"><svg class="ei" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span><span>追加すると標準の委託金設定が自動で作成されます。後から各セラピストの設定で変更できます。</span></div>
     <div class="ca2-fg"><label class="ca2-lbl">名前</label><input type="text" class="ca2-input" id="new-name" placeholder="セラピスト名を入力"></div>
-    <div class="ca2-fg"><label class="ca2-lbl">ログインPIN</label><input type="password" class="ca2-input" id="new-pin" maxlength="8" inputmode="numeric" placeholder="4〜8桁の数字"><div class="ca2-hint">キャストがログイン時に使用する番号です</div></div>
+    <div class="ca2-fg"><label class="ca2-lbl">ログインPIN</label><input type="password" class="ca2-input" id="new-pin" maxlength="8" inputmode="numeric" placeholder="4〜8桁の数字"><div class="ca2-hint">セラピストがログイン時に使用する番号です</div></div>
     <button class="ca2-submit" onclick="addCast()">追加する</button>
     <div class="lerr" id="cast-add-err"></div>
   </div>
@@ -2768,7 +2768,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 
-<!-- ===== キャスト用シフト訂正シート ===== -->
+<!-- ===== セラピスト用シフト訂正シート ===== -->
 <div class="overlay" id="cast-shift-edit-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -2867,7 +2867,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></span><span class="f2-card-title">店舗共通割引設定</span></div>
-      <div class="f2-card-sub">全キャスト共通の割引を登録。各セラピストの委託金設定で「店落ち/委託金」を選択できます。</div>
+      <div class="f2-card-sub">全セラピスト共通の割引を登録。各セラピストの委託金設定で「店落ち/委託金」を選択できます。</div>
       <div id="store-disc-list"></div>
       <button class="f2-addrow-btn" onclick="addBlankDisc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>割引を追加</button>
       <button class="f2-savebtn-sm" onclick="saveAllStoreDiscs()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
@@ -2875,7 +2875,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ===== PIN変更シート（キャスト ログインPIN・テンキー） ===== -->
+<!-- ===== PIN変更シート（セラピスト ログインPIN・テンキー） ===== -->
 <div class="overlay" id="pin-change-overlay">
   <div class="sheet pinch-sheet">
     <div class="sh-handle"></div>
@@ -3081,18 +3081,18 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ===== 退店済みキャストシート ===== -->
+<!-- ===== 退店済みセラピストシート ===== -->
 <div class="overlay" id="inactive-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
     <button class="sh-close" onclick="closeSheet('inactive')"><svg class="ei" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <div class="sh-title ina2-title">退店済みのキャスト</div>
-    <div class="ina2-notice"><svg class="ina2-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>退店処理してもキャストの売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。</span></div>
+    <div class="sh-title ina2-title">退店済みのセラピスト</div>
+    <div class="ina2-notice"><svg class="ina2-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>退店処理してもセラピストの売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。</span></div>
     <div id="inactive-list" class="ina2-list"></div>
   </div>
 </div>
 
-<!-- ===== キャスト接客メモログシート ===== -->
+<!-- ===== セラピスト接客メモログシート ===== -->
 <div class="overlay" id="cast-memo-log-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -3117,7 +3117,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ===== 割引種別設定シート（キャストごと店落ち/委託金設定） ===== -->
+<!-- ===== 割引種別設定シート（セラピストごと店落ち/委託金設定） ===== -->
 <div class="overlay" id="cast-disc-type-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -3130,7 +3130,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 
-<!-- ===== 割引設定シート（キャストごと） ===== -->
+<!-- ===== 割引設定シート（セラピストごと） ===== -->
 <div class="overlay" id="disc-overlay">
   <div class="sheet">
     <div class="sh-handle"></div>
@@ -3351,7 +3351,7 @@ async function enterAppAfterSession(info){
   }
   if(role==='owner'||role==='manager'){ await loadStoreDataForPin(); me={id:0,name:'店舗',is_owner:true}; startApp(); return true }
   if(castId){
-    // 店舗データとキャスト本人情報を並行取得(直列2→1往復)
+    // 店舗データとセラピスト本人情報を並行取得(直列2→1往復)
     const[,{data:c}]=await Promise.all([
       loadStoreDataForPin(),
       sb.from('casts').select('*').eq('id',castId).eq('store_id',PIN_STORE_ID).maybeSingle()
@@ -3402,7 +3402,7 @@ async function pkRegisterV2(castId){
   } finally { pkInProgress=false; _lastHiddenAt=0 }
 }
 // PIN設定/変更をサーバ(set-pin)経由で auth_pins に保存する（平文をDBに書かない）。
-// target: 'owner' または キャストID(number)。オーナーのセッションでのみ成功する。
+// target: 'owner' または セラピストID(number)。オーナーのセッションでのみ成功する。
 async function setPinViaServer(target, pin){
   const{data:{session}}=await sb.auth.getSession()
   const tok=session?.access_token
@@ -3439,7 +3439,7 @@ async function initPinAuth(){
   document.getElementById('s-top').classList.add('on')
   await renderPinCastPicker()
 }
-// ログイン前のキャスト選択肢を list-store-casts（id+nameのみ）で描画
+// ログイン前のセラピスト選択肢を list-store-casts（id+nameのみ）で描画
 async function renderPinCastPicker(){
   const _cl0=document.getElementById('cast-card-list')
   if(_cl0) _cl0.textContent='読み込み中...'
@@ -3472,7 +3472,7 @@ async function renderPinCastPicker(){
     if(!casts.length){
       const d=document.createElement('div')
       d.style.cssText='grid-column:1/-1;color:var(--text3);font-size:.8rem;padding:.6rem;text-align:center'
-      d.textContent=errMsg?('読み込みエラー: '+errMsg):'在籍キャストがいません'
+      d.textContent=errMsg?('読み込みエラー: '+errMsg):'在籍セラピストがいません'
       cardList.appendChild(d)
     }
     casts.forEach(c=>{
@@ -3746,7 +3746,7 @@ function b64ToBuf(b64){
   return Uint8Array.from(s,c=>c.charCodeAt(0)).buffer
 }
 
-// キャスト選択時にpasskeyが登録済みか確認してボタン表示
+// セラピスト選択時にpasskeyが登録済みか確認してボタン表示
 async function checkPasskeyBtn(castId){
   const btn=document.getElementById('btn-passkey')
   if(!btn||!castId) return
@@ -4031,14 +4031,14 @@ async function doCastLogin(){
     try{
       const j=await pinLoginViaServer('cast', cid?parseInt(cid):null, pin)
       const rid=(j&&j.cast_id!=null)?Number(j.cast_id):(cid?parseInt(cid):null)
-      // 店舗データとキャスト本人情報を並行取得(直列2→1往復)
+      // 店舗データとセラピスト本人情報を並行取得(直列2→1往復)
       const[,{data:c}]=await Promise.all([
         loadStoreDataForPin(),
         rid!=null ? sb.from('casts').select('*').eq('id',rid).maybeSingle() : Promise.resolve({data:null})
       ])
-      me=c?{...c,is_owner:false}:{id:rid,name:'キャスト',is_owner:false}
+      me=c?{...c,is_owner:false}:{id:rid,name:'セラピスト',is_owner:false}
       startApp()
-      if(rid!=null) setTimeout(()=>offerPasskeyRegistration(rid,(c&&c.name)||'キャスト'), 800)
+      if(rid!=null) setTimeout(()=>offerPasskeyRegistration(rid,(c&&c.name)||'セラピスト'), 800)
     }catch(e){ err.textContent=e.message||'PINが正しくありません' }
     finally{ btn.disabled=false; btn.textContent='ログイン' }
     return
@@ -4743,7 +4743,7 @@ async function checkOwnerPushBtn(){
       }
       // ★ ブラウザに新しいsubscriptionがあるがDB未登録 → 自動でDBへ登録（iOS Safariのendpointローテーション対策）
       if (Notification.permission === 'granted') {
-        // 他のユーザー（キャスト等）がこのendpointを登録済みなら自動登録しない（端末共有対策）
+        // 他のユーザー（セラピスト等）がこのendpointを登録済みなら自動登録しない（端末共有対策）
         const {data:allSubsCheck}=await withStoreFilter(sb.from('push_subscriptions').select('id,cast_id,subscription'));
         const ownedByOther=(allSubsCheck||[]).some(r=>{try{const s=typeof r.subscription==='string'?JSON.parse(r.subscription):r.subscription;return s.endpoint===subJson.endpoint&&r.cast_id!==0;}catch{return false;}});
         if(ownedByOther){ return; }
@@ -4889,7 +4889,7 @@ function tab(name){
   if(name==='owner-monthly') loadMonthly()
 }
 
-// 管理タブ：キャストと顧客をサブメニューで切り替え
+// 管理タブ：セラピストと顧客をサブメニューで切り替え
 let mgmtSub = 'owner-cast' // 最後に開いたサブ
 function tabMgmt(){
   // 管理ボタン（tbar内9番目）をアクティブに
@@ -4905,7 +4905,7 @@ function tabMgmt(){
     sheet.id = 'mgmt-subsheet'
     sheet.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom) + 96px);left:14px;right:14px;max-width:680px;margin:0 auto;background:#fff;border:1px solid #EDE9E1;border-radius:18px;display:flex;gap:0;z-index:49;overflow:hidden;box-shadow:0 6px 20px rgba(33,32,24,.10)'
     sheet.innerHTML=`
-      <button id="mgmt-cast-btn" onclick="tabMgmtSub('owner-cast')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-right:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> キャスト</button>
+      <button id="mgmt-cast-btn" onclick="tabMgmtSub('owner-cast')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-right:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> セラピスト</button>
       <button id="mgmt-customer-btn" onclick="tabMgmtSub('owner-customer')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 顧客</button>`
     document.body.appendChild(sheet)
   }
@@ -5008,7 +5008,7 @@ function refreshCurrentTab(){
 })()
 
 
-// ── キャスト：シフト申請 ──
+// ── セラピスト：シフト申請 ──
 function calMove(d){calMonth=addMonth(calMonth,d);loadCal()}
 async function loadCal(){
   const[y,m]=calMonth.split('-').map(Number)
@@ -5259,7 +5259,7 @@ async function loadShiftList(){
   renderInlineShiftList()
 }
 
-// ── キャスト：本日 ──
+// ── セラピスト：本日 ──
 let castTodayTimer = null;
 let castTodayClockTimer = null;
 
@@ -5413,7 +5413,7 @@ function fmtClock(iso) {
   } catch (e) { return ''; }
 }
 
-// キャスト本日ページ上部の出勤/退勤コントロールHTMLを組み立てる
+// セラピスト本日ページ上部の出勤/退勤コントロールHTMLを組み立てる
 function buildCastAttHtml(shifts) {
   if (!shifts || !shifts.length) return '';
   let h = '';
@@ -5993,7 +5993,7 @@ async function confirmExtend() {
   }
 }
 
-// ── キャスト：シフト訂正 ──
+// ── セラピスト：シフト訂正 ──
 let castShiftEditId = null
 let castShiftEditDate = null
 
@@ -6048,7 +6048,7 @@ async function deleteCastShift(){
   renderInlineShiftList()
 }
 
-// ── キャスト：委託金確認 ──
+// ── セラピスト：委託金確認 ──
 function salMove(d){salMonth=addMonth(salMonth,d);loadMySalary()}
 function salDayToggle(detailId){
   const el=document.getElementById(detailId)
@@ -6581,9 +6581,9 @@ async function openCustomerDetail(id){
   
   // 来店記録取得
   const{data:visits}=await withStoreFilter(sb.from('customer_visits').select('*')).eq('customer_id',id).order('visit_date',{ascending:false})
-  // キャストメモ取得（cast_memoがnullでないもの）
+  // セラピストメモ取得（cast_memoがnullでないもの）
   const{data:memos}=await withStoreFilter(sb.from('customer_visits').select('id,cast_memo,cast_name,created_at')).eq('customer_id',id).not('cast_memo','is',null).neq('cast_memo','').order('created_at',{ascending:false})
-  // キャスト一覧取得（NGプルダウン用）
+  // セラピスト一覧取得（NGプルダウン用）
   const{data:allCastsData}=await withStoreFilter(sb.from('casts').select('id,name')).eq('active',true).order('sort_order')
   const ngSelected=(c.ng_casts||'').split(/[,、]/).map(x=>x.trim()).filter(Boolean)
   const ngOptions=(allCastsData||[]).map(cast=>`<option value="${escapeHtml(cast.name)}" ${ngSelected.includes(cast.name)?'selected':''}>${escapeHtml(cast.name)}</option>`).join('')
@@ -6600,7 +6600,7 @@ async function openCustomerDetail(id){
       <div><div class="cf-lbl">名前</div><input class="cf-input" id="edit-cust-name" value="${escapeHtml(c.name)}"></div>
       <div><div class="cf-lbl">電話番号<span class="cf-lbl-opt">任意</span></div><input class="cf-input" id="edit-cust-phone" type="tel" value="${escapeHtml(c.phone||'')}" placeholder="090-0000-0000"></div>
       <div>
-        <div class="cf-lbl">NGキャスト<span class="cf-lbl-opt">複数選択可・任意</span></div>
+        <div class="cf-lbl">NGセラピスト<span class="cf-lbl-opt">複数選択可・任意</span></div>
         <div class="cf-ng-wrap" id="edit-cust-ng-wrap">
           ${(allCastsData||[]).map(cast=>{
             const chk=ngSelected.includes(cast.name)
@@ -6645,7 +6645,7 @@ async function openCustomerDetail(id){
     })
   }
 
-  html+=`<div class="cd-sec-title">キャストメモ</div>
+  html+=`<div class="cd-sec-title">セラピストメモ</div>
     <button class="cd-memo-add-btn" onclick="openCastMemoSheet(${c.id},'${escapeHtml(c.name)}')">＋ メモを追加</button>`
 
   if(memos&&memos.length){
@@ -6663,7 +6663,7 @@ async function openCustomerDetail(id){
     html+='<div class="empty">メモなし</div>'
   }
 
-  // キャストメモの下に顧客削除ボタン
+  // セラピストメモの下に顧客削除ボタン
   html+=`<div class="cd-danger-zone">
     <button class="cd-del-cust-btn" onclick="deleteCustomer(${c.id},'${escapeHtml(c.name)}')">
       この顧客データを完全に削除する
@@ -6762,11 +6762,11 @@ function openAddCustomer(){
   document.getElementById('ce-memo').value=''
   document.getElementById('ce-banned').value='false'
   syncBanDisplay('ce-banned','ce-banned-display')
-  // NGキャストチップを生成
+  // NGセラピストチップを生成
   const chipsWrap=document.getElementById('ce-ng-chips')
   if(chipsWrap){
     const activeCasts=allCustomers._casts||(window._allCastsForNg||[])
-    // キャスト一覧を使ってチップを生成（非同期取得）
+    // セラピスト一覧を使ってチップを生成（非同期取得）
     withStoreFilter(sb.from('casts').select('id,name')).eq('active',true).order('sort_order').then(({data})=>{
       window._allCastsForNg=data||[]
       chipsWrap.innerHTML=(data||[]).map(c=>'<button type="button" class="cf-ng-chip ce-ng-chip" data-name="'+escapeHtml(c.name)+'" onclick="toggleCeNgChip(this)">'+escapeHtml(c.name)+'</button>').join('')
@@ -6798,7 +6798,7 @@ async function saveNewCustomer(){
   const isManualNo=!!no
   const phone=document.getElementById('ce-phone').value.trim()
   const memo=document.getElementById('ce-memo').value.trim()
-  // NGキャストをチップから取得
+  // NGセラピストをチップから取得
   const ngChips=document.querySelectorAll('.ce-ng-chip[data-selected="true"]')
   const ng=Array.from(ngChips).map(x=>x.dataset.name).join(',')
   // 採番競合対策: DBから最新値を取得して挿入、失敗時は最大5回まで番号をインクリメントしてリトライ
@@ -6929,7 +6929,7 @@ async function openReservation(shiftId,castName,date){
   // 割引一覧をチェックボックスで表示（店舗共通割引 cast_id=0 から読み込み）
   const discList=document.getElementById('rv-discount-list')
   const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0).order('id')
-  // キャストの入店日を取得（新人割チェック用）
+  // セラピストの入店日を取得（新人割チェック用）
   const{data:shiftData}=await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',shiftId)).maybeSingle()
   let rvCastJoinedAt=null
   if(shiftData?.cast_id){
@@ -7145,10 +7145,10 @@ function openRvCustHistory(){
 function checkBanWarning(c){
   // 全出禁
   if(c.is_banned) return `${c.name}は出禁登録されています`
-  // キャスト指名NGチェック
+  // セラピスト指名NGチェック
   if(_rvCastName && c.ng_casts){
     const ngList=(c.ng_casts||'').split(/[,、]/).map(x=>x.trim()).filter(Boolean)
-    if(ngList.includes(_rvCastName)) return `${c.name}は${_rvCastName}のNGキャストに登録されています`
+    if(ngList.includes(_rvCastName)) return `${c.name}は${_rvCastName}のNGセラピストに登録されています`
   }
   return null
 }
@@ -7971,7 +7971,7 @@ async function confirmRoomAssign(shiftId){
   if(error){toast('エラー: '+error.message);return}
   delete _tempRoomMap[shiftId]
   toast(roomName+'に振り分けました')
-  // _tempRoomMapの他キャスト分を消さないようloadOwnerCalは呼ばずroomGridだけ更新
+  // _tempRoomMapの他セラピスト分を消さないようloadOwnerCalは呼ばずroomGridだけ更新
   // ownerShiftDataのpendingからapprovedに移す（再取得なしで即時反映）
   const shift=(ownerShiftData.pending||[]).find(s=>Number(s.id)===Number(shiftId))
   if(shift){
@@ -7981,7 +7981,7 @@ async function confirmRoomAssign(shiftId){
     ownerShiftData.pending=ownerShiftData.pending.filter(s=>Number(s.id)!==Number(shiftId))
   }
   refreshOwnerRoomGrid()
-  // 承認待ち詳細シートが開いている場合は再描画（他キャストの仮選択状態は_tempRoomMapで保持）
+  // 承認待ち詳細シートが開いている場合は再描画（他セラピストの仮選択状態は_tempRoomMapで保持）
   if(shift) ownerSelectDay(shift.date)
   if(shift&&shift.date===bizDay()){loadToday()}
   // バックグラウンドでカレンダーも更新（ルーム表には影響しない）
@@ -8282,7 +8282,7 @@ async function loadToday(){
   const td=todayNavDate||bizDay();const[y,m,d]=td.split('-')
   const isToday2=td===bizDay()
   document.getElementById('today-lbl').textContent=y+'年'+parseInt(m)+'月'+parseInt(d)+'日'+(isToday2?' (今日)':'')
-  // 問合せ数・シフト・キャスト一覧を並列取得
+  // 問合せ数・シフト・セラピスト一覧を並列取得
   const inqEl=document.getElementById('today-inquiry')
   const[inqRes,shiftsRes,castRes]=await Promise.all([
     withStoreFilter(sb.from('daily_notes').select('inquiry_count')).eq('date',td).maybeSingle(),
@@ -8724,7 +8724,7 @@ async function loadGanttModal(){
     const endH2disp=endH2<startH2?endH2+24:endH2
     const endTimeDisp=String(endH2disp).padStart(2,'0')+':'+endM2
 
-    // --- Action Row（キャストバッジ＋予約登録ボタン）---
+    // --- Action Row（セラピストバッジ＋予約登録ボタン）---
     const actionRow=`<div style="display:flex;gap:10px;padding:8px 16px 12px 16px;position:sticky;top:0;z-index:20;background:#fff">
       <div style="flex:1;min-width:0;background:#fff;border-radius:12px;border:1.5px solid #EDE9E1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 13px;min-height:66px">
         <div style="display:flex;align-items:center;gap:6px">
@@ -9338,7 +9338,7 @@ function calcTotal2(){
     const extBack=ov['ext:back']!=null?ov['ext:back']:extBack_base
     const extSale=ov['ext:price']!=null?ov['ext:price']:extSale_base
     // どちらの割引も総売上（客の支払い）は下がる
-    // 店落ちから引く→店が負担（店落ちが減る）、委託金から引く→キャストが負担（委託金が減る）
+    // 店落ちから引く→店が負担（店落ちが減る）、委託金から引く→セラピストが負担（委託金が減る）
     // カード金額（10%上乗せ前の元額）を支払い方法から算出
     const payCourse2=block.querySelector('.s-pay-course')?.value||'現金'
     const payShimei2=block.querySelector('.s-pay-shimei')?.value||'現金'
@@ -9578,20 +9578,20 @@ async function saveWork(){
     else toast('保存エラー: '+(err.message||JSON.stringify(err)))
     return
   }
-  // キャストへPush通知
+  // セラピストへPush通知
   await sendPushNotification(sheetCastId, '委託金が入力されました', sheetDate+'の委託金が確定しました。');
   closeSheet('work');toast('保存しました！')
   loadToday()
 }
 
-// ── キャスト管理 ──
+// ── セラピスト管理 ──
 async function loadCastMgmt(){
   const area=document.getElementById('cast-area')
   area.innerHTML='<div class="spin">読み込み中...</div>'
   const{data:casts}=await withStoreFilter(sb.from('casts').select('*')).eq('active',true).order('sort_order')
   const castCountBadge=document.getElementById('cast-count-badge')
   if(castCountBadge) castCountBadge.textContent=(casts?casts.length:0)+'名'
-  if(!casts||!casts.length){area.innerHTML='<div class="empty">在籍中のキャストがいません</div>';return}
+  if(!casts||!casts.length){area.innerHTML='<div class="empty">在籍中のセラピストがいません</div>';return}
   // cast_feesから入店日を取得
   const castIds=casts.map(c=>c.id)
   let joinedMap={}
@@ -9631,7 +9631,7 @@ async function openInactiveSheet(){
   const{data:casts}=await withStoreFilter(sb.from('casts').select('*')).eq('active',false).order('sort_order')
   const area=document.getElementById('inactive-list')
   if(!casts||!casts.length){
-    area.innerHTML='<div class="empty" style="padding:1.5rem 0">退店済みのキャストはいません</div>'
+    area.innerHTML='<div class="empty" style="padding:1.5rem 0">退店済みのセラピストはいません</div>'
   } else {
     area.innerHTML=casts.map(c=>`
       <div class="cast-row">
@@ -9646,9 +9646,9 @@ async function openInactiveSheet(){
 }
 
 async function deleteCast(castId, name){
-  if(!confirm(name+'を退店処理しますか？\nキャスト情報は削除されますが、売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。\nこの操作は取り消せません。')) return
+  if(!confirm(name+'を退店処理しますか？\nセラピスト情報は削除されますが、売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。\nこの操作は取り消せません。')) return
   try {
-    // 設定データのみ削除（割引設定はキャスト固有の設定のため削除）
+    // 設定データのみ削除（割引設定はセラピスト固有の設定のため削除）
     // works・shifts・cast_fees・reservations は税務記録として保持する
     const r1=await withStoreFilter(sb.from('cast_discounts').delete()).eq('cast_id',castId)
     if(r1.error) throw new Error('discounts削除エラー: '+r1.error.message)
@@ -9871,7 +9871,7 @@ async function openFeeSheet(castId,name){
 async function renderFeeDiscList(){
   // 店舗共通割引を取得
   const{data:storeDiscs}=await withStoreFilter(sb.from('cast_discounts').select('*').eq('cast_id',0).order('sort_order'))
-  // このキャストのdisc_types設定を取得
+  // このセラピストのdisc_types設定を取得
   const{data:fee}=await withStoreFilter(sb.from('cast_fees').select('disc_types').eq('cast_id',feeCastId2)).maybeSingle()
   const discTypes=(fee?.disc_types)||{}
   const area=document.getElementById('fee-disc-list')
@@ -9922,7 +9922,7 @@ async function deleteFeeDisc(id){
 async function saveFee(){
   const btn=document.getElementById('btn-save-fee')
   btn.disabled=true;btn.textContent='保存中...'
-  if(!feeCastId2){toast('エラー: キャストIDが不明です');btn.disabled=false;btn.textContent='保存する';return}
+  if(!feeCastId2){toast('エラー: セラピストIDが不明です');btn.disabled=false;btn.textContent='保存する';return}
   // 入力値を直接取得（valueを明示的に数値化）
   const gv=id=>{const el=document.getElementById(id);if(!el)return 0;const v=parseInt(el.value,10);return isNaN(v)?0:v}
   const miscEnabled=document.getElementById('f-misc-enabled')?.value!=='0'
@@ -10215,7 +10215,7 @@ async function loadOwnerSalary(){
   </div>
   <div class="sal2-section-lbl">セラピスト別</div>
   <div class="sal2-cast-list">`
-  // キャスト別カード
+  // セラピスト別カード
   const castCards=works.map(w=>{
     const name=w.castName
     const sessions=w.sessions||[]
@@ -10300,7 +10300,7 @@ async function loadGlobalData(){
   const{data:cs}=await withStoreFilter(sb.from('courses').select('*')).order('price')
   const{data:op}=await withStoreFilter(sb.from('options').select('*')).order('id')
   courses=cs||[]; opts=op||[]
-  // キャスト予約入力のコース・オプション選択肢を更新
+  // セラピスト予約入力のコース・オプション選択肢を更新
   refreshCourseOptSelects()
 }
 
@@ -10639,7 +10639,7 @@ async function deleteStoreDisc(id){
   await withStoreFilter(sb.from('cast_discounts').delete()).eq('id',id)
   await loadStoreDiscList();toast('削除しました')
 }
-// ── 予約確認シート（キャスト側・店舗側共用） ──
+// ── 予約確認シート（セラピスト側・店舗側共用） ──
 async function openShiftReservations(shiftId, castName){
   document.getElementById('shift-reservations-title').textContent = castName + ' の予約確認'
   document.getElementById('shift-reservations-overlay').classList.add('on')
@@ -10773,7 +10773,7 @@ async function openRvDetail(rvId, shiftId, castName){
         </div>`
       }
       // ③ 接客メモ（cast_memo）
-      // キャストは自分の名前のメモのみ・店舗は全件
+      // セラピストは自分の名前のメモのみ・店舗は全件
       let memoQuery = sb.from('customer_visits')
         .select('id,cast_memo,cast_name,created_at')
         .eq('customer_id',custData.id)
@@ -10781,13 +10781,13 @@ async function openRvDetail(rvId, shiftId, castName){
         .neq('cast_memo','')
         .order('created_at',{ascending:false})
         .limit(5)
-      // キャストも全件取得（投稿者名は自分/他キャストで切り替え表示）
+      // セラピストも全件取得（投稿者名は自分/他セラピストで切り替え表示）
       const {data:memos} = await memoQuery
       if(memos&&memos.length){
         memoHtml += `<div style="font-size:.75rem;font-weight:700;color:var(--text2);margin:.4rem 0 .2rem"><svg class="ei" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> 接客メモ</div>`
         memoHtml += memos.map(m=>`<div style="background:var(--surface2);border-radius:8px;padding:.4rem .7rem;font-size:.8rem;margin-bottom:.25rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.15rem">
-            <span style="font-size:.65rem;color:var(--text2);font-weight:600">${escapeHtml(me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他キャスト）'))}</span>
+            <span style="font-size:.65rem;color:var(--text2);font-weight:600">${escapeHtml(me.is_owner?(m.cast_name||'不明'):(m.cast_name===me.name?me.name:'（他セラピスト）'))}</span>
             <span style="font-size:.62rem;color:var(--text3)">${m.created_at?.slice(0,10)||''}</span>
           </div>
           <div style="white-space:pre-wrap">${escapeHtml(m.cast_memo)}</div>
@@ -10803,11 +10803,11 @@ async function openRvDetail(rvId, shiftId, castName){
       const realVisits = (visits||[]).filter(v=>v.course||v.shimei_type)
       if(realVisits.length){
         visitHtml = `<div style="font-size:.75rem;font-weight:700;color:var(--text2);margin:.4rem 0 .2rem"><svg class="ei" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> 来店履歴</div>`
-        // 表示名の判定: オーナーは全員の名前を表示、キャストは自分のシフトのcastName(=currentRvCastName)と一致するもののみ自分と表示
+        // 表示名の判定: オーナーは全員の名前を表示、セラピストは自分のシフトのcastName(=currentRvCastName)と一致するもののみ自分と表示
         const viewerName = me.is_owner ? null : (currentRvCastName || me.name)
         visitHtml += realVisits.map(v=>{
           const isMine = !viewerName || v.cast_name === viewerName
-          const dispName = me.is_owner ? (v.cast_name||'?') : (isMine ? v.cast_name : '他キャスト')
+          const dispName = me.is_owner ? (v.cast_name||'?') : (isMine ? v.cast_name : '他セラピスト')
           const dispDetail = [v.shimei_type,v.course,v.options].filter(Boolean).join(' / ')
           return `<div style="border-left:3px solid ${isMine?'var(--accent)':'var(--border)'};padding:.25rem .5rem;margin-bottom:.2rem;font-size:.78rem">
           <span style="font-weight:600">${v.visit_date||''}</span>
@@ -11029,9 +11029,9 @@ async function saveRvEdit(rvId){
   loadToday()
 }
 
-// ── キャスト：接客メモタブ ──
+// ── セラピスト：接客メモタブ ──
 let castMemoAllCustomers = []
-// ── キャスト：自分の過去接客メモ閲覧 ──
+// ── セラピスト：自分の過去接客メモ閲覧 ──
 let myCastMemoMonth = null
 
 async function openMyCastMemoLog(){
@@ -11293,7 +11293,7 @@ async function openCastMemoForReservation(customerNo, customerName){
   document.getElementById('cast-memo-overlay').classList.add('on')
 }
 
-// ── キャスト：接客メモ履歴（店舗側のキャスト管理から開く） ──
+// ── セラピスト：接客メモ履歴（店舗側のセラピスト管理から開く） ──
 let castMemoLogCastId = null
 let castMemoLogMonth = ym(new Date())
 function openCastMemoLog(castId, castName){
@@ -11368,7 +11368,7 @@ async function renderCastMemoLog(){
 // ── 割引種別設定保存 ──
 async function saveCastDiscTypes(){
   const castId = document.getElementById('cast-disc-type-title')?.dataset?.castId
-  if(!castId){toast('キャストIDが不明です');return}
+  if(!castId){toast('セラピストIDが不明です');return}
   const rows = document.querySelectorAll('#cast-disc-type-list [data-disc-id]')
   for(const row of rows){
     const discId = parseInt(row.dataset.discId)
@@ -11490,7 +11490,7 @@ async function renderMonthlyContent(){
     if(_sk0==='free') rvsByCast[castName].free++
     else if(_sk0==='net') rvsByCast[castName].net++
     else if(_sk0==='hon') rvsByCast[castName].hon++
-    // 日付×キャスト別に予約を集計（立替金計算用）
+    // 日付×セラピスト別に予約を集計（立替金計算用）
     const dk=d+'|'+castId
     if(!rvsByDateCast[dk]) rvsByDateCast[dk]=[]
     rvsByDateCast[dk].push(r)
@@ -11520,7 +11520,7 @@ async function renderMonthlyContent(){
       dayRvs.forEach(r=>{const am=calcRv(r);card+=am.card;cardBase+=am.cardBase||0;cash+=am.cash;cardFee+=calcCardFee(am.cardBase||0);const _k=(resolveShimei(am.shimei)||{}).key;if(_k==='free')rvFree++;else if(_k==='net')rvNet++;else if(_k==='hon')rvHon++;if(am.isNew)newCount++;else repeatCount++})
     }
     const profit=gross_work-net
-    // キャストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
+    // セラピストごとの現金売上・立替金を計算（sessionsにcash/cardがあれば優先）
     const castRows=dayWorks.map(w=>{
       const b=workCardBreakdown(w)
       const wCash=b.cash,wCard=b.billed,wCardBase=b.base
@@ -11829,7 +11829,7 @@ async function pdfMonthlyDaily(){
   }
 }
 
-// ── キャスト成績表：白背景セル ──
+// ── セラピスト成績表：白背景セル ──
 function renderMonthlyCast(area,castStats,fmt2){
   if(!castStats||!Object.keys(castStats).length){area.innerHTML='<div class="empty">この月の記録はありません</div>';return}
   const rows=Object.entries(castStats).map(([name,s])=>({
@@ -11858,7 +11858,7 @@ function renderMonthlyCast(area,castStats,fmt2){
     </div>`).join('')
   // 日別明細(.md-table)と同一デザインで描画（列幅はfixedで揃える）
   const cols=[
-    {l:'キャスト',w:78,l1:true},
+    {l:'セラピスト',w:78,l1:true},
     {l:'本数',w:38},{l:shimeiName('free'),w:48},{l:shimeiName('net'),w:52},{l:shimeiName('hon'),w:52},
     {l:'総売上',w:66},
     ...(hasDisc?[{l:'割引',w:58,c:'red'}]:[]),
