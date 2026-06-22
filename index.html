@@ -8791,7 +8791,7 @@ async function loadGanttModal(){
           const intEY=timeToY(minToTimeStr(intEndMin))
           if(intSY!==null&&intEY!==null&&intEY-intSY>0){
             const intH=intEY-intSY
-            const intLabel=intH>=10?`<span style="font-size:10px;color:#333;font-weight:800;white-space:nowrap;letter-spacing:.04em">インターバル</span>`:''
+            const intLabel=intH>=10?`<span style="font-size:10px;color:#333;font-weight:800;white-space:nowrap;letter-spacing:.04em">インターバル 〜${minToTimeStr(intEndMin)}</span>`:''
             layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${intSY+1}px;height:${Math.max(intH-2,4)}px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.35),rgba(100,100,100,.35) 2px,rgba(180,180,180,.15) 2px,rgba(180,180,180,.15) 8px);border-radius:6px;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden">${intLabel}</div>`
           }
         }
@@ -8814,8 +8814,11 @@ async function loadGanttModal(){
       const afterIntEndMin=prevCoMin!==null?prevCoMin+intervalMin:fSMin
       const rawStartMin=afterIntEndMin??fSMin
       const effectiveStartMin=(nowMinForFree!==null&&nowMinForFree>rawStartMin)?nowMinForFree:rawStartMin
-      const pureGapMin=Math.max(0,fEMin-effectiveStartMin)
-      const fitCourse=COURSE_LABELS.find(([mc])=>pureGapMin>=mc)
+      // 次が実予約の場合、新規予約の後にもインターバルが必要なため差し引く（出勤終わりまでの最終枠は不要）
+      const isToShiftEnd=(fi===sorted2.length)
+      const trailingInterval=isToShiftEnd?0:intervalMin
+      const bookableMin=Math.max(0,fEMin-effectiveStartMin-trailingInterval)
+      const fitCourse=COURSE_LABELS.find(([mc])=>bookableMin>=mc)
       // 空き枠はインターバル後から表示。さらに予約を過ぎている場合は現在時刻から表示
       const gapStartStr=minToTimeStr(effectiveStartMin)
       const fSY=timeToY(gapStartStr)
@@ -8825,8 +8828,8 @@ async function loadGanttModal(){
       if(!isPastGap&&fSY!==null&&fEY!==null&&fEY-fSY>10){
         const fH=fEY-fSY
         layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${fSY+2}px;height:${fH-4}px;background:#fff;border-radius:10px;border:1.5px solid #EDE9E1;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;text-align:center;padding:0 8px">
-          <span style="font-size:13px;font-weight:700;color:#7A6E5E;white-space:nowrap">空き ${pureGapMin}分</span>
-          ${fitCourse&&fH>30?`<span style="font-size:11px;font-weight:600;color:#FF9124;white-space:nowrap">${escapeHtml(fitCourse[1])}コースまで予約可能</span>`:''}
+          <span style="font-size:13px;font-weight:700;color:#7A6E5E;white-space:nowrap">${gapStartStr}〜 空き ${bookableMin}分</span>
+          ${fH>30?(fitCourse?`<span style="font-size:11px;font-weight:600;color:#FF9124;white-space:nowrap">${escapeHtml(fitCourse[1])}コースまで予約可能</span>`:`<span style="font-size:11px;font-weight:600;color:#C0392B;white-space:nowrap">入るコースなし</span>`):''}
         </div>`
       }
       prevEnd=r.checkout_time?.slice(0,5)||prevEnd
