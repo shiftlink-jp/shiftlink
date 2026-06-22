@@ -8560,8 +8560,40 @@ async function saveCardFeeSettings(){
 }
 async function saveRoom(){
   const btn=document.getElementById('btn-save-room')
+  const newRoom=document.getElementById('room-sel').value
+  // ── 同一ルーム・同一日・時間帯重複チェック ──
+  if(newRoom){
+    btn.disabled=true;btn.textContent='確認中...'
+    // 編集対象シフトの日付・時間を取得（openRoomには日付が渡らないためDBから取得）
+    const{data:me_s}=await withStoreFilter(sb.from('shifts').select('date,start_time,end_time')).eq('id',roomShiftId).maybeSingle()
+    if(me_s&&me_s.date&&me_s.start_time&&me_s.end_time){
+      // 同店舗・同日・同ルームの別シフトを取得
+      const{data:others}=await withStoreFilter(sb.from('shifts').select('id,cast_id,start_time,end_time')).eq('date',me_s.date).eq('room',newRoom).neq('id',roomShiftId).neq('status','rejected')
+      // 時刻文字列を分換算（深夜跨ぎ対応）
+      const toMin=t=>{if(!t)return null;let[h,m]=t.split(':').map(Number);if(h<6)h+=24;return h*60+m}
+      const myS=toMin(me_s.start_time), myE=toMin(me_s.end_time)
+      // overlap: 既存start < 自分end かつ 自分start < 既存end
+      const conflict=(others||[]).find(o=>{
+        const oS=toMin(o.start_time), oE=toMin(o.end_time)
+        if(oS==null||oE==null)return false
+        return oS<myE&&myS<oE
+      })
+      if(conflict){
+        // キャスト名を解決
+        let nm='別のセラピスト'
+        if(conflict.cast_id){
+          const{data:cr}=await withStoreFilter(sb.from('casts').select('name')).eq('id',conflict.cast_id).maybeSingle()
+          if(cr&&cr.name)nm=cr.name
+        }
+        const tStr=(conflict.start_time||'').slice(0,5)+'〜'+(conflict.end_time||'').slice(0,5)
+        if(!confirm('このルームは'+nm+'('+tStr+')と時間が重複しています。それでも振り分けますか？')){
+          btn.disabled=false;btn.textContent='保存する';return
+        }
+      }
+    }
+  }
   btn.disabled=true;btn.textContent='保存中...'
-  const{error}=await withStoreFilter(sb.from('shifts').update({room:document.getElementById('room-sel').value})).eq('id',roomShiftId)
+  const{error}=await withStoreFilter(sb.from('shifts').update({room:newRoom})).eq('id',roomShiftId)
   btn.disabled=false;btn.textContent='保存する'
   if(error){toast('エラーが発生しました');return}
   toast('ルームを指定しました！');closeSheet('room');loadToday();loadOwnerCal()
