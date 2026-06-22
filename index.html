@@ -11458,7 +11458,7 @@ async function renderMonthlyContent(){
   const total_ad=sd.total_ad_expense||0,total_rent=sd.total_rent||0,total_util=sd.total_utility||0
   const total_fixed=sd.total_fixed||0,total_vari=sd.total_variable||0
   const total_custom=customExpenses.reduce((s,e)=>s+(e.amount||0),0)
-  const total_expenses=sd.total_expenses||(total_fixed+total_vari+total_custom)
+  const total_expenses=(sd.total_expenses||(total_fixed+total_vari+total_custom))+(tot.cardFee||0)
 
   monthlyCachedData={dailyRows,tot,sd,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,castStats}
   renderMonthlyFromCache()
@@ -11472,7 +11472,7 @@ function renderMonthlyFromCache(){
   if(monthlyTabMode==='summary') renderMonthlySummary(area,tot,sd,fmt2,total_expenses)
   else if(monthlyTabMode==='daily') renderMonthlyDaily(area,dailyRows,tot)
   else if(monthlyTabMode==='cast') renderMonthlyCast(area,castStats,fmt2)
-  else if(monthlyTabMode==='expense') renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses)
+  else if(monthlyTabMode==='expense') renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,tot.cardFee)
   else if(monthlyTabMode==='chart') renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total_util,total_fixed,total_vari,dailyRows)
 }
 
@@ -11772,7 +11772,7 @@ function renderMonthlyCast(area,castStats,fmt2){
   area.innerHTML=html
 }
 
-function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses){
+function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,cardFee){
   const fixed=sd.fixed_expenses||{}
   // Pencil「Monthly 経費」: 合計カード + アイコン付き経費リスト + 追加ボタン
   const ICON={
@@ -11793,7 +11793,12 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     <span class="me-amt">${fmt2(amount)}</span>
     <button class="me-x" onclick="event.stopPropagation();openMonthlySalesEdit()" aria-label="編集">${svg('x')}</button>
   </div>`
-  let rows=''
+  const feeRow=`<div class="me-row" style="cursor:default">
+    <span class="me-ic">${svg('credit-card')}</span>
+    <span class="me-name">カード手数料 <span style="font-size:.6rem;color:var(--text3);font-weight:600">自動計算</span></span>
+    <span class="me-amt">${fmt2(cardFee||0)}</span>
+  </div>`
+  let rows=feeRow
   if(total_rent>0) rows+=expRow('building-2','家賃',total_rent)
   if(total_util>0) rows+=expRow('zap','光熱費',total_util)
   if(total_ad>0) rows+=expRow('megaphone','広告費',total_ad)
