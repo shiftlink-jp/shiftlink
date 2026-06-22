@@ -1898,17 +1898,15 @@ if("serviceWorker" in navigator && !_isSaaS){
 <!-- ===== SAAS LOGIN (メール/パスワード) ===== -->
 <div class="screen login-wrap" id="s-saas-login">
   <div class="login-box">
-    <div class="login-logo" style="text-align:center;margin-bottom:.5rem">
-      <div style="font-size:1.8rem;font-weight:800;letter-spacing:.08em;color:var(--text)">SHIFT LINK</div>
-      <div style="font-size:.72rem;color:var(--text3);margin-top:.25rem">店舗管理をもっとシンプルに</div>
-    </div>
+    <div class="login-logo" id="saas-login-logo" style="text-align:center;margin-bottom:.25rem"></div>
+    <div class="login-tagline">予約・シフト・売上を、ひとつに。</div>
 
     <div id="saas-login-form" style="margin-top:1.5rem">
       <label class="lbl">メールアドレス</label>
       <input class="linput" type="email" id="saas-email" placeholder="owner@example.com" autocomplete="email">
       <label class="lbl" style="margin-top:.75rem">パスワード</label>
       <input class="linput" type="password" id="saas-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSaasLogin()">
-      <button class="btn-login" style="background:var(--accent);margin-top:1rem" onclick="doSaasLogin()" id="btn-saas-login">ログイン</button>
+      <button class="btn-login btn-login-primary" style="margin-top:1rem" onclick="doSaasLogin()" id="btn-saas-login">ログイン</button>
       <div class="lerr" id="saas-err"></div>
       <div style="text-align:center;margin-top:.75rem">
         <button onclick="showPasswordReset()" style="background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">パスワードを忘れた方はこちら</button>
@@ -1925,7 +1923,7 @@ if("serviceWorker" in navigator && !_isSaaS){
       <p style="font-size:.82rem;color:var(--text3);margin:.4rem 0 .85rem;line-height:1.6">登録済みのメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。</p>
       <label class="lbl">メールアドレス</label>
       <input class="linput" type="email" id="saas-reset-email" placeholder="owner@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doPasswordReset()">
-      <button class="btn-login" style="background:var(--accent);margin-top:.85rem" onclick="doPasswordReset()" id="btn-saas-reset">リセットメールを送信</button>
+      <button class="btn-login btn-login-primary" style="margin-top:.85rem" onclick="doPasswordReset()" id="btn-saas-reset">リセットメールを送信</button>
       <div class="lerr" id="saas-reset-err"></div>
       <div style="text-align:center;margin-top:1rem">
         <button onclick="showSaasLogin()" style="background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログインに戻る</button>
@@ -1939,7 +1937,7 @@ if("serviceWorker" in navigator && !_isSaaS){
       <input class="linput" type="password" id="saas-newpw" placeholder="••••••••" minlength="8" autocomplete="new-password" onkeydown="if(event.key==='Enter')doUpdatePassword()">
       <label class="lbl" style="margin-top:.75rem">確認のため再入力</label>
       <input class="linput" type="password" id="saas-newpw-confirm" placeholder="••••••••" minlength="8" autocomplete="new-password" onkeydown="if(event.key==='Enter')doUpdatePassword()">
-      <button class="btn-login" style="background:var(--accent);margin-top:.85rem" onclick="doUpdatePassword()" id="btn-saas-newpw">パスワードを変更する</button>
+      <button class="btn-login btn-login-primary" style="margin-top:.85rem" onclick="doUpdatePassword()" id="btn-saas-newpw">パスワードを変更する</button>
       <div class="lerr" id="saas-newpw-err"></div>
     </div>
 
@@ -1957,7 +1955,7 @@ if("serviceWorker" in navigator && !_isSaaS){
         <input type="checkbox" id="saas-signup-agree" style="width:18px;height:18px;flex-shrink:0;margin-top:.1rem;accent-color:var(--accent)">
         <span><a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意します</span>
       </label>
-      <button class="btn-login" style="background:var(--accent);margin-top:.75rem" onclick="doSaasSignup()" id="btn-saas-signup">無料で始める（14日間トライアル）</button>
+      <button class="btn-login btn-login-primary" style="margin-top:.75rem" onclick="doSaasSignup()" id="btn-saas-signup">無料で始める（14日間トライアル）</button>
       <div class="lerr" id="saas-signup-err"></div>
       <div style="text-align:center;margin-top:1rem">
         <button onclick="showSaasLogin()" style="background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログインに戻る</button>
@@ -1965,6 +1963,19 @@ if("serviceWorker" in navigator && !_isSaaS){
     </div>
   </div>
 </div>
+
+<!-- SaaSログイン画面のロゴはPINログインのロゴ画像を流用（base64の重複を避ける） -->
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var src=document.querySelector('#s-top .login-logo img');
+  var dst=document.getElementById('saas-login-logo');
+  if(src&&dst&&!dst.querySelector('img')){
+    var img=src.cloneNode(true);
+    img.style.cssText='width:240px;height:240px;object-fit:contain;display:block;margin:0 auto';
+    dst.appendChild(img);
+  }
+});
+</script>
 
 <!-- ===== SaaS UPGRADE ===== -->
 <div class="screen" id="s-saas-upgrade" style="align-items:center;justify-content:center;min-height:100vh;background:#f8f8f8">
