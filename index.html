@@ -3313,6 +3313,11 @@ function lockApp(){
   appAuthed=false; me=null
   clearLastActive()
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  // 管理画面のサブシートや開いているシート/オーバーレイは .screen の外(fixed)にあるため、
+  // 画面切替だけでは残ってしまう。ロック時に明示的に隠す（戻った時にログイン画面へ要素が残るバグ対策）。
+  const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
+  document.querySelectorAll('.overlay.on,.sheet-overlay.on').forEach(o=>o.classList.remove('on'))
+  document.querySelectorAll('.open').forEach(o=>o.classList.remove('open'))
   const top=document.getElementById('s-top'); if(top) top.classList.add('on')
   try{ renderPinCastPicker() }catch(e){}
 }
