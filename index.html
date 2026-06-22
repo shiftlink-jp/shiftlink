@@ -7029,6 +7029,14 @@ function getCourseMinutes(courseName){
   const m=courseName.match(/(\d+)分/)
   return m?parseInt(m[1]):0
 }
+// 空き分数に入る最大コースのラベルを返す（延長は除外）
+function bookableCourseLabel(availMin){
+  if(availMin<=0) return '予約不可'
+  const cand=(courses||[]).map(c=>({name:c.name,min:c.duration||getCourseMinutes(c.name||'')})).filter(c=>c.min>0&&!/延長/.test(c.name||''))
+  const fit=cand.filter(c=>c.min<=availMin).sort((a,b)=>b.min-a.min)
+  if(!fit.length) return '入るコースなし'
+  return '最大 '+fit[0].name+'まで可'
+}
 function autoCalcCheckout(){
   const checkin=document.getElementById('rv-checkin').value
   const course=document.getElementById('rv-course').value
@@ -7429,10 +7437,16 @@ async function loadGantt(){
         // 次予約との空き計算
         const nextRv=sortedRvsL[ri+1]
         const nextCheckinMin=nextRv?.checkin_time?timeStrToMinL(nextRv.checkin_time.slice(0,5)):null
-        const gapMin=nextCheckinMin!==null?nextCheckinMin-intEndMin:null
-        let belowText=`⏱ 最短 ${intEndStr}〜`
-        if(gapMin!==null&&gapMin>0) belowText+=`　▷ 次予約まで ${gapMin}分空き`
-        else if(gapMin!==null&&gapMin<=0) belowText+=`　▷ 次予約まで余裕なし`
+        let belowText
+        if(nextCheckinMin!==null){
+          // 次予約あり：新規予約の後にもインターバルが必要なため、インターバル2回分を差し引く
+          const bookableMin=nextCheckinMin-coMin-intervalMin*2
+          if(bookableMin>0) belowText=`⏱ ${intEndStr}〜 ／ 空き ${bookableMin}分（${bookableCourseLabel(bookableMin)}）`
+          else belowText=`⏱ ${intEndStr}〜 ／ インターバル込みで空きなし`
+        } else {
+          // 最終予約：インターバル後の受付可能時刻
+          belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
+        }
         belowBars+=`<div style="font-size:.58rem;color:var(--text3);padding:.05rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${belowText}</div>`
       }
     })
@@ -7579,13 +7593,15 @@ async function renderGanttInto(area, date, filterShifts=null){
         // 次予約との空き表示
         const nextRv=sortedRvsG[ri+1]
         const nextCheckinMin=nextRv?.checkin_time?timeStrToMin(nextRv.checkin_time.slice(0,5)):null
-        const gapMin=nextCheckinMin!==null?nextCheckinMin-intEndMin:null
-        // 下部テキスト：最短予約可能時間 + 次予約まで余裕
-        let belowText=`⏱ 最短 ${intEndStr}〜`
-        if(gapMin!==null&&gapMin>0){
-          belowText+=`　▷ 次予約まで ${gapMin}分空き`
-        } else if(gapMin!==null&&gapMin<=0){
-          belowText+=`　▷ 次予約まで余裕なし`
+        let belowText
+        if(nextCheckinMin!==null){
+          // 次予約あり：新規予約の後にもインターバルが必要なため、インターバル2回分を差し引く
+          const bookableMin=nextCheckinMin-coMin-intervalMin*2
+          if(bookableMin>0) belowText=`⏱ ${intEndStr}〜 ／ 空き ${bookableMin}分（${bookableCourseLabel(bookableMin)}）`
+          else belowText=`⏱ ${intEndStr}〜 ／ インターバル込みで空きなし`
+        } else {
+          // 最終予約：インターバル後の受付可能時刻
+          belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
         }
         belowBars+=`<div style="font-size:.58rem;color:var(--text3);padding:.1rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${belowText}</div>`
       }
