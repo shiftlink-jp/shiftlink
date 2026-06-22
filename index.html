@@ -3367,6 +3367,9 @@ let _pkPrep={}   // { castId: {p: Promise<optObj|null>, at} }
 function pkPrepare(castId){
   castId=Number(castId)
   if(!window.PublicKeyCredential || !pkHasLocal(castId)) return
+  // 既に新しい先読みがあれば使い回す（再取得して未解決の通信に差し替えると、
+  // タップ直後にawaitが通信待ちで止まり、iOSがFace IDを出さなくなるため）
+  const ex=_pkPrep[castId]; if(ex && (Date.now()-ex.at)<180000) return
   pkBrowser()  // ライブラリ先読み(待たない)
   const p=pkApi('auth-options',{cast_id:castId}).then(o=>(o&&o.options&&o.credentials)?o:null).catch(()=>null)
   _pkPrep[castId]={p, at:Date.now()}
@@ -3641,7 +3644,7 @@ function showLogin(type){
   // 管理サブタブを非表示
   const sub=document.getElementById('mgmt-subsheet'); if(sub) sub.style.display='none'
   if(type==='top') document.getElementById('s-top').classList.add('on')
-  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); pkPrepare(0); setTimeout(()=>doOwnerLoginSmart(true), 150) }
+  else if(type==='owner'){ document.getElementById('s-owner-login').classList.add('on'); checkOwnerPasskeyBtn(); pkPrepare(0); doOwnerLoginSmart(true) }
   else if(type==='cast'){
     document.getElementById('s-cast-login').classList.add('on')
     if(PIN_AUTH_MODE) setupCastPinLogin()
