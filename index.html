@@ -6015,7 +6015,7 @@ async function loadMySalary(){
       const wProfitT=(todaySavedWork.sales||0)-(todaySavedWork.net||todaySavedWork.back||0)
       const cellT=(label,val,accent=false)=>{
         const backLabels=['バック','委託金'];
-        const profitLabels=['店舗利益','純利益','粗利益','利益'];
+        const profitLabels=['店落ち','店舗利益','純利益','粗利益','利益'];
         const isBack=backLabels.some(l=>label.includes(l));
         const isProfit=profitLabels.some(l=>label.includes(l));
         const lblCls=isBack?'back':isProfit?'profit':'';
@@ -6028,7 +6028,7 @@ async function loadMySalary(){
         ${cellT('カード',fmt(wCardSalesT))}
         ${cellT('委託金',fmt(todaySavedWork.net||todaySavedWork.back||0),true)}
         ${cellT('雑費',todaySavedWork.misc?fmt(todaySavedWork.misc):'¥0')}
-        ${cellT('店舗利益',fmt(wProfitT))}
+        ${cellT('店落ち',fmt(wProfitT))}
       </div>`
       todayHtml+=buildSessionLines(todaySavedWork)
     } else if(todayShifts&&todayShifts.length){
@@ -6083,7 +6083,7 @@ async function loadMySalary(){
       const todayProfit=todaySalesTotal-todayBackTotal-todayMisc
       const cell=(label,val,accent=false)=>{
         const backLabels=['バック','委託金'];
-        const profitLabels=['店舗利益','純利益','粗利益','利益'];
+        const profitLabels=['店落ち','店舗利益','純利益','粗利益','利益'];
         const isBack=backLabels.some(l=>label.includes(l));
         const isProfit=profitLabels.some(l=>label.includes(l));
         const lblCls=isBack?'back':isProfit?'profit':'';
@@ -6096,7 +6096,7 @@ async function loadMySalary(){
         ${cell('カード',rvCount?fmt(todayCardTotal):'¥-')}
         ${cell('委託金',rvCount?fmt(todayBackTotal):'¥-',true)}
         ${cell('雑費','¥-')}
-        ${cell('店舗利益',rvCount?fmt(todayProfit):'¥-')}
+        ${cell('店落ち',rvCount?fmt(todayProfit):'¥-')}
       </div>`
       if(!todayRvs||!todayRvs.length){
         todayHtml+=`<div class="sal3-empty">本日の予約はまだありません</div>`
@@ -6154,7 +6154,7 @@ async function loadMySalary(){
               <span class="ws-c-pay"></span>
               <span class="ws-c-sales">売上</span>
               <span class="ws-c-back">委託金</span>
-              <span class="ws-c-shop">店舗利益</span>
+              <span class="ws-c-shop">店落ち</span>
             </div>
             ${dispRowsHtml2}
             <div class="ws-subtotal">
@@ -6301,7 +6301,7 @@ async function loadMySalary(){
           <span class="ws-c-pay"></span>
           <span class="ws-c-sales">売上</span>
           <span class="ws-c-back">委託金</span>
-          <span class="ws-c-shop">店舗利益</span>
+          <span class="ws-c-shop">店落ち</span>
         </div>
         ${dispRowsHtml}
         <div class="ws-subtotal">
@@ -6339,7 +6339,7 @@ async function loadMySalary(){
     const wProfit=(w.sales||0)-(w.net||w.back||0)
     const cell2=(label,val,accent=false)=>{
         const backLabels=['バック','委託金'];
-        const profitLabels=['店舗利益','純利益','粗利益','利益'];
+        const profitLabels=['店落ち','店舗利益','純利益','粗利益','利益'];
         const isBack=backLabels.some(l=>label.includes(l));
         const isProfit=profitLabels.some(l=>label.includes(l));
         const lblCls=isBack?'back':isProfit?'profit':'';
@@ -6352,7 +6352,7 @@ async function loadMySalary(){
       ${cell2('カード',fmt(wCardSales))}
       ${cell2('委託金',fmt(w.net||w.back||0),true)}
       ${cell2('雑費',w.misc?fmt(w.misc):'¥0')}
-      ${cell2('店舗利益',fmt(wProfit))}
+      ${cell2('店落ち',fmt(wProfit))}
     </div>`
     // バック内訳
     const shimeiBack=(w.sessions||[]).reduce((s,ss)=>s+(ss.shimei_back||0),0)
@@ -9278,7 +9278,7 @@ function calcTotal2(){
       <span class="ws-c-pay"></span>
       <span class="ws-c-sales">売上</span>
       <span class="ws-c-back">委託金</span>
-      <span class="ws-c-shop">店舗利益</span>
+      <span class="ws-c-shop">店落ち</span>
     </div>`
     if(c) brows+=mkRow(c.name,'コース',coursePrice,cback,payCourse2==='カード','course')
     if(shimeiPrice) brows+=mkRow(stype,'指名料',shimeiPrice,sback,payShimei2==='カード','shimei')
@@ -9350,7 +9350,7 @@ function calcTotal2(){
   if(misc>0) bd+=`<div class="ws-srow back"><span class="ws-srow-lbl">雑費<span class="ws-srow-misc-note">委託金から控除</span></span><span class="ws-srow-val">-${fmt(misc)}</span></div>`
   if(totalCardFee>0) bd+=`<div class="ws-srow fee"><span class="ws-srow-lbl">決済手数料</span><span class="ws-srow-val">-${fmt(totalCardFee)}</span></div>`
   bd+=`<div class="ws-divider-bold"></div>`
-  bd+=`<div class="ws-srow ws-srow-total"><span class="ws-srow-lbl">店舗利益</span><span class="ws-srow-val">${fmt(shopDrop2)}</span></div>`
+  bd+=`<div class="ws-srow ws-srow-total"><span class="ws-srow-lbl">店落ち</span><span class="ws-srow-val">${fmt(shopDrop2)}</span></div>`
   document.getElementById('w-breakdown').innerHTML=bd
 }
 // 旧calcTotal互換
@@ -10080,7 +10080,7 @@ async function loadOwnerSalary(){
     <div class="sal2-hero-row">
       <div><div class="sal2-hero-amt net">${fmt(totalSales)}</div><div class="sal2-hero-lbl">純売上高</div></div>
       <div><div class="sal2-hero-amt fee">${fmt(totalNet)}</div><div class="sal2-hero-lbl">委託金合計</div></div>
-      <div><div class="sal2-hero-amt profit">${fmt(totalProfit)}</div><div class="sal2-hero-lbl">店舗利益</div></div>
+      <div><div class="sal2-hero-amt profit">${fmt(totalProfit)}</div><div class="sal2-hero-lbl">店落ち</div></div>
     </div>
     <div class="sal2-divider"></div>
     <div>
@@ -10140,7 +10140,7 @@ async function loadOwnerSalary(){
         +`</div>`
     }).join(''):''
     const detail=sessBlocks?`<div class="sal2-detail-lbl2">接客明細</div>`
-      +`<div class="sal2-sd-colhdr"><span class="sal2-sd-sp"></span><span class="sal2-sd-h">売上</span><span class="sal2-sd-h fee">委託金</span><span class="sal2-sd-h profit">店舗利益</span></div>`
+      +`<div class="sal2-sd-colhdr"><span class="sal2-sd-sp"></span><span class="sal2-sd-h">売上</span><span class="sal2-sd-h fee">委託金</span><span class="sal2-sd-h profit">店落ち</span></div>`
       +`<div class="sal2-sd-list">${sessBlocks}</div>`:''
     return `<div class="sal2-cast-card">
       <div class="sal2-cast-hdr">
@@ -10152,7 +10152,7 @@ async function loadOwnerSalary(){
         <div class="sal2-sum-row"><span class="sal2-sum-lbl">純売上</span><span class="sal2-sum-val">${fmt(w.sales||0)}</span></div>
         <div class="sal2-sum-row"><span class="sal2-sum-lbl">委託金</span><span class="sal2-sum-val fee">${fmt(w.net||w.back||0)}</span></div>
         ${misc>0?`<div class="sal2-sum-row"><span class="sal2-sum-lbl">雑費</span><span class="sal2-sum-val disc">-${fmt(misc)}</span></div>`:''}
-        <div class="sal2-sum-row"><span class="sal2-sum-lbl">店舗利益</span><span class="sal2-sum-val profit">${fmt(shopDrop)}</span></div>
+        <div class="sal2-sum-row"><span class="sal2-sum-lbl">店落ち</span><span class="sal2-sum-val profit">${fmt(shopDrop)}</span></div>
       </div>
       <div class="sal2-actions">
         <button class="sal2-btn-input" onclick="openWorkSheet(null,'${name}','${w.date}',${w.cast_id})">修正</button>
@@ -11554,7 +11554,7 @@ function renderMonthlyDaily(area,dailyRows,tot){
     {l:'日付',w:52},
     {l:'総売上',w:60},{l:'割引',w:48,c:'red'},{l:'純売上',w:62},{l:'現金売上',w:62},
     {l:'カード',w:56},{l:'手数料',w:50,c:'red'},{l:'委託金',w:58,c:'red'},{l:'立替金',w:54,c:'red'},
-    {l:'店舗利益',w:58,c:'blue'},{l:'現金残',w:56,c:'blue'},{l:'客単価',w:56},
+    {l:'店落ち',w:58,c:'blue'},{l:'現金残',w:56,c:'blue'},{l:'客単価',w:56},
     {l:'出勤',w:34},{l:shimeiName('free'),w:44},{l:shimeiName('net'),w:50},{l:shimeiName('hon'),w:50},{l:'合計',w:32},{l:'総数',w:32}
   ]
   const COL=cols.length
