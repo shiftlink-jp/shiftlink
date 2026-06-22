@@ -1313,6 +1313,17 @@ tr:last-child td{border-bottom:none}
 #monthly-edit-overlay .mse-addrow{width:100%;background:#fff;border:1.5px solid #EDE9E1;border-radius:9px;height:40px;font-size:12px;font-weight:600;color:#7A6E5E;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-family:inherit}
 #monthly-edit-overlay .mse-addrow svg{width:13px;height:13px}
 #monthly-edit-overlay .mse-add-btn svg{width:14px;height:14px}
+#monthly-edit-overlay .mse-hint2{display:flex;align-items:flex-start;gap:8px;background:#FFF1E2;border-radius:10px;padding:10px 12px;margin-bottom:.7rem}
+#monthly-edit-overlay .mse-hint2 svg{width:14px;height:14px;color:#FF9124;flex-shrink:0;margin-top:1px}
+#monthly-edit-overlay .mse-hint2 span{font-size:11px;line-height:1.4;color:#9A6A2E}
+#monthly-edit-overlay .mse-sec-head2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+#monthly-edit-overlay .mse-seg-wrap{display:flex;background:#ECE6DC;border-radius:999px;padding:3px;gap:2px;flex-shrink:0}
+#monthly-edit-overlay .mse-seg{padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;color:#7A6E5E;cursor:pointer;border:none;background:transparent;font-family:inherit}
+#monthly-edit-overlay .mse-seg.on{background:#fff;color:#211C16;box-shadow:0 1px 3px rgba(33,32,24,.1)}
+#monthly-edit-overlay .mse-name-input{flex:1;min-width:0;background:#fff;border:1.5px solid #EDE9E1;border-radius:9px;height:44px;padding:0 12px;font-size:13px;font-weight:700;color:#211C16;font-family:inherit;outline:none}
+#monthly-edit-overlay .mse-name-input:focus{border-color:#FF9124}
+#monthly-edit-overlay .mse-row-del{flex-shrink:0;width:30px;height:44px;background:none;border:none;color:#C0B6A6;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#monthly-edit-overlay .mse-row-del svg{width:16px;height:16px}
 
 /* ===== キャスト管理タブ + キャスト追加/委託金設定/店舗料金設定シート Pencilデザイン反映 (2026-06) ===== */
 /* --- #p-owner-cast --- */
@@ -11489,11 +11500,14 @@ async function renderMonthlyContent(){
     const other=(s.sales||0)-(courseSale+shimeiSale+optSale);if(other>0)compOther+=other
   })})
   tot.compCourse=compCourse;tot.compOpt=compOpt;tot.compShimei=compShimei;tot.compOther=compOther
-  const customExpenses=sd.custom_expenses||[]
-  const total_ad=sd.total_ad_expense||0,total_rent=sd.total_rent||0,total_util=sd.total_utility||0
-  const total_fixed=sd.total_fixed||0,total_vari=sd.total_variable||0
-  const total_custom=customExpenses.reduce((s,e)=>s+(e.amount||0),0)
-  const total_expenses=total_rent+total_util+total_ad+total_fixed+total_vari+total_custom+(tot.cardFee||0)
+  const customExpenses=getExpenseItems(sd)
+  const total_ad=customExpenses.filter(e=>e.category==='広告費').reduce((s,e)=>s+e.amount,0)
+  const total_rent=customExpenses.filter(e=>e.category==='家賃').reduce((s,e)=>s+e.amount,0)
+  const total_util=customExpenses.filter(e=>e.category==='光熱費').reduce((s,e)=>s+e.amount,0)
+  const total_fixed=customExpenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+e.amount,0)
+  const total_vari=customExpenses.filter(e=>e.type==='variable').reduce((s,e)=>s+e.amount,0)
+  const total_custom=customExpenses.reduce((s,e)=>s+e.amount,0)
+  const total_expenses=total_fixed+total_vari+(tot.cardFee||0)
 
   monthlyCachedData={dailyRows,tot,sd,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,castStats}
   renderMonthlyFromCache()
@@ -11828,17 +11842,11 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     <span class="mex-name">${escapeHtml(name)}</span>
     <span class="mex-amt">${fmt2(amount)}</span>
   </div>`
-  const customFixed=[],customVar=[]
-  ;(customExpenses||[]).forEach(e=>{(e.category==='固定費'?customFixed:customVar).push(e)})
-  const sumCustom=arr=>arr.reduce((s,e)=>s+(e.amount||0),0)
-  // 固定費
+  const fixedItems=(customExpenses||[]).filter(e=>e.type==='fixed')
+  const varItems=(customExpenses||[]).filter(e=>e.type==='variable')
   let fixedRows=''
-  if(total_rent>0) fixedRows+=row('building-2','家賃',total_rent)
-  if(total_util>0) fixedRows+=row('zap','光熱費',total_util)
-  if(total_ad>0) fixedRows+=row('megaphone','広告費',total_ad)
-  if(total_fixed>0) fixedRows+=row('file-text','固定費',total_fixed)
-  customFixed.forEach(e=>{fixedRows+=row('ellipsis',e.label||e.category||'その他',e.amount)})
-  const fixedSum=total_rent+total_util+total_ad+total_fixed+sumCustom(customFixed)
+  fixedItems.forEach(e=>{fixedRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount)})
+  const fixedSum=fixedItems.reduce((s,e)=>s+(e.amount||0),0)
   // 変動費（カード手数料を先頭に固定）
   const feeRow=`<div class="mex-row fee">
     <span class="mex-ic accent">${svg('credit-card')}</span>
@@ -11849,9 +11857,8 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     <span class="mex-amt">${fmt2(cardFee)}</span>
   </div>`
   let varRows=feeRow
-  if(total_vari>0) varRows+=row('package','変動費',total_vari)
-  customVar.forEach(e=>{varRows+=row('ellipsis',e.label||e.category||'その他',e.amount)})
-  const varSum=cardFee+total_vari+sumCustom(customVar)
+  varItems.forEach(e=>{varRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount)})
+  const varSum=cardFee+varItems.reduce((s,e)=>s+(e.amount||0),0)
   const grand=fixedSum+varSum
   const pct=v=>grand>0?Math.round(v/grand*100):0
   const legend=(color,label,sum)=>`<div class="mex-leg"><span class="mex-leg-dot" style="background:${color}"></span><div><div class="mex-leg-n">${label}</div><div class="mex-leg-r"><span class="mex-leg-a">${fmt2(sum)}</span><span class="mex-leg-p" style="color:${color}">${pct(sum)}%</span></div></div></div>`
@@ -12074,40 +12081,69 @@ async function loadMonthlySalesForm(){
   const setvR=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v}
   setvN('mse-goal-sales',data?.goal_sales??prevGoal.next_goal_sales);setvR('mse-goal-count',data?.goal_count??prevGoal.next_goal_count);setvR('mse-goal-recruit',data?.goal_recruit??prevGoal.next_goal_recruit);setvR('mse-actual-recruit',data?.actual_recruit)
   setvN('mse-next-goal-sales',data?.next_goal_sales);setvR('mse-next-goal-count',data?.next_goal_count);setvR('mse-next-goal-recruit',data?.next_goal_recruit)
-  setvN('mse-ad-panda',ad.aroma_panda);setvN('mse-ad-estelove',ad.esute_love);setvN('mse-ad-ranking',ad.ranking)
-  setvN('mse-ad-bakusai',ad.bakusai);setvN('mse-ad-japan',ad.japan);setvN('mse-ad-estekon',ad.esute_kon);setvN('mse-ad-tax',ad.tax)
-  setvN('mse-rent-es',rent.es_residence);setvN('mse-rent-anna',rent.anna_marie);setvN('mse-rent-hani',rent.hani_lilika);setvN('mse-rent-park',rent.park_flats)
-  setvN('mse-util-es',util.es_residence);setvN('mse-util-anna',util.anna_marie);setvN('mse-util-hani',util.hani_lilika);setvN('mse-util-park',util.park_flats)
-  setvN('mse-fixed-personnel',fixed.personnel);setvN('mse-fixed-comm',fixed.communication);setvN('mse-fixed-card',fixed.card_fee)
-  setvN('mse-var-fuel',vari.fuel);setvN('mse-var-consumables',vari.consumables);setvN('mse-var-equipment',vari.equipment);setvN('mse-var-meeting',vari.meeting);setvN('mse-var-other',vari.other)
+  mseLoadExpenseState(expSrc)
   setvR('mse-route-ekon',routes.esute_kon);setvR('mse-route-panda',routes.panda);setvR('mse-route-elove',routes.esute_love);setvR('mse-route-rank',routes.ranking);setvR('mse-route-japan',routes.japan);setvR('mse-route-zero',routes.zerotwo);setvR('mse-route-hp',routes.hp);setvR('mse-route-sns',routes.sns);setvR('mse-route-other',routes.other)
   setvR('mse-new-cust',data?.new_customers);setvR('mse-repeat-cust',data?.repeat_customers)
   setvR('mse-shimei-free',data?.shimei_free);setvR('mse-shimei-net',data?.shimei_net);setvR('mse-shimei-hon',data?.shimei_hon)
   // 指名ラベルを現在の指名名に追従
   ;['free','net','hon'].forEach(k=>{const el=document.getElementById('mse-shimei-'+k+'-lbl');if(el)el.textContent=shimeiName(k)})
-  const cArea=document.getElementById('mse-custom-expense-area')
-  if(cArea){cArea.innerHTML=customExpenses.map((e,i)=>buildCustomExpenseRow(i,e.category,e.label,e.amount)).join('');customExpenseCount=customExpenses.length}
 }
 
-const EXPENSE_CATEGORIES={ad:'宣伝広告費',rent:'家賃',util:'水道光熱費',fixed:'固定費',variable:'変動費',other:'その他'}
-let customExpenseCount=0
-function buildCustomExpenseRow(idx,category='other',label='',amount=''){
-  const catOpts=Object.entries(EXPENSE_CATEGORIES).map(([k,v])=>`<option value="${k}" ${k===category?'selected':''}>${v}</option>`).join('')
-  const amtStr=amount!=null&&amount!==''?Number(amount).toLocaleString():''
-  return `<div class="mse-card" style="margin-bottom:.5rem" id="mse-custom-row-${idx}">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-      <select id="mse-custom-cat-${idx}" style="flex:1;font-size:13px;padding:.4rem .5rem;background:#fff;border:1.5px solid #EDE9E1;border-radius:9px;height:38px;color:#211C16">${catOpts}</select>
-      <button onclick="removeCustomExpense(${idx})" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#A89B88;padding:0 0 0 .3rem"><svg class="ei" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    </div>
-    <div class="mse-row">
-      <div class="mse-name-box"><input type="text" placeholder="項目名" value="${label}" id="mse-custom-label-${idx}" style="border:none;background:transparent;width:100%;font-size:13px;font-weight:700;color:#211C16;outline:none"></div>
-      <div class="mse-amt-box"><input type="text" inputmode="numeric" placeholder="¥0" value="${amtStr}" id="mse-custom-amount-${idx}"
-        onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
-    </div>
-  </div>`
+// ── 経費データモデル（custom_expensesを「名前/金額/固定変動」の統一リストとして利用） ──
+const MSE_ICONS={'megaphone':'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>','building-2':'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>','zap':'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>','file-text':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>','package':'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>','ellipsis':'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>','plus':'<path d="M5 12h14"/><path d="M12 5v14"/>','x':'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>','info':'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'}
+function mseSvg(n){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${MSE_ICONS[n]||''}</svg>`}
+function mseExpenseIcon(cat){return {'広告費':'megaphone','家賃':'building-2','光熱費':'zap','固定費':'file-text','変動費':'package'}[cat]||'ellipsis'}
+// sdから統一経費リスト[{category,label,amount,type:'fixed'|'variable'}]を得る（新形式優先・旧形式は合計移行）
+function getExpenseItems(sd){
+  if(!sd) return []
+  const cust=sd.custom_expenses||[]
+  if(cust.some(e=>e&&e.type)) return cust.filter(e=>e&&e.label).map(e=>({category:e.category||'その他',label:e.label,amount:e.amount||0,type:e.type==='fixed'?'fixed':'variable'}))
+  const items=[]
+  const ad=sd.total_ad_expense||0; if(ad)items.push({category:'広告費',label:'広告費',amount:ad,type:'fixed'})
+  const rent=sd.total_rent||0; if(rent)items.push({category:'家賃',label:'家賃',amount:rent,type:'fixed'})
+  const util=sd.total_utility||0; if(util)items.push({category:'光熱費',label:'光熱費',amount:util,type:'fixed'})
+  const fx=sd.fixed_expenses||{}; const fixedSum=(fx.personnel||0)+(fx.communication||0)+(fx.card_fee||0); if(fixedSum)items.push({category:'固定費',label:'固定費',amount:fixedSum,type:'fixed'})
+  const vr=sd.variable_expenses||{}; const varSum=(vr.fuel||0)+(vr.consumables||0)+(vr.equipment||0)+(vr.meeting||0)+(vr.other||0); if(varSum)items.push({category:'変動費',label:'変動費',amount:varSum,type:'variable'})
+  cust.forEach(e=>{if(e&&e.label)items.push({category:e.category||'その他',label:e.label,amount:e.amount||0,type:(e.category==='variable'||e.category==='other'||e.category==='util')?'variable':'fixed'})})
+  return items
 }
-function addCustomExpense(category){const area=document.getElementById('mse-custom-expense-area');if(!area)return;customExpenseCount++;const div=document.createElement('div');div.innerHTML=buildCustomExpenseRow(customExpenseCount,typeof category==='string'?category:'other');area.appendChild(div.firstElementChild);const sheet=area.closest('.sheet');const row=area.lastElementChild;if(row&&sheet){const inp=row.querySelector('input[id^="mse-custom-label"]');if(inp)inp.focus();row.scrollIntoView({block:'center',behavior:'smooth'})}}
-function removeCustomExpense(idx){const row=document.getElementById('mse-custom-row-'+idx);if(row)row.remove()}
+// ── 経費編集シートの状態管理 ──
+let mseExpenseState=[]
+function mseLoadExpenseState(sd){
+  const items=getExpenseItems(sd)
+  const order=['広告費','家賃','光熱費','固定費','変動費']
+  const map={}
+  items.forEach(e=>{const c=e.category||'その他';if(!map[c])map[c]={category:c,type:e.type,items:[]};map[c].items.push({label:e.label,amount:e.amount});map[c].type=e.type})
+  const cats=[...order.filter(c=>map[c]),...Object.keys(map).filter(c=>!order.includes(c))]
+  mseExpenseState=cats.map(c=>map[c])
+  if(!mseExpenseState.length) mseExpenseState=[{category:'広告費',type:'fixed',items:[]},{category:'家賃',type:'fixed',items:[]},{category:'固定費',type:'fixed',items:[]},{category:'変動費',type:'variable',items:[]}]
+  renderMseExpenseSections()
+}
+function mseSyncExpenseFromDOM(){
+  mseExpenseState.forEach((sec,si)=>sec.items.forEach((it,ii)=>{
+    const ln=document.getElementById(`mse-exp-name-${si}-${ii}`);if(ln)it.label=ln.value
+    const la=document.getElementById(`mse-exp-amt-${si}-${ii}`);if(la){const n=parseInt((la.value||'').replace(/,/g,''));it.amount=isNaN(n)?null:n}
+  }))
+}
+function renderMseExpenseSections(){
+  const c=document.getElementById('mse-expense-sections');if(!c)return
+  c.innerHTML=mseExpenseState.map((sec,si)=>`<div class="mse-card">
+    <div class="mse-sec-head2">
+      <div class="mse-card-head" style="margin:0"><div class="mse-card-icon">${mseSvg(mseExpenseIcon(sec.category))}</div><div class="mse-card-title">${escapeHtml(sec.category)}</div></div>
+      <div class="mse-seg-wrap"><button class="mse-seg ${sec.type==='fixed'?'on':''}" onclick="mseSetSecType(${si},'fixed')">固定</button><button class="mse-seg ${sec.type==='variable'?'on':''}" onclick="mseSetSecType(${si},'variable')">変動</button></div>
+    </div>
+    ${sec.items.map((it,ii)=>`<div class="mse-row">
+      <input class="mse-name-input" type="text" placeholder="項目名" value="${escapeHtml(it.label||'')}" id="mse-exp-name-${si}-${ii}">
+      <div class="mse-amt-box"><input type="text" inputmode="numeric" placeholder="¥0" value="${it.amount!=null?Number(it.amount).toLocaleString():''}" id="mse-exp-amt-${si}-${ii}" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div>
+      <button class="mse-row-del" onclick="mseDelExpenseItem(${si},${ii})" aria-label="削除">${mseSvg('x')}</button>
+    </div>`).join('')}
+    <button class="mse-addrow" onclick="mseAddExpenseItem(${si})">${mseSvg('plus')}追加</button>
+  </div>`).join('')
+}
+function mseSetSecType(si,type){mseSyncExpenseFromDOM();mseExpenseState[si].type=type;renderMseExpenseSections()}
+function mseAddExpenseItem(si){mseSyncExpenseFromDOM();mseExpenseState[si].items.push({label:'',amount:null});renderMseExpenseSections();const el=document.getElementById(`mse-exp-name-${si}-${mseExpenseState[si].items.length-1}`);if(el){el.focus();el.scrollIntoView({block:'center',behavior:'smooth'})}}
+function mseDelExpenseItem(si,ii){mseSyncExpenseFromDOM();mseExpenseState[si].items.splice(ii,1);renderMseExpenseSections()}
+function mseAddExpenseSection(){mseSyncExpenseFromDOM();const name=(prompt('経費カテゴリ名を入力')||'').trim();if(!name)return;mseExpenseState.push({category:name,type:'variable',items:[{label:'',amount:null}]});renderMseExpenseSections();const el=document.getElementById('mse-expense-sections');if(el)el.lastElementChild.scrollIntoView({block:'center',behavior:'smooth'})}
 function parseMoneyInput(id){const el=document.getElementById(id);if(!el||el.value==='')return null;const n=parseInt(el.value.replace(/,/g,''));return isNaN(n)?null:n}
 function getvStr(id){const el=document.getElementById(id);return el?el.value.trim():''}
 function getvInt(id){const el=document.getElementById(id);return el&&el.value!==''?parseInt(el.value)||null:null}
@@ -12115,28 +12151,15 @@ function getvInt(id){const el=document.getElementById(id);return el&&el.value!==
 async function saveMonthlySales(){
   const btn=document.getElementById('mse-save-btn')
   btn.disabled=true;btn.textContent='保存中...'
-  const ad_panda=parseMoneyInput('mse-ad-panda'),ad_elove=parseMoneyInput('mse-ad-estelove'),ad_rank=parseMoneyInput('mse-ad-ranking')
-  const ad_baku=parseMoneyInput('mse-ad-bakusai'),ad_jap=parseMoneyInput('mse-ad-japan'),ad_ekon=parseMoneyInput('mse-ad-estekon'),ad_tax=parseMoneyInput('mse-ad-tax')
-  const ad_expenses={aroma_panda:ad_panda,esute_love:ad_elove,ranking:ad_rank,bakusai:ad_baku,japan:ad_jap,esute_kon:ad_ekon,tax:ad_tax}
-  const total_ad_expense=[ad_panda,ad_elove,ad_rank,ad_baku,ad_jap,ad_ekon,ad_tax].filter(v=>v!=null).reduce((s,v)=>s+v,0)
-  const r_es=parseMoneyInput('mse-rent-es'),r_anna=parseMoneyInput('mse-rent-anna'),r_hani=parseMoneyInput('mse-rent-hani'),r_park=parseMoneyInput('mse-rent-park')
-  const rent_expenses={es_residence:r_es,anna_marie:r_anna,hani_lilika:r_hani,park_flats:r_park}
-  const total_rent=[r_es,r_anna,r_hani,r_park].filter(v=>v!=null).reduce((s,v)=>s+v,0)
-  const u_es=parseMoneyInput('mse-util-es'),u_anna=parseMoneyInput('mse-util-anna'),u_hani=parseMoneyInput('mse-util-hani'),u_park=parseMoneyInput('mse-util-park')
-  const utility_expenses={es_residence:u_es,anna_marie:u_anna,hani_lilika:u_hani,park_flats:u_park}
-  const total_utility=[u_es,u_anna,u_hani,u_park].filter(v=>v!=null).reduce((s,v)=>s+v,0)
-  const fp=parseMoneyInput('mse-fixed-personnel'),fc=parseMoneyInput('mse-fixed-comm'),fcard=parseMoneyInput('mse-fixed-card')
-  const fixed_expenses={personnel:fp,communication:fc,card_fee:fcard}
-  const total_fixed=total_ad_expense+total_rent+[fp,fc,fcard].filter(v=>v!=null).reduce((s,v)=>s+v,0)
-  const vf=parseMoneyInput('mse-var-fuel'),vc=parseMoneyInput('mse-var-consumables'),ve=parseMoneyInput('mse-var-equipment'),vm=parseMoneyInput('mse-var-meeting'),vo=parseMoneyInput('mse-var-other')
-  const variable_expenses={fuel:vf,consumables:vc,equipment:ve,meeting:vm,other:vo}
-  const total_variable=total_utility+[vf,vc,ve,vm,vo].filter(v=>v!=null).reduce((s,v)=>s+v,0)
-  const cArea=document.getElementById('mse-custom-expense-area')
+  mseSyncExpenseFromDOM()
   const custom_expenses=[]
-  if(cArea){cArea.querySelectorAll('[id^="mse-custom-row-"]').forEach(row=>{const idx=row.id.replace('mse-custom-row-','');const category=getvStr('mse-custom-cat-'+idx)||'other';const label=getvStr('mse-custom-label-'+idx);const amount=parseMoneyInput('mse-custom-amount-'+idx);if(label&&amount!=null)custom_expenses.push({category,label,amount})})}
-  const total_custom=custom_expenses.reduce((s,e)=>s+(e.amount||0),0)
-  const total_expenses=total_fixed+total_variable+total_custom
-  const payload={month:monthlyMonth,goal_sales:parseMoneyInput('mse-goal-sales'),goal_count:getvInt('mse-goal-count'),goal_recruit:getvInt('mse-goal-recruit'),actual_recruit:getvInt('mse-actual-recruit'),next_goal_sales:parseMoneyInput('mse-next-goal-sales'),next_goal_count:getvInt('mse-next-goal-count'),next_goal_recruit:getvInt('mse-next-goal-recruit'),ad_expenses,total_ad_expense,rent_expenses,total_rent,utility_expenses,total_utility,fixed_expenses,total_fixed,variable_expenses,total_variable,custom_expenses,total_expenses,acquisition_routes:{esute_kon:getvInt('mse-route-ekon'),panda:getvInt('mse-route-panda'),esute_love:getvInt('mse-route-elove'),ranking:getvInt('mse-route-rank'),japan:getvInt('mse-route-japan'),zerotwo:getvInt('mse-route-zero'),hp:getvInt('mse-route-hp'),sns:getvInt('mse-route-sns'),other:getvInt('mse-route-other')},new_customers:getvInt('mse-new-cust'),repeat_customers:getvInt('mse-repeat-cust'),shimei_free:getvInt('mse-shimei-free'),shimei_net:getvInt('mse-shimei-net'),shimei_hon:getvInt('mse-shimei-hon')}
+  mseExpenseState.forEach(sec=>sec.items.forEach(it=>{if(it.label&&it.amount!=null)custom_expenses.push({category:sec.category,label:it.label,amount:it.amount,type:sec.type})}))
+  const catSum=cc=>custom_expenses.filter(e=>e.category===cc).reduce((s,e)=>s+e.amount,0)
+  const total_ad_expense=catSum('広告費'),total_rent=catSum('家賃'),total_utility=catSum('光熱費')
+  const total_fixed=custom_expenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+e.amount,0)
+  const total_variable=custom_expenses.filter(e=>e.type==='variable').reduce((s,e)=>s+e.amount,0)
+  const total_expenses=total_fixed+total_variable
+  const payload={month:monthlyMonth,goal_sales:parseMoneyInput('mse-goal-sales'),goal_count:getvInt('mse-goal-count'),goal_recruit:getvInt('mse-goal-recruit'),actual_recruit:getvInt('mse-actual-recruit'),next_goal_sales:parseMoneyInput('mse-next-goal-sales'),next_goal_count:getvInt('mse-next-goal-count'),next_goal_recruit:getvInt('mse-next-goal-recruit'),ad_expenses:null,total_ad_expense,rent_expenses:null,total_rent,utility_expenses:null,total_utility,fixed_expenses:null,total_fixed,variable_expenses:null,total_variable,custom_expenses,total_expenses,acquisition_routes:{esute_kon:getvInt('mse-route-ekon'),panda:getvInt('mse-route-panda'),esute_love:getvInt('mse-route-elove'),ranking:getvInt('mse-route-rank'),japan:getvInt('mse-route-japan'),zerotwo:getvInt('mse-route-zero'),hp:getvInt('mse-route-hp'),sns:getvInt('mse-route-sns'),other:getvInt('mse-route-other')},new_customers:getvInt('mse-new-cust'),repeat_customers:getvInt('mse-repeat-cust'),shimei_free:getvInt('mse-shimei-free'),shimei_net:getvInt('mse-shimei-net'),shimei_hon:getvInt('mse-shimei-hon')}
   const {error}=await sb.from('monthly_sales').upsert(withStoreId(payload),{onConflict:'month'})
   btn.disabled=false;btn.textContent='保存'
   if(error){toast('保存失敗: '+error.message);return}
@@ -12187,51 +12210,9 @@ init()
       <button id="mse-tab-route" class="mse-tab-btn" onclick="mseSwitchTab('route')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>集客</button>
     </div>
     <div id="mse-body-expense">
-      <div class="mse-card">
-        <div class="mse-card-head"><div class="mse-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div><div class="mse-card-title">広告費</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>アロマパンダ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-panda" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>エステラブ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-estelove" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>ランキング</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-ranking" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>爆サイ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-bakusai" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>ジャパン</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-japan" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>エステ魂</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-estekon" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>消費税</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-ad-tax" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <button class="mse-addrow" onclick="addCustomExpense('ad')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>追加</button>
-      </div>
-      <div class="mse-card">
-        <div class="mse-card-head"><div class="mse-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div><div class="mse-card-title">家賃</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>エスレジデンス</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-rent-es" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>アンナマリー</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-rent-anna" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>ハニリリカ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-rent-hani" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>パークフラッツ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-rent-park" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <button class="mse-addrow" onclick="addCustomExpense('rent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>追加</button>
-      </div>
-      <div class="mse-card">
-        <div class="mse-card-head"><div class="mse-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div><div class="mse-card-title">光熱費</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>エスレジデンス</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-util-es" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>アンナマリー</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-util-anna" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>ハニリリカ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-util-hani" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>パークフラッツ</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-util-park" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <button class="mse-addrow" onclick="addCustomExpense('util')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>追加</button>
-      </div>
-      <div class="mse-card">
-        <div class="mse-card-head"><div class="mse-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></div><div class="mse-card-title">固定費</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>人件費</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-fixed-personnel" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>通信費</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-fixed-comm" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>カード決済手数料</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-fixed-card" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <button class="mse-addrow" onclick="addCustomExpense('fixed')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>追加</button>
-      </div>
-      <div class="mse-card">
-        <div class="mse-card-head"><div class="mse-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg></div><div class="mse-card-title">変動費</div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>燃料費</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-var-fuel" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>消耗品</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-var-consumables" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>備品費</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-var-equipment" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>会議費</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-var-meeting" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <div class="mse-row"><div class="mse-name-box"><span>その他</span><span class="mse-pencil"><svg class="ei" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div><div class="mse-amt-box"><input type="text" inputmode="numeric" id="mse-var-other" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"></div></div>
-        <button class="mse-addrow" onclick="addCustomExpense('variable')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>追加</button>
-      </div>
-      <div id="mse-custom-expense-area" style="margin-bottom:.5rem"></div>
-      <button class="mse-add-btn" onclick="addCustomExpense()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>経費項目を追加</button>
+      <div class="mse-hint2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>各項目の「固定／変動」を切り替えると、経費画面の固定費・変動費の分類に反映されます。項目名はタップで変更、ゴミ箱で削除できます。</span></div>
+      <div id="mse-expense-sections"></div>
+      <button class="mse-add-btn" onclick="mseAddExpenseSection()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>経費項目を追加</button>
     </div>
     <div id="mse-body-goal" style="display:none">
       <div class="mse-card">
