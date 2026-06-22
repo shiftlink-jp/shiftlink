@@ -11489,7 +11489,7 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     ${kpiCard('店舗利益',fmt2(tot.profit),'var(--btx)')}
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
-    ${kpiCard('ザッピ',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
+    ${kpiCard('雑費',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
     ${kpiCard('平均出勤',tot.workDays>0?Math.round(tot.attendance/tot.workDays)+'名':'0名')}
     ${kpiCard('施術件数',tot.count+'本')}
     ${kpiCard('平均客単価',fmt2(tot.avg_unit))}
