@@ -1343,7 +1343,7 @@ tr:last-child td{border-bottom:none}
 #expense-edit-overlay .fxe-cat-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #expense-edit-overlay .fxe-cat-ic svg{width:15px;height:15px}
 #expense-edit-overlay .fxe-cat-name{width:100%;box-sizing:border-box;min-width:0;border:none;background:transparent;font-size:14px;font-weight:700;color:#211C16;font-family:inherit;outline:none;padding:0}
-#expense-edit-overlay .fxe-cat-tot{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:#211C16;flex-shrink:0}
+#expense-edit-overlay .fxe-cat-tot{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:#211C16;flex-shrink:0;width:96px;text-align:right;padding-right:8px;box-sizing:border-box}
 #expense-edit-overlay .fxe-cat-tools{display:flex;align-items:center;gap:3px;flex-shrink:0}
 #expense-edit-overlay .fxe-mini{width:26px;height:26px;border:1px solid #EDE9E1;background:#fff;border-radius:7px;color:#7A6E5E;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 #expense-edit-overlay .fxe-mini:disabled{opacity:.3}
@@ -1353,7 +1353,7 @@ tr:last-child td{border-bottom:none}
 #expense-edit-overlay .fxe-sub-arrow{color:#CFC6B8;flex-shrink:0;display:flex}
 #expense-edit-overlay .fxe-sub-arrow svg{width:14px;height:14px}
 #expense-edit-overlay .fxe-sub-name{flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:500;color:#4A4035;font-family:inherit;outline:none;padding:0}
-#expense-edit-overlay .fxe-sub-amt{width:96px;flex-shrink:0;text-align:right;border:1.5px solid #EDE9E1;border-radius:8px;height:34px;padding:0 8px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#211C16;outline:none}
+#expense-edit-overlay .fxe-sub-amt{width:96px;flex-shrink:0;box-sizing:border-box;text-align:right;border:1.5px solid #EDE9E1;border-radius:8px;height:34px;padding:0 8px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#211C16;outline:none}
 #expense-edit-overlay .fxe-sub-amt:focus,#expense-edit-overlay .fxe-cat-name:focus,#expense-edit-overlay .fxe-sub-name:focus{border-color:#FF9124}
 #expense-edit-overlay .fxe-sub-del{flex-shrink:0;width:26px;height:34px;background:none;border:none;color:#D9897C;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 #expense-edit-overlay .fxe-hl{display:flex;align-items:center;gap:8px;min-width:0}
@@ -1364,8 +1364,8 @@ tr:last-child td{border-bottom:none}
 #expense-edit-overlay .fxe-x svg{width:17px;height:17px}
 #expense-edit-overlay .fxe-cat-nv{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 #expense-edit-overlay .fxe-cat-cnt{font-size:10px;color:#A89B88}
-#expense-edit-overlay .fxe-cat-r{display:flex;align-items:center;gap:12px;flex-shrink:0}
-#expense-edit-overlay .fxe-cat-del{background:none;border:none;color:#D9897C;cursor:pointer;padding:0;display:flex;align-items:center}
+#expense-edit-overlay .fxe-cat-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#expense-edit-overlay .fxe-cat-del{width:26px;background:none;border:none;color:#D9897C;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #expense-edit-overlay .fxe-cat-del svg{width:15px;height:15px}
 #expense-edit-overlay .mse-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:.7rem}
 #expense-edit-overlay .mse-save-btn{width:100%;background:#FF9124;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:12px;height:52px;box-shadow:0 6px 16px rgba(255,145,36,.25);cursor:pointer}
@@ -1894,7 +1894,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v31';
+const SW_VER = 'v32';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
