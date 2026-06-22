@@ -1881,7 +1881,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v27';
+const SW_VER = 'v28';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -12332,9 +12332,8 @@ init()
   <div class="sheet" style="max-height:95vh;overflow-y:auto">
     <div class="sheet-bar"></div>
     <div class="mse-head">
-      <button class="fxe-back" onclick="closeSheet('expense-edit')" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>戻る</button>
       <div class="sheet-title" id="fxe-title" style="margin:0;font-size:.95rem">固定費の設定</div>
-      <button class="mse-xbtn" onclick="closeSheet('expense-edit')" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      <button class="fxe-back" onclick="closeSheet('expense-edit')" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>戻る</button>
     </div>
     <div id="fxe-summary"></div>
     <div id="fxe-list"></div>
