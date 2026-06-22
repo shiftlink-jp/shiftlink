@@ -62,11 +62,16 @@ serve(async (req) => {
       metadata: { store_id },
     }
 
-    // まだトライアル中で期限内なら残日数をトライアルとして設定
+    // トライアルは「初回契約の店舗」のみに付与する。
+    // 過去に一度でもサブスクを作成した店舗（解約後の再契約を含む）はトライアルなしで即課金。
     if (store.subscription_status === 'trialing' && store.trial_ends_at) {
       const remaining = Math.ceil((new Date(store.trial_ends_at).getTime() - Date.now()) / 86400000)
       if (remaining > 0) {
-        subscriptionData.trial_period_days = remaining
+        // Stripe上の契約歴を確認（active/canceled等すべて対象）。1件でもあれば再契約とみなしトライアルなし。
+        const pastSubs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 1 })
+        if (pastSubs.data.length === 0) {
+          subscriptionData.trial_period_days = remaining
+        }
       }
     }
 
