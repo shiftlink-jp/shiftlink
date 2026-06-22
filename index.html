@@ -1329,6 +1329,60 @@ tr:last-child td{border-bottom:none}
 #monthly-edit-overlay .mse-icon-btn:disabled{opacity:.3;cursor:default}
 #monthly-edit-overlay .mse-icon-btn.danger{color:#DC2626}
 #monthly-edit-overlay .mse-icon-btn svg{width:14px;height:14px}
+/* ── 固定費/変動費 設定シート ── */
+#expense-edit-overlay .fxe-summary{display:flex;align-items:center;justify-content:space-between;border-radius:14px;padding:16px;margin-bottom:14px}
+#expense-edit-overlay .fxe-sum-l{display:flex;align-items:center;gap:10px}
+#expense-edit-overlay .fxe-sum-ic{width:34px;height:34px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#expense-edit-overlay .fxe-sum-ic svg{width:17px;height:17px}
+#expense-edit-overlay .fxe-sum-t1{font-size:12px;font-weight:600;color:#7A6E5E}
+#expense-edit-overlay .fxe-sum-t2{font-size:10px;color:#A89B88}
+#expense-edit-overlay .fxe-sum-amt{font-family:'Inter',sans-serif;font-size:22px;font-weight:800}
+#expense-edit-overlay .fxe-cat{background:#fff;border:1.5px solid #EDE9E1;border-radius:12px;padding:3px 12px 10px;margin-bottom:8px}
+#expense-edit-overlay .fxe-cat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #F0ECE4}
+#expense-edit-overlay .fxe-cat-l{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+#expense-edit-overlay .fxe-cat-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#expense-edit-overlay .fxe-cat-ic svg{width:15px;height:15px}
+#expense-edit-overlay .fxe-cat-name{flex:1;min-width:0;border:none;background:transparent;font-size:14px;font-weight:700;color:#211C16;font-family:inherit;outline:none;padding:0}
+#expense-edit-overlay .fxe-cat-tot{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:#211C16;flex-shrink:0}
+#expense-edit-overlay .fxe-cat-tools{display:flex;align-items:center;gap:3px;flex-shrink:0}
+#expense-edit-overlay .fxe-mini{width:26px;height:26px;border:1px solid #EDE9E1;background:#fff;border-radius:7px;color:#7A6E5E;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#expense-edit-overlay .fxe-mini:disabled{opacity:.3}
+#expense-edit-overlay .fxe-mini.danger{color:#DC2626}
+#expense-edit-overlay .fxe-mini svg{width:13px;height:13px}
+#expense-edit-overlay .fxe-sub{display:flex;align-items:center;gap:8px;padding:7px 0}
+#expense-edit-overlay .fxe-sub-arrow{color:#CFC6B8;flex-shrink:0;display:flex}
+#expense-edit-overlay .fxe-sub-arrow svg{width:14px;height:14px}
+#expense-edit-overlay .fxe-sub-name{flex:1;min-width:0;border:none;background:transparent;font-size:13px;font-weight:500;color:#4A4035;font-family:inherit;outline:none;padding:0}
+#expense-edit-overlay .fxe-sub-amt{width:96px;flex-shrink:0;text-align:right;border:1.5px solid #EDE9E1;border-radius:8px;height:34px;padding:0 8px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#211C16;outline:none}
+#expense-edit-overlay .fxe-sub-amt:focus,#expense-edit-overlay .fxe-cat-name:focus,#expense-edit-overlay .fxe-sub-name:focus{border-color:#FF9124}
+#expense-edit-overlay .fxe-sub-del{flex-shrink:0;width:26px;height:34px;background:none;border:none;color:#C9BEAD;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#expense-edit-overlay .fxe-sub-del svg{width:14px;height:14px}
+#expense-edit-overlay .fxe-addsub{display:flex;align-items:center;justify-content:center;gap:5px;height:36px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:inherit;margin-top:3px;width:100%}
+#expense-edit-overlay .fxe-addsub svg{width:13px;height:13px}
+#expense-edit-overlay .fxe-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:48px;background:#fff;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid}
+#expense-edit-overlay .fxe-add svg{width:15px;height:15px}
+#expense-edit-overlay .fxe-fee{display:flex;align-items:center;gap:10px;background:#FFFBF6;border:1.5px solid #F2D9BC;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+#expense-edit-overlay .fxe-fee-ic{width:30px;height:30px;border-radius:8px;background:#FFF1E2;color:#FF9124;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#expense-edit-overlay .fxe-fee-ic svg{width:16px;height:16px}
+#expense-edit-overlay .fxe-fee-nv{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+#expense-edit-overlay .fxe-fee-top{display:flex;align-items:center;gap:6px}
+#expense-edit-overlay .fxe-fee-n{font-size:14px;font-weight:700;color:#211C16}
+#expense-edit-overlay .fxe-badge{font-size:9px;font-weight:700;color:#FF9124;background:#FFF1E2;border-radius:999px;padding:2px 7px}
+#expense-edit-overlay .fxe-fee-s{font-size:10px;color:#A89B88}
+#expense-edit-overlay .fxe-fee-a{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:#7A6E5E;flex-shrink:0}
+#expense-edit-overlay.is-fixed .fxe-summary{background:#EEF4FE}
+#expense-edit-overlay.is-fixed .fxe-sum-amt,#expense-edit-overlay.is-fixed .fxe-sum-ic{color:#3B82F6}
+#expense-edit-overlay.is-fixed .fxe-cat-ic{background:#EEF4FE;color:#3B82F6}
+#expense-edit-overlay.is-fixed .fxe-addsub{background:#EEF4FE;color:#3B82F6}
+#expense-edit-overlay.is-fixed .fxe-add{border-color:#3B82F6;color:#3B82F6}
+#expense-edit-overlay.is-var .fxe-summary{background:#FFF4E8}
+#expense-edit-overlay.is-var .fxe-sum-amt,#expense-edit-overlay.is-var .fxe-sum-ic{color:#FF9124}
+#expense-edit-overlay.is-var .fxe-cat-ic{background:#FFF4E8;color:#FF9124}
+#expense-edit-overlay.is-var .fxe-addsub{background:#FFF4E8;color:#FF9124}
+#expense-edit-overlay.is-var .fxe-add{border-color:#FF9124;color:#FF9124}
+#p-owner-monthly .mex-sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+#p-owner-monthly .mex-edit{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #EDE9E1;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#7A6E5E;cursor:pointer;font-family:inherit;flex-shrink:0}
+#p-owner-monthly .mex-edit svg{width:12px;height:12px}
 
 /* ===== キャスト管理タブ + キャスト追加/委託金設定/店舗料金設定シート Pencilデザイン反映 (2026-06) ===== */
 /* --- #p-owner-cast --- */
@@ -1821,7 +1875,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v25';
+const SW_VER = 'v26';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2355,7 +2409,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="panel" id="p-owner-monthly">
       <div class="no-print pg-hdr">
         <div class="pg-title">売上</div>
-        <button class="mo-edit-pill" onclick="openMonthlySalesEdit()"><svg class="ei" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> 経費・目標</button>
+        <button class="mo-edit-pill" onclick="openMonthlySalesEdit()"><svg class="ei" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> 目標・集客</button>
       </div>
       <div class="no-print" style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem">
         <button class="cal-nav-btn" onclick="monthlyMove(-1)">‹</button>
@@ -11842,7 +11896,7 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
   }
   const svg=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`
   cardFee=cardFee||0
-  const row=(icon,name,amount)=>`<div class="mex-row" onclick="openMonthlySalesEdit()">
+  const row=(icon,name,amount,type)=>`<div class="mex-row" onclick="openExpenseSheet('${type}')">
     <span class="mex-ic">${svg(icon)}</span>
     <span class="mex-name">${escapeHtml(name)}</span>
     <span class="mex-amt">${fmt2(amount)}</span>
@@ -11850,7 +11904,7 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
   const fixedItems=(customExpenses||[]).filter(e=>e.type==='fixed')
   const varItems=(customExpenses||[]).filter(e=>e.type==='variable')
   let fixedRows=''
-  fixedItems.forEach(e=>{fixedRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount)})
+  fixedItems.forEach(e=>{fixedRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount,'fixed')})
   const fixedSum=fixedItems.reduce((s,e)=>s+(e.amount||0),0)
   // 変動費（カード手数料を先頭に固定）
   const feeRow=`<div class="mex-row fee">
@@ -11862,7 +11916,7 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
     <span class="mex-amt">${fmt2(cardFee)}</span>
   </div>`
   let varRows=feeRow
-  varItems.forEach(e=>{varRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount)})
+  varItems.forEach(e=>{varRows+=row(mseExpenseIcon(e.category),e.label||e.category||'その他',e.amount,'variable')})
   const varSum=cardFee+varItems.reduce((s,e)=>s+(e.amount||0),0)
   const grand=fixedSum+varSum
   const pct=v=>grand>0?Math.round(v/grand*100):0
@@ -11874,14 +11928,14 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
       <div class="mex-legend">${legend('#3B82F6','固定費',fixedSum)}${legend('#FF9124','変動費',varSum)}</div>
     </div>
     <div class="mex-sec">
-      <div class="mex-sec-label"><span class="mex-sec-dot" style="background:#3B82F6"></span><span class="mex-sec-t">固定費</span><span class="mex-sec-s">毎月ほぼ一定</span></div>
+      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#3B82F6"></span><span class="mex-sec-t">固定費</span><span class="mex-sec-s">毎月ほぼ一定</span></div><button class="mex-edit" onclick="openExpenseSheet('fixed')">編集</button></div>
       ${fixedRows?`<div class="mex-list">${fixedRows}</div>`:''}
-      <button class="mex-add" onclick="openMonthlySalesEdit()">${svg('plus')}固定費を追加</button>
+      <button class="mex-add" onclick="openExpenseSheet('fixed')">${svg('plus')}固定費を編集</button>
     </div>
     <div class="mex-sec">
-      <div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div>
+      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div><button class="mex-edit" onclick="openExpenseSheet('variable')">編集</button></div>
       <div class="mex-list">${varRows}</div>
-      <button class="mex-add" onclick="openMonthlySalesEdit()">${svg('plus')}変動費を追加</button>
+      <button class="mex-add" onclick="openExpenseSheet('variable')">${svg('plus')}変動費を編集</button>
     </div>`
 }
 
@@ -12057,12 +12111,13 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
 
 async function openMonthlySalesEdit(){
   document.getElementById('monthly-edit-overlay').classList.add('on')
+  mseSwitchTab('goal')
   await loadMonthlySalesForm()
 }
 
 async function loadMonthlySalesForm(){
   const [y,m]=monthlyMonth.split('-').map(Number)
-  document.getElementById('mse-title').textContent=y+'年'+m+'月 経費・目標・集客'
+  document.getElementById('mse-title').textContent=y+'年'+m+'月 目標・集客'
   const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
   // 当月の経費が実質空かどうか（広告/家賃/光熱費/固定費/変動費/カスタムのいずれにも値が無い）
   const hasVals=o=>o&&Object.values(o).some(v=>v!=null&&v!=='')
@@ -12086,7 +12141,6 @@ async function loadMonthlySalesForm(){
   const setvR=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v}
   setvN('mse-goal-sales',data?.goal_sales??prevGoal.next_goal_sales);setvR('mse-goal-count',data?.goal_count??prevGoal.next_goal_count);setvR('mse-goal-recruit',data?.goal_recruit??prevGoal.next_goal_recruit);setvR('mse-actual-recruit',data?.actual_recruit)
   setvN('mse-next-goal-sales',data?.next_goal_sales);setvR('mse-next-goal-count',data?.next_goal_count);setvR('mse-next-goal-recruit',data?.next_goal_recruit)
-  mseLoadExpenseState(expSrc)
   setvR('mse-route-ekon',routes.esute_kon);setvR('mse-route-panda',routes.panda);setvR('mse-route-elove',routes.esute_love);setvR('mse-route-rank',routes.ranking);setvR('mse-route-japan',routes.japan);setvR('mse-route-zero',routes.zerotwo);setvR('mse-route-hp',routes.hp);setvR('mse-route-sns',routes.sns);setvR('mse-route-other',routes.other)
   setvR('mse-new-cust',data?.new_customers);setvR('mse-repeat-cust',data?.repeat_customers)
   setvR('mse-shimei-free',data?.shimei_free);setvR('mse-shimei-net',data?.shimei_net);setvR('mse-shimei-hon',data?.shimei_hon)
@@ -12095,7 +12149,7 @@ async function loadMonthlySalesForm(){
 }
 
 // ── 経費データモデル（custom_expensesを「名前/金額/固定変動」の統一リストとして利用） ──
-const MSE_ICONS={'megaphone':'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>','building-2':'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>','zap':'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>','file-text':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>','package':'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>','ellipsis':'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>','plus':'<path d="M5 12h14"/><path d="M12 5v14"/>','x':'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>','info':'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>','chevron-up':'<path d="m18 15-6-6-6 6"/>','chevron-down':'<path d="m6 9 6 6 6-6"/>','trash':'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'}
+const MSE_ICONS={'megaphone':'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>','building-2':'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>','zap':'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>','file-text':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>','package':'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>','ellipsis':'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>','plus':'<path d="M5 12h14"/><path d="M12 5v14"/>','x':'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>','info':'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>','chevron-up':'<path d="m18 15-6-6-6 6"/>','chevron-down':'<path d="m6 9 6 6 6-6"/>','trash':'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>','lock':'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>','corner-down-right':'<polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/>'}
 function mseSvg(n){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${MSE_ICONS[n]||''}</svg>`}
 function mseExpenseIcon(cat){return {'広告費':'megaphone','家賃':'building-2','光熱費':'zap','固定費':'file-text','変動費':'package'}[cat]||'ellipsis'}
 // sdから統一経費リスト[{category,label,amount,type:'fixed'|'variable'}]を得る（新形式優先・旧形式は合計移行）
@@ -12156,6 +12210,73 @@ function mseDelExpenseItem(si,ii){mseSyncExpenseFromDOM();mseExpenseState[si].it
 function mseAddExpenseSection(){mseSyncExpenseFromDOM();const name=(prompt('経費カテゴリ名を入力')||'').trim();if(!name)return;mseExpenseState.push({category:name,type:'variable',items:[{label:'',amount:null}]});renderMseExpenseSections();const el=document.getElementById('mse-expense-sections');if(el)el.lastElementChild.scrollIntoView({block:'center',behavior:'smooth'})}
 function mseDelSection(si){mseSyncExpenseFromDOM();const sec=mseExpenseState[si];if(!sec)return;const has=sec.items.some(it=>it.label||it.amount!=null);if(has&&!confirm(`「${sec.category}」を項目ごと削除しますか？`))return;mseExpenseState.splice(si,1);renderMseExpenseSections()}
 function mseMoveSection(si,dir){mseSyncExpenseFromDOM();const ni=si+dir;if(ni<0||ni>=mseExpenseState.length)return;const t=mseExpenseState[si];mseExpenseState[si]=mseExpenseState[ni];mseExpenseState[ni]=t;renderMseExpenseSections()}
+// ── 固定費/変動費 設定シート（type別） ──
+let fxeType='fixed',fxeState=[],fxeOther=[],fxeCardFee=0
+function fxeItemsToCats(items){
+  const order=['広告費','家賃','光熱費','固定費','変動費']
+  const map={}
+  items.forEach(e=>{const c=e.category||'その他';if(!map[c])map[c]={category:c,type:e.type,items:[]};map[c].items.push({label:e.label,amount:e.amount});map[c].type=e.type})
+  const cats=[...order.filter(c=>map[c]),...Object.keys(map).filter(c=>!order.includes(c))]
+  return cats.map(c=>map[c])
+}
+async function openExpenseSheet(type){
+  fxeType=type
+  const ov=document.getElementById('expense-edit-overlay')
+  ov.classList.remove('is-fixed','is-var');ov.classList.add(type==='fixed'?'is-fixed':'is-var')
+  document.getElementById('fxe-title').textContent=type==='fixed'?'固定費の設定':'変動費の設定'
+  fxeCardFee=(monthlyCachedData&&monthlyCachedData.tot)?(monthlyCachedData.tot.cardFee||0):0
+  const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
+  const cats=fxeItemsToCats(getExpenseItems(data||{}))
+  fxeState=cats.filter(c=>c.type===type)
+  fxeOther=cats.filter(c=>c.type!==type)
+  if(!fxeState.length)fxeState=[{category:type==='fixed'?'家賃':'消耗品費',type,items:[{label:'',amount:null}]}]
+  ov.classList.add('on')
+  fxeRender()
+}
+function fxeSyncFromDOM(){
+  fxeState.forEach((c,ci)=>{
+    const cn=document.getElementById(`fxe-cat-${ci}`);if(cn)c.category=cn.value
+    c.items.forEach((it,ii)=>{
+      const ln=document.getElementById(`fxe-sn-${ci}-${ii}`);if(ln)it.label=ln.value
+      const an=document.getElementById(`fxe-sa-${ci}-${ii}`);if(an){const n=parseInt((an.value||'').replace(/,/g,''));it.amount=isNaN(n)?null:n}
+    })
+  })
+}
+function fxeSum(){let s=0;fxeState.forEach(c=>c.items.forEach(it=>{if(it.amount!=null)s+=it.amount}));if(fxeType==='variable')s+=fxeCardFee;return s}
+function fxeRender(){
+  const isVar=fxeType==='variable'
+  document.getElementById('fxe-summary').innerHTML=`<div class="fxe-summary"><div class="fxe-sum-l"><div class="fxe-sum-ic">${mseSvg(isVar?'package':'lock')}</div><div><div class="fxe-sum-t1">${isVar?'変動費の合計':'固定費の合計'}</div><div class="fxe-sum-t2">${isVar?'売上などで変わる費用':'毎月ほぼ一定でかかる費用'}</div></div></div><div class="fxe-sum-amt">¥${fxeSum().toLocaleString()}</div></div>`
+  let html=''
+  if(isVar)html+=`<div class="fxe-fee"><div class="fxe-fee-ic">${mseSvg('credit-card')}</div><div class="fxe-fee-nv"><div class="fxe-fee-top"><span class="fxe-fee-n">カード手数料</span><span class="fxe-badge">自動</span></div><div class="fxe-fee-s">カード売上から自動計算</div></div><div class="fxe-fee-a">¥${fxeCardFee.toLocaleString()}</div>${mseSvg('lock')}</div>`
+  html+=fxeState.map((c,ci)=>{
+    const tot=c.items.reduce((s,it)=>s+(it.amount||0),0)
+    return `<div class="fxe-cat"><div class="fxe-cat-head"><div class="fxe-cat-l"><div class="fxe-cat-ic">${mseSvg(mseExpenseIcon(c.category))}</div><input class="fxe-cat-name" id="fxe-cat-${ci}" value="${escapeHtml(c.category||'')}" placeholder="カテゴリ名"></div><span class="fxe-cat-tot">¥${tot.toLocaleString()}</span><div class="fxe-cat-tools"><button class="fxe-mini" onclick="fxeMoveCat(${ci},-1)" ${ci===0?'disabled':''}>${mseSvg('chevron-up')}</button><button class="fxe-mini" onclick="fxeMoveCat(${ci},1)" ${ci===fxeState.length-1?'disabled':''}>${mseSvg('chevron-down')}</button><button class="fxe-mini danger" onclick="fxeDelCat(${ci})">${mseSvg('trash')}</button></div></div>${c.items.map((it,ii)=>`<div class="fxe-sub"><span class="fxe-sub-arrow">${mseSvg('corner-down-right')}</span><input class="fxe-sub-name" id="fxe-sn-${ci}-${ii}" value="${escapeHtml(it.label||'')}" placeholder="項目名"><input class="fxe-sub-amt" inputmode="numeric" id="fxe-sa-${ci}-${ii}" value="${it.amount!=null?Number(it.amount).toLocaleString():''}" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"><button class="fxe-sub-del" onclick="fxeDelSub(${ci},${ii})">${mseSvg('x')}</button></div>`).join('')}<button class="fxe-addsub" onclick="fxeAddSub(${ci})">${mseSvg('plus')}サブ項目を追加</button></div>`
+  }).join('')
+  document.getElementById('fxe-list').innerHTML=html
+  document.getElementById('fxe-add-btn').innerHTML=mseSvg('plus')+(isVar?'変動費の項目を追加':'固定費の項目を追加')
+}
+function fxeAddCategory(){fxeSyncFromDOM();const name=(prompt('カテゴリ名を入力')||'').trim();if(!name)return;fxeState.push({category:name,type:fxeType,items:[{label:'',amount:null}]});fxeRender();const el=document.getElementById('fxe-list');if(el&&el.lastElementChild)el.lastElementChild.scrollIntoView({block:'center',behavior:'smooth'})}
+function fxeDelCat(ci){fxeSyncFromDOM();const c=fxeState[ci];if(!c)return;const has=c.items.some(it=>it.label||it.amount!=null);if(has&&!confirm(`「${c.category}」を削除しますか？`))return;fxeState.splice(ci,1);fxeRender()}
+function fxeMoveCat(ci,dir){fxeSyncFromDOM();const ni=ci+dir;if(ni<0||ni>=fxeState.length)return;const t=fxeState[ci];fxeState[ci]=fxeState[ni];fxeState[ni]=t;fxeRender()}
+function fxeAddSub(ci){fxeSyncFromDOM();fxeState[ci].items.push({label:'',amount:null});fxeRender();const el=document.getElementById(`fxe-sn-${ci}-${fxeState[ci].items.length-1}`);if(el)el.focus()}
+function fxeDelSub(ci,ii){fxeSyncFromDOM();fxeState[ci].items.splice(ii,1);if(!fxeState[ci].items.length)fxeState[ci].items.push({label:'',amount:null});fxeRender()}
+async function fxeSave(){
+  const btn=document.getElementById('fxe-save-btn');btn.disabled=true;btn.textContent='保存中...'
+  fxeSyncFromDOM()
+  const allCats=[...fxeState.map(c=>({category:c.category,type:fxeType,items:c.items})),...fxeOther]
+  const custom_expenses=[]
+  allCats.forEach(c=>c.items.forEach(it=>{if(it.label&&it.amount!=null)custom_expenses.push({category:c.category,label:it.label,amount:it.amount,type:c.type})}))
+  const catSum=cc=>custom_expenses.filter(e=>e.category===cc).reduce((s,e)=>s+e.amount,0)
+  const total_ad_expense=catSum('広告費'),total_rent=catSum('家賃'),total_utility=catSum('光熱費')
+  const total_fixed=custom_expenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+e.amount,0)
+  const total_variable=custom_expenses.filter(e=>e.type==='variable').reduce((s,e)=>s+e.amount,0)
+  const total_expenses=total_fixed+total_variable
+  const payload={month:monthlyMonth,ad_expenses:null,total_ad_expense,rent_expenses:null,total_rent,utility_expenses:null,total_utility,fixed_expenses:null,total_fixed,variable_expenses:null,total_variable,custom_expenses,total_expenses}
+  const {error}=await sb.from('monthly_sales').upsert(withStoreId(payload),{onConflict:'month'})
+  btn.disabled=false;btn.textContent='保存する'
+  if(error){toast('保存失敗: '+error.message);return}
+  toast('保存しました');closeSheet('expense-edit');monthlyCachedData=null;renderMonthlyContent()
+}
 function parseMoneyInput(id){const el=document.getElementById(id);if(!el||el.value==='')return null;const n=parseInt(el.value.replace(/,/g,''));return isNaN(n)?null:n}
 function getvStr(id){const el=document.getElementById(id);return el?el.value.trim():''}
 function getvInt(id){const el=document.getElementById(id);return el&&el.value!==''?parseInt(el.value)||null:null}
@@ -12163,15 +12284,7 @@ function getvInt(id){const el=document.getElementById(id);return el&&el.value!==
 async function saveMonthlySales(){
   const btn=document.getElementById('mse-save-btn')
   btn.disabled=true;btn.textContent='保存中...'
-  mseSyncExpenseFromDOM()
-  const custom_expenses=[]
-  mseExpenseState.forEach(sec=>sec.items.forEach(it=>{if(it.label&&it.amount!=null)custom_expenses.push({category:sec.category,label:it.label,amount:it.amount,type:sec.type})}))
-  const catSum=cc=>custom_expenses.filter(e=>e.category===cc).reduce((s,e)=>s+e.amount,0)
-  const total_ad_expense=catSum('広告費'),total_rent=catSum('家賃'),total_utility=catSum('光熱費')
-  const total_fixed=custom_expenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+e.amount,0)
-  const total_variable=custom_expenses.filter(e=>e.type==='variable').reduce((s,e)=>s+e.amount,0)
-  const total_expenses=total_fixed+total_variable
-  const payload={month:monthlyMonth,goal_sales:parseMoneyInput('mse-goal-sales'),goal_count:getvInt('mse-goal-count'),goal_recruit:getvInt('mse-goal-recruit'),actual_recruit:getvInt('mse-actual-recruit'),next_goal_sales:parseMoneyInput('mse-next-goal-sales'),next_goal_count:getvInt('mse-next-goal-count'),next_goal_recruit:getvInt('mse-next-goal-recruit'),ad_expenses:null,total_ad_expense,rent_expenses:null,total_rent,utility_expenses:null,total_utility,fixed_expenses:null,total_fixed,variable_expenses:null,total_variable,custom_expenses,total_expenses,acquisition_routes:{esute_kon:getvInt('mse-route-ekon'),panda:getvInt('mse-route-panda'),esute_love:getvInt('mse-route-elove'),ranking:getvInt('mse-route-rank'),japan:getvInt('mse-route-japan'),zerotwo:getvInt('mse-route-zero'),hp:getvInt('mse-route-hp'),sns:getvInt('mse-route-sns'),other:getvInt('mse-route-other')},new_customers:getvInt('mse-new-cust'),repeat_customers:getvInt('mse-repeat-cust'),shimei_free:getvInt('mse-shimei-free'),shimei_net:getvInt('mse-shimei-net'),shimei_hon:getvInt('mse-shimei-hon')}
+  const payload={month:monthlyMonth,goal_sales:parseMoneyInput('mse-goal-sales'),goal_count:getvInt('mse-goal-count'),goal_recruit:getvInt('mse-goal-recruit'),actual_recruit:getvInt('mse-actual-recruit'),next_goal_sales:parseMoneyInput('mse-next-goal-sales'),next_goal_count:getvInt('mse-next-goal-count'),next_goal_recruit:getvInt('mse-next-goal-recruit'),acquisition_routes:{esute_kon:getvInt('mse-route-ekon'),panda:getvInt('mse-route-panda'),esute_love:getvInt('mse-route-elove'),ranking:getvInt('mse-route-rank'),japan:getvInt('mse-route-japan'),zerotwo:getvInt('mse-route-zero'),hp:getvInt('mse-route-hp'),sns:getvInt('mse-route-sns'),other:getvInt('mse-route-other')},new_customers:getvInt('mse-new-cust'),repeat_customers:getvInt('mse-repeat-cust'),shimei_free:getvInt('mse-shimei-free'),shimei_net:getvInt('mse-shimei-net'),shimei_hon:getvInt('mse-shimei-hon')}
   const {error}=await sb.from('monthly_sales').upsert(withStoreId(payload),{onConflict:'month'})
   btn.disabled=false;btn.textContent='保存'
   if(error){toast('保存失敗: '+error.message);return}
@@ -12182,7 +12295,7 @@ async function saveMonthlySales(){
 }
 
 function mseSwitchTab(tab){
-  const tabs=['expense','goal','route']
+  const tabs=['goal','route']
   tabs.forEach(t=>{const btn=document.getElementById('mse-tab-'+t);const body=document.getElementById('mse-body-'+t);if(btn)btn.classList.toggle('mse-tab-active',t===tab);if(body)body.style.display=t===tab?'block':'none'})
 }
 
@@ -12209,24 +12322,31 @@ init()
 </script>
 
 <!-- ===== 月次売上 手動編集シート ===== -->
+<div class="sheet-overlay" id="expense-edit-overlay">
+  <div class="sheet" style="max-height:95vh;overflow-y:auto">
+    <div class="sheet-bar"></div>
+    <div class="mse-head">
+      <div class="sheet-title" id="fxe-title" style="margin:0;font-size:.95rem">固定費の設定</div>
+      <button class="mse-xbtn" onclick="closeSheet('expense-edit')" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div id="fxe-summary"></div>
+    <div id="fxe-list"></div>
+    <button class="fxe-add" id="fxe-add-btn" onclick="fxeAddCategory()" style="margin-top:2px"></button>
+    <button class="mse-save-btn" id="fxe-save-btn" onclick="fxeSave()" style="margin-top:.7rem">保存する</button>
+  </div>
+</div>
 <div class="sheet-overlay" id="monthly-edit-overlay">
   <div class="sheet" style="max-height:95vh;overflow-y:auto">
     <div class="sheet-bar"></div>
     <div class="mse-head">
-      <div class="sheet-title" id="mse-title" style="margin:0;font-size:.95rem">経費・目標・集客</div>
+      <div class="sheet-title" id="mse-title" style="margin:0;font-size:.95rem">目標・集客</div>
       <button class="mse-xbtn" onclick="closeSheet('monthly-edit')" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
     <div class="mse-tabbar">
-      <button id="mse-tab-expense" class="mse-tab-btn mse-tab-active" onclick="mseSwitchTab('expense')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>経費</button>
-      <button id="mse-tab-goal" class="mse-tab-btn" onclick="mseSwitchTab('goal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>目標</button>
+      <button id="mse-tab-goal" class="mse-tab-btn mse-tab-active" onclick="mseSwitchTab('goal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>目標</button>
       <button id="mse-tab-route" class="mse-tab-btn" onclick="mseSwitchTab('route')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>集客</button>
     </div>
-    <div id="mse-body-expense">
-      <div class="mse-hint2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>各項目の「固定／変動」を切り替えると、経費画面の固定費・変動費の分類に反映されます。項目名はタップで変更、ゴミ箱で削除できます。</span></div>
-      <div id="mse-expense-sections"></div>
-      <button class="mse-add-btn" onclick="mseAddExpenseSection()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>経費項目を追加</button>
-    </div>
-    <div id="mse-body-goal" style="display:none">
+    <div id="mse-body-goal">
       <div class="mse-card">
         <div class="mse-card-head"><div class="mse-card-icon"><svg class="ei" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="mse-card-title">今月の目標</div></div>
         <div class="mse-grid2">
