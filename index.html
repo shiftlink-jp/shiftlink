@@ -1370,6 +1370,12 @@ tr:last-child td{border-bottom:none}
 #expense-edit-overlay .fxe-badge{font-size:9px;font-weight:700;color:#FF9124;background:#FFF1E2;border-radius:999px;padding:2px 7px}
 #expense-edit-overlay .fxe-fee-s{font-size:10px;color:#A89B88}
 #expense-edit-overlay .fxe-fee-a{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:#7A6E5E;flex-shrink:0}
+#expense-edit-overlay .fxe-fee-n{white-space:nowrap}
+#expense-edit-overlay .fxe-fee-s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#expense-edit-overlay .fxe-fee-lock{flex-shrink:0;color:#C9BEAD;display:flex;align-items:center}
+#expense-edit-overlay .fxe-fee-lock svg{width:13px;height:13px}
+#expense-edit-overlay .fxe-back{display:flex;align-items:center;gap:2px;background:none;border:none;color:#7A6E5E;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:0;flex-shrink:0}
+#expense-edit-overlay .fxe-back svg{width:18px;height:18px}
 #expense-edit-overlay.is-fixed .fxe-summary{background:#EEF4FE}
 #expense-edit-overlay.is-fixed .fxe-sum-amt,#expense-edit-overlay.is-fixed .fxe-sum-ic{color:#3B82F6}
 #expense-edit-overlay.is-fixed .fxe-cat-ic{background:#EEF4FE;color:#3B82F6}
@@ -1875,7 +1881,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v26';
+const SW_VER = 'v27';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -12247,7 +12253,7 @@ function fxeRender(){
   const isVar=fxeType==='variable'
   document.getElementById('fxe-summary').innerHTML=`<div class="fxe-summary"><div class="fxe-sum-l"><div class="fxe-sum-ic">${mseSvg(isVar?'package':'lock')}</div><div><div class="fxe-sum-t1">${isVar?'変動費の合計':'固定費の合計'}</div><div class="fxe-sum-t2">${isVar?'売上などで変わる費用':'毎月ほぼ一定でかかる費用'}</div></div></div><div class="fxe-sum-amt">¥${fxeSum().toLocaleString()}</div></div>`
   let html=''
-  if(isVar)html+=`<div class="fxe-fee"><div class="fxe-fee-ic">${mseSvg('credit-card')}</div><div class="fxe-fee-nv"><div class="fxe-fee-top"><span class="fxe-fee-n">カード手数料</span><span class="fxe-badge">自動</span></div><div class="fxe-fee-s">カード売上から自動計算</div></div><div class="fxe-fee-a">¥${fxeCardFee.toLocaleString()}</div>${mseSvg('lock')}</div>`
+  if(isVar)html+=`<div class="fxe-fee"><div class="fxe-fee-ic">${mseSvg('credit-card')}</div><div class="fxe-fee-nv"><div class="fxe-fee-top"><span class="fxe-fee-n">カード手数料</span><span class="fxe-badge">自動</span></div><div class="fxe-fee-s">カード売上から自動計算</div></div><div class="fxe-fee-a">¥${fxeCardFee.toLocaleString()}</div><span class="fxe-fee-lock">${mseSvg('lock')}</span></div>`
   html+=fxeState.map((c,ci)=>{
     const tot=c.items.reduce((s,it)=>s+(it.amount||0),0)
     return `<div class="fxe-cat"><div class="fxe-cat-head"><div class="fxe-cat-l"><div class="fxe-cat-ic">${mseSvg(mseExpenseIcon(c.category))}</div><input class="fxe-cat-name" id="fxe-cat-${ci}" value="${escapeHtml(c.category||'')}" placeholder="カテゴリ名"></div><span class="fxe-cat-tot">¥${tot.toLocaleString()}</span><div class="fxe-cat-tools"><button class="fxe-mini" onclick="fxeMoveCat(${ci},-1)" ${ci===0?'disabled':''}>${mseSvg('chevron-up')}</button><button class="fxe-mini" onclick="fxeMoveCat(${ci},1)" ${ci===fxeState.length-1?'disabled':''}>${mseSvg('chevron-down')}</button><button class="fxe-mini danger" onclick="fxeDelCat(${ci})">${mseSvg('trash')}</button></div></div>${c.items.map((it,ii)=>`<div class="fxe-sub"><span class="fxe-sub-arrow">${mseSvg('corner-down-right')}</span><input class="fxe-sub-name" id="fxe-sn-${ci}-${ii}" value="${escapeHtml(it.label||'')}" placeholder="項目名"><input class="fxe-sub-amt" inputmode="numeric" id="fxe-sa-${ci}-${ii}" value="${it.amount!=null?Number(it.amount).toLocaleString():''}" placeholder="¥0" onfocus="this.value=this.value.replace(/,/g,'')" onblur="const n=parseInt(this.value.replace(/,/g,''));if(!isNaN(n))this.value=n.toLocaleString()"><button class="fxe-sub-del" onclick="fxeDelSub(${ci},${ii})">${mseSvg('x')}</button></div>`).join('')}<button class="fxe-addsub" onclick="fxeAddSub(${ci})">${mseSvg('plus')}サブ項目を追加</button></div>`
@@ -12326,6 +12332,7 @@ init()
   <div class="sheet" style="max-height:95vh;overflow-y:auto">
     <div class="sheet-bar"></div>
     <div class="mse-head">
+      <button class="fxe-back" onclick="closeSheet('expense-edit')" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>戻る</button>
       <div class="sheet-title" id="fxe-title" style="margin:0;font-size:.95rem">固定費の設定</div>
       <button class="mse-xbtn" onclick="closeSheet('expense-edit')" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
