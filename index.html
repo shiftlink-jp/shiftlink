@@ -11486,7 +11486,7 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     ${kpiCard('純売上高',fmt2(tot.gross_work))}
     ${kpiCard('委託金',fmt2(tot.net),'var(--rtx)')}
     ${kpiCard('経費',total_expenses>0?'-¥'+total_expenses.toLocaleString():'¥0','var(--rtx)')}
-    ${kpiCard('店舗利益',fmt2(tot.profit),'var(--btx)')}
+    ${kpiCard('粗利益',fmt2(tot.profit),'var(--btx)')}
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
     ${kpiCard('雑費',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
