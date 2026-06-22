@@ -6673,18 +6673,24 @@ async function openCustomerDetail(id){
   }
 
   // セラピストメモの下に「別の顧客にまとめる」と顧客削除ボタン
+  // XSS対策: 顧客名をinline onclickに埋め込まず、data-*属性＋addEventListener(innerHTML設定後)で渡す
   html+=`<div class="cd-danger-zone">
-    <button class="cd-merge-cust-btn" onclick="mergeCustomer(${c.id},${c.customer_no},'${escapeHtml(c.name)}')">
+    <button class="cd-merge-cust-btn" id="cd-merge-btn" data-id="${c.id}" data-no="${escapeHtml(String(c.customer_no))}" data-name="${escapeHtml(c.name)}">
       この顧客を別の顧客にまとめる
     </button>
     <div class="cd-danger-note" style="margin-bottom:1.1rem">同じ人を重複登録した時に、来店記録・メモをまとめ先へ移してこの番号を削除します</div>
-    <button class="cd-del-cust-btn" onclick="deleteCustomer(${c.id},'${escapeHtml(c.name)}')">
+    <button class="cd-del-cust-btn" id="cd-del-cust-btn" data-id="${c.id}" data-name="${escapeHtml(c.name)}">
       この顧客データを完全に削除する
     </button>
     <div class="cd-danger-note">来店記録・メモも全て削除されます</div>
   </div>`
 
   document.getElementById('customer-detail-body').innerHTML=html
+  // XSS対策: 顧客名を含むボタンはinline onclickを使わず、ここでハンドラを紐付ける
+  const _mb=document.getElementById('cd-merge-btn')
+  if(_mb) _mb.addEventListener('click',()=>mergeCustomer(Number(_mb.dataset.id),Number(_mb.dataset.no),_mb.dataset.name))
+  const _db=document.getElementById('cd-del-cust-btn')
+  if(_db) _db.addEventListener('click',()=>deleteCustomer(Number(_db.dataset.id),_db.dataset.name))
   initNgChips(ngSelected)
 }
 
