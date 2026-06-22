@@ -11485,11 +11485,11 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
     ${kpiCard('割引',tot.disc>0?'-¥'+tot.disc.toLocaleString():'¥0','var(--rtx)')}
     ${kpiCard('純売上高',fmt2(tot.gross_work))}
     ${kpiCard('委託金',fmt2(tot.net),'var(--rtx)')}
-    ${kpiCard('雑費',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
+    ${kpiCard('経費',total_expenses>0?'-¥'+total_expenses.toLocaleString():'¥0','var(--rtx)')}
     ${kpiCard('店舗利益',fmt2(tot.profit),'var(--btx)')}
     ${kpiCard('現金売上',fmt2(tot.cash))}
     ${kpiCard('カード売上',fmt2(tot.card))}
-    ${kpiCard('カード手数料',tot.cardFee>0?'-¥'+tot.cardFee.toLocaleString():'¥0','var(--text3)')}
+    ${kpiCard('ザッピ',tot.misc>0?'-¥'+tot.misc.toLocaleString():'¥0','var(--text3)')}
     ${kpiCard('平均出勤',tot.workDays>0?Math.round(tot.attendance/tot.workDays)+'名':'0名')}
     ${kpiCard('施術件数',tot.count+'本')}
     ${kpiCard('平均客単価',fmt2(tot.avg_unit))}
@@ -11514,11 +11514,23 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
       <div class="mo-shimei-card"><div class="mo-shimei-label">${escapeHtml(shimeiName('net'))}</div><div class="mo-shimei-value">${tot.net_shimei}本</div></div>
       <div class="mo-shimei-card"><div class="mo-shimei-label">${escapeHtml(shimeiName('hon'))}</div><div class="mo-shimei-value">${tot.hon_shimei}本</div></div>
     </div>`
-  if(total_expenses>0){
-    html+=`<div class="card" style="margin-bottom:.55rem">
-      <div style="font-weight:700;font-size:.85rem;margin-bottom:.3rem"><svg class="ei" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg> 経費合計</div>
-      <div style="font-size:1.1rem;font-weight:700;color:var(--rtx)">¥${total_expenses.toLocaleString()}</div></div>`
-  }
+  const opProfit=tot.gross_work-tot.net-total_expenses
+  const opRate=tot.gross_work>0?Math.round(opProfit/tot.gross_work*100):0
+  const opCell=(l,v,col='var(--text)')=>`<div style="background:#FAF8F4;border-radius:10px;padding:.5rem .3rem;text-align:center"><div style="font-size:.6rem;color:var(--text3);margin-bottom:.2rem;font-weight:600">${l}</div><div style="font-size:.72rem;font-weight:700;font-family:'Inter',sans-serif;color:${col}">${v}</div></div>`
+  html+=`<div class="mo-section-title">営業利益</div>
+  <div class="card" style="margin-bottom:.55rem;padding:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem">
+      <span style="font-weight:700;font-size:.85rem">営業利益</span>
+      <span style="display:inline-flex;align-items:center;gap:.25rem;background:#FFF1E2;color:#FF9124;font-weight:700;font-size:.7rem;border-radius:999px;padding:.25rem .6rem">利益率 ${opRate}%</span>
+    </div>
+    <div style="font-size:1.55rem;font-weight:800;color:var(--text);font-family:'Inter',sans-serif;line-height:1.1">${fmt2(opProfit)}</div>
+    <div style="font-size:.65rem;color:var(--text3);margin:.15rem 0 .6rem">純売上から委託金・経費を引いた利益</div>
+    <div style="border-top:1px solid #EDE9E1;padding-top:.6rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem">
+      ${opCell('純売上高',fmt2(tot.gross_work))}
+      ${opCell('委託金',tot.net>0?'-¥'+tot.net.toLocaleString():'¥0','var(--rtx)')}
+      ${opCell('経費',total_expenses>0?'-¥'+total_expenses.toLocaleString():'¥0','var(--rtx)')}
+    </div>
+  </div>`
   area.innerHTML=html
 }
 
