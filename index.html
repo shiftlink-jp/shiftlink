@@ -3260,7 +3260,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 let _saasStore=null, _saasSession=null
 
 // プラットフォーム運営者（サービス提供者）のメール。代理店タブの表示制御に使う。
-const PLATFORM_OPERATOR_EMAIL='rrrkkk0924@icloud.com'
+const PLATFORM_OPERATOR_EMAIL='shiftlink.jp@gmail.com'
 function isPlatformOperator(){
   // ★Authセッションの確定メールのみで判定。store.owner_email（自己申告で詐称可能）は使わない。
   //   UIガードに過ぎず、本当の防御はDB側のRLS（is_platform_operator＝JWTのemailで判定）。
@@ -4392,7 +4392,9 @@ async function initSaasApp(session){
   const{data:store}=await sb.from('stores').select('*').eq('id',currentStoreId).single()
   _saasStore=store  // プラン管理ボタンの分岐（契約済みかどうか）に使う
   // サブスクリプション状態チェック
-  if(store){
+  // ★運営者（プラットフォーム管理者）は課金を受け取る側なので、解約/トライアル切れでも
+  //   アップグレード画面で止めずメインアプリ（代理店タブ含む）に入れる。一般店舗は従来通り。
+  if(store && !isPlatformOperator()){
     const status=store.subscription_status
     const trialEnd=store.trial_ends_at?new Date(store.trial_ends_at):null
     const now=new Date()

@@ -57,7 +57,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 AS $$
-  SELECT lower(coalesce(auth.jwt()->>'email','')) = lower('rrrkkk0924@icloud.com');
+  SELECT lower(coalesce(auth.jwt()->>'email','')) = lower('shiftlink.jp@gmail.com');
 $$;
 
 -- 運営者のみ全 referral_partners を CRUD 可
