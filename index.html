@@ -7076,6 +7076,11 @@ function getCourseMinutes(courseName){
   return m?parseInt(m[1]):0
 }
 // 空き分数に入る最大コースのラベルを返す（延長は除外）
+// 延長を除いた最短コースの所要分数（受付可否の判定に使用）
+function shortestCourseMin(){
+  const mins=(courses||[]).filter(c=>!/延長/.test(c.name||'')).map(c=>c.duration||getCourseMinutes(c.name||'')).filter(m=>m>0)
+  return mins.length?Math.min(...mins):0
+}
 function bookableCourseLabel(availMin){
   if(availMin<=0) return '予約不可'
   const cand=(courses||[]).map(c=>({name:c.name,min:c.duration||getCourseMinutes(c.name||'')})).filter(c=>c.min>0&&!/延長/.test(c.name||''))
@@ -7490,8 +7495,14 @@ async function loadGantt(){
           if(bookableMin>0) belowText=`⏱ ${intEndStr}〜 ／ 空き ${bookableMin}分（${bookableCourseLabel(bookableMin)}）`
           else belowText=`⏱ ${intEndStr}〜 ／ インターバル込みで空きなし`
         } else {
-          // 最終予約：インターバル後の受付可能時刻
-          belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
+          // 最終予約：退勤時間までに最短コースが入るか判定
+          const shiftEndMin=timeStrToMinL(s.end_time?.slice(0,5))
+          const minCourse=shortestCourseMin()
+          if(shiftEndMin!==null&&minCourse>0&&intEndMin+minCourse>shiftEndMin){
+            belowText=`⏱ ${intEndStr}〜 ／ 退勤時間までに入らないため受付終了`
+          } else {
+            belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
+          }
         }
         belowBars+=`<div style="font-size:.58rem;color:var(--text3);padding:.05rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${belowText}</div>`
       }
@@ -7646,8 +7657,14 @@ async function renderGanttInto(area, date, filterShifts=null){
           if(bookableMin>0) belowText=`⏱ ${intEndStr}〜 ／ 空き ${bookableMin}分（${bookableCourseLabel(bookableMin)}）`
           else belowText=`⏱ ${intEndStr}〜 ／ インターバル込みで空きなし`
         } else {
-          // 最終予約：インターバル後の受付可能時刻
-          belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
+          // 最終予約：退勤時間までに最短コースが入るか判定
+          const shiftEndMin=timeStrToMin(s.end_time?.slice(0,5))
+          const minCourse=shortestCourseMin()
+          if(shiftEndMin!==null&&minCourse>0&&intEndMin+minCourse>shiftEndMin){
+            belowText=`⏱ ${intEndStr}〜 ／ 退勤時間までに入らないため受付終了`
+          } else {
+            belowText=`⏱ インターバル後 ${intEndStr}〜 予約受付可能`
+          }
         }
         belowBars+=`<div style="font-size:.58rem;color:var(--text3);padding:.1rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${belowText}</div>`
       }
