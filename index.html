@@ -12286,18 +12286,28 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const yen=n=>'¥'+Number(n||0).toLocaleString()
   const yenC=n=>{n=n||0;return n>=10000?'¥'+(n/10000).toFixed(n>=1000000?0:1)+'万':'¥'+n.toLocaleString()}
   const cnt=n=>String(n||0)
-  // CSS conic-gradient 円グラフ（穴なし・扇形上に%表示）
+  // SVG 円グラフ（穴なし・扇形上に%表示）
+  // 以前は CSS conic-gradient（背景の塗り）で描いていたが、印刷・PDF出力時に
+  // 背景が省略されて円グラフが消えるため、SVGの扇形(path)で描き直して確実に出力する
   const pie=(data,colors,size)=>{
     const total=data.reduce((s,d)=>s+d.value,0)||1;let cum=0;const segs=[],labels=[]
-    const cx=size/2,cy=size/2,r=size*0.28,fs=data.length>4?11:13
+    const cx=size/2,cy=size/2,r=size/2,lr=size*0.28,fs=data.length>4?11:13
     data.forEach((d,i)=>{
       const frac=d.value/total,col=colors[i%colors.length]
-      segs.push(`${col} ${(cum*360).toFixed(2)}deg ${((cum+frac)*360).toFixed(2)}deg`)
-      const ma=(90-(cum+frac/2)*360)*Math.PI/180,lx=cx+r*Math.cos(ma),ly=cy-r*Math.sin(ma),pct=Math.round(frac*100)
-      if(pct>=4)labels.push(`<div class="gr-pie-pct" style="left:${lx.toFixed(1)}px;top:${ly.toFixed(1)}px;font-size:${fs}px;color:${col==='#FACC15'?'#211C16':'#fff'}">${pct}%</div>`)
+      if(frac>=0.9999){
+        segs.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}"/>`)
+      }else{
+        const a0=cum*2*Math.PI-Math.PI/2, a1=(cum+frac)*2*Math.PI-Math.PI/2
+        const x0=(cx+r*Math.cos(a0)).toFixed(2),y0=(cy+r*Math.sin(a0)).toFixed(2)
+        const x1=(cx+r*Math.cos(a1)).toFixed(2),y1=(cy+r*Math.sin(a1)).toFixed(2)
+        const large=frac>0.5?1:0
+        segs.push(`<path d="M${cx} ${cy} L${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${col}"/>`)
+      }
+      const ma=(cum+frac/2)*2*Math.PI-Math.PI/2,lx=(cx+lr*Math.cos(ma)).toFixed(1),ly=(cy+lr*Math.sin(ma)).toFixed(1),pct=Math.round(frac*100)
+      if(pct>=4)labels.push(`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" font-weight="700" fill="${col==='#FACC15'?'#211C16':'#fff'}">${pct}%</text>`)
       cum+=frac
     })
-    return `<div class="gr-pie" style="width:${size}px;height:${size}px;background:conic-gradient(${segs.join(',')})">${labels.join('')}</div>`
+    return `<svg class="gr-pie" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block">${segs.join('')}${labels.join('')}</svg>`
   }
   const legend=(data,colors,fmtVal)=>{
     const total=data.reduce((s,d)=>s+d.value,0)||1
