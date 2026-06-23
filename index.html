@@ -10039,7 +10039,11 @@ async function openFeeSheet(castId,name){
       return `<div class="f2-row"><div class="f2-row-lbl">${escapeHtml(o.name)}バック</div><div class="f2-amt-wrap"><input type="number" class="f2-amt-input fee-trial-op-back" data-key="${key}" min="0" step="100" value="${val!=null?val:''}" placeholder="通常と同じ"><span class="f2-unit">円</span></div></div>`
     }).join('')
   }
-  document.getElementById('fee-overlay').classList.add('on')
+  const feeOv=document.getElementById('fee-overlay')
+  feeOv.classList.add('on')
+  // 前回保存時に最下部までスクロールした状態が残るため、開くたびに先頭へ戻す
+  const feeSheet=feeOv.querySelector('.sheet')
+  if(feeSheet)feeSheet.scrollTop=0
 }
 
 async function renderFeeDiscList(){
