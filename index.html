@@ -3260,7 +3260,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 let _saasStore=null, _saasSession=null
 
 // プラットフォーム運営者（サービス提供者）のメール。代理店タブの表示制御に使う。
-const PLATFORM_OPERATOR_EMAIL='shiftlink.jp@gmail.com'
+const PLATFORM_OPERATOR_EMAIL='ren.konno0924@i.softbank.jp'
 function isPlatformOperator(){
   // ★Authセッションの確定メールのみで判定。store.owner_email（自己申告で詐称可能）は使わない。
   //   UIガードに過ぎず、本当の防御はDB側のRLS（is_platform_operator＝JWTのemailで判定）。
