@@ -129,9 +129,12 @@ BEGIN
     RETURN; -- 不正・無効コードは無視（登録続行）
   END IF;
 
+  -- 紹介元は最初の1回だけ記録。以降の呼び出しは無視する。
+  -- （店舗オーナーが後から別コードに書き換えて紹介料を横取りする不正を防止）
   UPDATE stores
     SET referred_by = v_partner, referral_code = trim(p_code)
-    WHERE id = p_store_id;
+    WHERE id = p_store_id
+      AND referred_by IS NULL;
 END;
 $$;
 
