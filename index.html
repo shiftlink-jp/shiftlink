@@ -11992,6 +11992,60 @@ async function pdfMonthlyDaily(){
   }
 }
 
+// 月次タブ共通：印刷ダイアログを開く（現在表示中の画面をそのまま印刷）
+function printMonthlyArea(){ window.print() }
+
+// 指定要素を画像化して縦向きA4のPDFとして保存（グラフ・経費タブ用の汎用関数）
+async function pdfMonthlyArea(elId,title,fileBase){
+  const el=document.getElementById(elId)
+  if(!el){ toast('内容が見つかりません'); return }
+  try{
+    toast('PDFを作成中…',6000)
+    if(!window.html2canvas) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
+    if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+    const canvas=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0})
+    const img=canvas.toDataURL('image/png')
+    const {jsPDF}=window.jspdf
+    const pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'})
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight()
+    const margin=24, headerH=26
+    pdf.setFontSize(13)
+    pdf.text(title+'  '+(monthlyMonth||''), margin, margin+12)
+    const iw=pw-margin*2
+    const fullH=canvas.height*iw/canvas.width
+    const contentTop=margin+headerH
+    const pageContentH=ph-contentTop-margin
+    let heightLeft=fullH, position=contentTop
+    pdf.addImage(img,'PNG',margin,position,iw,fullH)
+    heightLeft-=pageContentH
+    while(heightLeft>0){
+      pdf.addPage()
+      position=contentTop-(fullH-heightLeft)
+      pdf.addImage(img,'PNG',margin,position,iw,fullH)
+      heightLeft-=pageContentH
+    }
+    pdf.save(fileBase+'_'+(monthlyMonth||'')+'.pdf')
+    toast('PDFを保存しました')
+  }catch(e){
+    console.error(e)
+    toast('PDF作成に失敗。印刷ダイアログを開きます')
+    const orig=document.title
+    document.title=fileBase+'_'+(monthlyMonth||'')
+    window.print()
+    setTimeout(()=>{document.title=orig},1500)
+  }
+}
+
+// 月次タブ共通：印刷/PDF書き出しボタン行のHTMLを生成
+function monthlyExportRow(printFn,pdfFn){
+  const printerSvg=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V2h12v7"/><rect width="12" height="8" x="6" y="14"/></svg>`
+  const fileSvg=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`
+  return `<div class="mo-export-row no-print">
+    <button class="mo-export-btn" onclick="${printFn}">${printerSvg}印刷</button>
+    <button class="mo-export-btn" onclick="${pdfFn}">${fileSvg}PDF</button>
+  </div>`
+}
+
 // ── セラピスト成績表：白背景セル ──
 function renderMonthlyCast(area,castStats,fmt2){
   if(!castStats||!Object.keys(castStats).length){area.innerHTML='<div class="empty">この月の記録はありません</div>';return}
@@ -12104,7 +12158,9 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
   const grand=fixedSum+varSum
   const pct=v=>grand>0?Math.round(v/grand*100):0
   const legend=(color,label,sum)=>`<div class="mex-leg"><span class="mex-leg-dot" style="background:${color}"></span><div><div class="mex-leg-n">${label}</div><div class="mex-leg-r"><span class="mex-leg-a">${fmt2(sum)}</span><span class="mex-leg-p" style="color:${color}">${pct(sum)}%</span></div></div></div>`
-  area.innerHTML=`
+  area.innerHTML=
+    monthlyExportRow("printMonthlyArea()","pdfMonthlyArea('expense-print-area','経費','経費')")
+    +`<div id="expense-print-area">
     <div class="mex-total">
       <div class="mex-total-head"><div><div class="mex-total-l">今月の経費合計</div><div class="mex-total-v">${fmt2(grand)}</div></div></div>
       <div class="mex-bar"><div class="mex-bar-fixed" style="flex:${fixedSum}"></div><div class="mex-bar-var" style="flex:${varSum}"></div></div>
@@ -12119,6 +12175,7 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
       <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div><button class="mex-edit" onclick="openExpenseSheet('variable')">編集</button></div>
       <div class="mex-list">${varRows}</div>
       <button class="mex-add" onclick="openExpenseSheet('variable')">${svg('plus')}変動費を編集</button>
+    </div>
     </div>`
 }
 
@@ -12284,12 +12341,15 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const hon=n=>n+'本',nin=n=>n+'人'
 
   area.innerHTML=
-    pieCard('売上構成',compData,PIE,180,yen)
+    monthlyExportRow("printMonthlyArea()","pdfMonthlyArea('chart-print-area','グラフ','グラフ')")
+    +'<div id="chart-print-area">'
+    +pieCard('売上構成',compData,PIE,180,yen)
     +lineCard('日別売上','今月の推移',salesData,days,'#FF9124','#FF912422',yManen,{label:lastMD,value:yen(lastRow.gross_work||0)})
     +lineCard('日別本数','今月の推移',countData,days,'#1D4ED8','#1D4ED822',v=>String(v),{label:lastMD,value:cnt(lastRow.count||0)})
     +pieCard('指名内訳',shimeiData,PIE,150,hon)
     +pieCard('来店内訳',visitData,PIE,150,nin)
     +pieCard('集客経路',routeData,PIE,150,nin)
+    +'</div>'
 }
 
 async function openMonthlySalesEdit(){
