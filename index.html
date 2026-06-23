@@ -1281,6 +1281,17 @@ tr:last-child td{border-bottom:none}
   #daily-print-table tr{page-break-inside:avoid}
   #daily-print-table thead{display:table-header-group}
 
+  /* グラフ・経費タブ：円グラフ(conic-gradient)や凡例・バーは背景色で描いているため、
+     印刷時にも背景を出すよう指定しないと円グラフ等が真っ白になって消えてしまう */
+  #p-owner-monthly .gr-pie, #p-owner-monthly .gr-donut, #p-owner-monthly .gr-dot,
+  #p-owner-monthly .gr-card, #p-owner-monthly .mex-total, #p-owner-monthly .mex-list,
+  #p-owner-monthly .mex-bar, #p-owner-monthly .mex-bar-fixed, #p-owner-monthly .mex-bar-var,
+  #p-owner-monthly .mex-leg-dot, #p-owner-monthly .mex-sec-dot,
+  #p-owner-monthly .mex-ic, #p-owner-monthly .me-ic{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+
   @page{size:A4 landscape;margin:10mm}
 }
 
