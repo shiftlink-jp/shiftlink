@@ -2092,6 +2092,8 @@ if("serviceWorker" in navigator && !_isSaaS){
       <input class="linput" type="email" id="saas-signup-email" placeholder="owner@example.com" autocomplete="email">
       <label class="lbl" style="margin-top:.75rem">パスワード（8文字以上）</label>
       <input class="linput" type="password" id="saas-signup-password" placeholder="••••••••" minlength="8" autocomplete="new-password">
+      <label class="lbl" style="margin-top:.75rem">紹介コード（お持ちの方）<span style="color:var(--text3);font-weight:400">※任意</span></label>
+      <input class="linput" type="text" id="saas-signup-referral" placeholder="例: ABC123" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false">
       <label style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.85rem;font-size:.82rem;color:var(--text3);cursor:pointer;line-height:1.5">
         <input type="checkbox" id="saas-signup-agree" style="width:18px;height:18px;flex-shrink:0;margin-top:.1rem;accent-color:var(--accent)">
         <span><a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意します</span>
@@ -2430,6 +2432,30 @@ document.addEventListener('DOMContentLoaded',function(){
         <span id="customer-count-badge" class="cust-list-count"></span>
       </div>
       <div id="customer-area"><div class="spin">読み込み中...</div></div>
+    </div>
+
+    <!-- 運営者：代理店管理 -->
+    <div class="panel" id="p-owner-referral">
+      <div class="pg-hdr">
+        <div class="pg-title">代理店管理</div>
+        <button class="cust-add-btn" onclick="openAddReferralPartner()">＋ 代理店を追加</button>
+      </div>
+      <div id="referral-add-form" style="height:0;overflow:hidden;transition:none;background:#fff;border:1px solid #EDE9E1;border-radius:14px;margin-bottom:.8rem;padding:0">
+        <div style="padding:1rem">
+          <label class="lbl">代理店名</label>
+          <input class="linput" type="text" id="referral-new-name" placeholder="例: 〇〇エージェント">
+          <label class="lbl" style="margin-top:.6rem">紹介コード（英数字）</label>
+          <input class="linput" type="text" id="referral-new-code" placeholder="例: ABC123" autocapitalize="characters" autocorrect="off" spellcheck="false">
+          <label class="lbl" style="margin-top:.6rem">料率（%）</label>
+          <input class="linput" type="number" id="referral-new-rate" value="20" min="0" step="1">
+          <div style="display:flex;gap:.5rem;margin-top:.8rem">
+            <button class="btn-login btn-login-primary" style="flex:1" onclick="saveReferralPartner()" id="btn-save-referral">登録する</button>
+            <button class="btn-login" style="flex:0 0 auto;background:#eee;color:#555" onclick="closeAddReferralPartner()">キャンセル</button>
+          </div>
+          <div class="lerr" id="referral-form-err"></div>
+        </div>
+      </div>
+      <div id="referral-area"><div class="spin">読み込み中...</div></div>
     </div>
 
 
@@ -3232,6 +3258,15 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // SaaS用変数
 let _saasStore=null, _saasSession=null
+
+// プラットフォーム運営者（サービス提供者）のメール。代理店タブの表示制御に使う。
+const PLATFORM_OPERATOR_EMAIL='rrrkkk0924@icloud.com'
+function isPlatformOperator(){
+  // ★Authセッションの確定メールのみで判定。store.owner_email（自己申告で詐称可能）は使わない。
+  //   UIガードに過ぎず、本当の防御はDB側のRLS（is_platform_operator＝JWTのemailで判定）。
+  const email=_saasSession?.user?.email || ''
+  return SAAS_MODE && email.trim().toLowerCase()===PLATFORM_OPERATOR_EMAIL
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 // グローバルエラー監視（本番のバグ可視化）
@@ -4273,6 +4308,15 @@ async function doSaasSignup(){
       p_name:storeName, p_slug:slug, p_email:email
     })
     if(storeErr) throw storeErr
+    // 2.5 紹介コードの記録（入力があれば。無効・不正コードは無視して登録続行）
+    const referralCode=document.getElementById('saas-signup-referral')?.value.trim()
+    if(referralCode){
+      try{
+        await sb.rpc('set_store_referral',{p_store_id:storeId,p_code:referralCode})
+      }catch(e){
+        console.warn('Referral code record failed (non-critical):', e)
+      }
+    }
     // 3. Stripeトライアルサブスク作成
     try{
       const trialRes=await fetch(SUPABASE_URL+'/functions/v1/create-trial-subscription',{
@@ -4332,6 +4376,7 @@ async function setupInitialStoreData(storeId){
 }
 
 async function initSaasApp(session){
+  _saasSession=session  // 運営者判定（代理店タブ表示）等で使う
   // store_membersからユーザーの所属店舗を取得
   const{data:member,error:memErr}=await sb.from('store_members').select('store_id,role,cast_id').eq('user_id',session.user.id).single()
   if(memErr||!member){
@@ -4932,6 +4977,15 @@ function tabMgmt(){
     sheet.innerHTML=`
       <button id="mgmt-cast-btn" onclick="tabMgmtSub('owner-cast')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-right:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> セラピスト</button>
       <button id="mgmt-customer-btn" onclick="tabMgmtSub('owner-customer')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 顧客</button>`
+    // 運営者のみ「代理店」サブタブを追加（一般店舗オーナーには出さない）
+    if(isPlatformOperator()){
+      const ab=document.createElement('button')
+      ab.id='mgmt-referral-btn'
+      ab.setAttribute('onclick',"tabMgmtSub('owner-referral')")
+      ab.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-left:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555'
+      ab.innerHTML='<svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 代理店'
+      sheet.appendChild(ab)
+    }
     document.body.appendChild(sheet)
   }
   sheet.style.display='flex'
@@ -4950,8 +5004,88 @@ function tabMgmtSub(name){
   const kb=document.getElementById('mgmt-customer-btn')
   if(cb) cb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;border-right:1px solid #e0e0e0;'+(name==='owner-cast'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
   if(kb) kb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;'+(name==='owner-customer'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
+  const rb=document.getElementById('mgmt-referral-btn')
+  if(rb) rb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;border-left:1px solid #EDE9E1;'+(name==='owner-referral'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
   if(name==='owner-cast') { loadCastMgmt(); checkOwnerPushBtn(); }
   if(name==='owner-customer') loadCustomers()
+  if(name==='owner-referral') loadReferralMgmt()
+}
+
+// ── 代理店管理（運営者専用）──
+function openAddReferralPartner(){
+  const f=document.getElementById('referral-add-form')
+  if(f) f.style.cssText='overflow:hidden;background:#fff;border:1px solid #EDE9E1;border-radius:14px;margin-bottom:.8rem;height:auto'
+}
+function closeAddReferralPartner(){
+  const f=document.getElementById('referral-add-form')
+  if(f) f.style.cssText='height:0;overflow:hidden;background:#fff;border:1px solid #EDE9E1;border-radius:14px;margin-bottom:.8rem;padding:0'
+  const e=document.getElementById('referral-form-err'); if(e) e.textContent=''
+}
+async function saveReferralPartner(){
+  const name=document.getElementById('referral-new-name').value.trim()
+  // コードは小文字に正規化して保存（照合 resolve_referral_code が lower() で比較するため一貫させる）
+  const code=document.getElementById('referral-new-code').value.trim().toLowerCase()
+  const rate=parseFloat(document.getElementById('referral-new-rate').value)
+  const err=document.getElementById('referral-form-err')
+  const btn=document.getElementById('btn-save-referral')
+  err.textContent=''
+  if(!name){err.textContent='代理店名を入力してください';return}
+  if(!code){err.textContent='紹介コードを入力してください';return}
+  btn.disabled=true; btn.textContent='登録中...'
+  try{
+    const{error}=await sb.from('referral_partners').insert({
+      name, code, commission_rate:isNaN(rate)?20:rate, active:true
+    })
+    if(error) throw error
+    document.getElementById('referral-new-name').value=''
+    document.getElementById('referral-new-code').value=''
+    document.getElementById('referral-new-rate').value='20'
+    closeAddReferralPartner()
+    loadReferralMgmt()
+    toast('代理店を登録しました')
+  }catch(e){
+    err.textContent=(e.message||'').includes('duplicate')?'この紹介コードは既に使われています':('登録に失敗しました: '+(e.message||''))
+  }finally{
+    btn.disabled=false; btn.textContent='登録する'
+  }
+}
+async function loadReferralMgmt(){
+  const area=document.getElementById('referral-area')
+  if(!area) return
+  area.innerHTML='<div class="spin">読み込み中...</div>'
+  try{
+    const{data,error}=await sb.rpc('referral_partner_stats')
+    if(error) throw error
+    const rows=data||[]
+    if(rows.length===0){
+      area.innerHTML='<div style="text-align:center;color:#999;padding:2rem;font-size:.85rem">まだ代理店が登録されていません</div>'
+      return
+    }
+    let html=''
+    rows.forEach(r=>{
+      const rate=Number(r.commission_rate)||0
+      const referred=Number(r.referred_count)||0
+      const paying=Number(r.paying_count)||0
+      // 概算支払額: 継続課金中の店舗数 × 月額(税抜14,800) × 料率%
+      const est=Math.round(paying*14800*rate/100)
+      html+=`<div style="background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:1rem;margin-bottom:.7rem;box-shadow:0 2px 8px rgba(33,32,24,.05)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+          <div style="font-weight:700;font-size:1rem;color:#333">${escapeHtml(r.name)}</div>
+          <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;${r.active?'background:#e8f5e9;color:#2e7d32':'background:#eee;color:#999'}">${r.active?'有効':'停止中'}</span>
+        </div>
+        <div style="font-size:.78rem;color:#888;margin-top:.2rem">コード: <b style="color:#f57c00">${escapeHtml(r.code)}</b> ／ 料率 ${rate}%</div>
+        <div style="display:flex;gap:.6rem;margin-top:.7rem">
+          <div style="flex:1;text-align:center;background:#faf8f4;border-radius:10px;padding:.5rem"><div style="font-size:1.3rem;font-weight:800;color:#333">${referred}</div><div style="font-size:.68rem;color:#999">紹介店舗</div></div>
+          <div style="flex:1;text-align:center;background:#faf8f4;border-radius:10px;padding:.5rem"><div style="font-size:1.3rem;font-weight:800;color:#2e7d32">${paying}</div><div style="font-size:.68rem;color:#999">継続課金中</div></div>
+          <div style="flex:1;text-align:center;background:#faf8f4;border-radius:10px;padding:.5rem"><div style="font-size:1.05rem;font-weight:800;color:#f57c00">¥${est.toLocaleString()}</div><div style="font-size:.68rem;color:#999">今月概算</div></div>
+        </div>
+      </div>`
+    })
+    area.innerHTML=html
+  }catch(e){
+    console.error('loadReferralMgmt failed:',e)
+    area.innerHTML='<div style="text-align:center;color:#c00;padding:2rem;font-size:.85rem">読み込みに失敗しました（運営者権限が必要です）</div>'
+  }
 }
 
 // ── プルトゥリフレッシュ ──
