@@ -510,7 +510,9 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #reservation-overlay .rvf-opt-left input[type="checkbox"]{width:18px;height:18px;border-radius:5px;accent-color:#FF9124;flex-shrink:0}
 #reservation-overlay .rvf-opt-name{font-size:.85rem;font-weight:600;color:#211C16}
 #reservation-overlay .rvf-opt-price{font-size:.72rem;color:#A89B88}
-#reservation-overlay .rvf-opt-pay{font-size:.74rem;padding:.3rem .5rem;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#A89B88;opacity:.4;pointer-events:none;font-weight:700;min-width:68px;-webkit-appearance:none;appearance:none}
+#reservation-overlay .rvf-opt-pay{font-size:.74rem;padding:.3rem .5rem;border:1.5px solid #EDE9E1;border-radius:8px;background:#fff;color:#A89B88;opacity:.4;pointer-events:none;font-weight:700;min-width:68px;-webkit-appearance:none;appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+#reservation-overlay .rvf-opt-pay svg{width:14px;height:14px;flex-shrink:0}
+#reservation-overlay .rvf-opt-pay.is-card{border-color:#5B9BD5;background:#EEF5FC;color:#2E6FAF}
 #reservation-overlay .rvf-disc-row{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;padding:.45rem 0;border-bottom:1px solid #EDE9E1}
 #reservation-overlay .rvf-disc-row:last-child{border-bottom:none}
 #reservation-overlay .rvf-disc-row input[type="checkbox"]{width:18px;height:18px;border-radius:5px;accent-color:#FF9124;flex-shrink:0}
@@ -6967,10 +6969,9 @@ async function openReservation(shiftId,castName,date){
           <input type="checkbox" class="rv-opt-chk" value="${escapeHtml(o.name)}" onchange="updateOptPay(this)">
           <div><div class="rvf-opt-name">${o.name}</div><div class="rvf-opt-price">¥${(o.price||0).toLocaleString()}</div></div>
         </label>
-        <select class="rv-opt-pay rvf-opt-pay" data-opt="${escapeHtml(o.name)}" disabled>
-          <option value="現金">現金</option><option value="カード">カード</option>
-        </select>
+        <button type="button" class="rv-opt-pay rvf-opt-pay" data-opt="${escapeHtml(o.name)}" value="現金" onclick="togglePay(this)" disabled></button>
       </div>`).join('')
+      optsList.querySelectorAll('.rv-opt-pay').forEach(renderPayBtn)
   } else {
     optsList.innerHTML='<div style="font-size:.83rem;color:var(--text3)">オプションなし</div>'
   }
@@ -7064,6 +7065,7 @@ function updateOptPay(chk){
     sel.style.opacity='.4'
     sel.style.pointerEvents='none'
     sel.value='現金'
+    renderPayBtn(sel)
   }
 }
 
