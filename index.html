@@ -1860,7 +1860,7 @@ tr:last-child td{border-bottom:none}
 #p-shift .cs2-day-cell{height:54px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;font-family:'Inter','Noto Sans JP',sans-serif}
 #p-shift .cs2-day-num{font-size:13px;font-weight:500;line-height:1}
 #p-shift .cs2-day-dot{width:5px;height:5px;border-radius:50%;margin-top:4px;background:transparent}
-#p-shift .cs2-day-time{font-family:'Inter','Noto Sans JP',sans-serif;font-size:9px;font-weight:700;line-height:1;margin-top:3px;white-space:nowrap}
+#p-shift .cs2-day-time{font-family:'Inter','Noto Sans JP',sans-serif;font-size:9px;font-weight:700;line-height:1;margin-top:3px;white-space:nowrap;border-radius:999px;padding:2px 5px;color:#fff}
 #p-shift .cs2-day-badge{font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:700;line-height:1;border-radius:999px;padding:2px 5px;margin-top:3px;background:#EAF2FD;color:#2E6FD6;white-space:nowrap}
 #p-shift .cs2-day-cell.today{background:#FF9124}
 #p-shift .cs2-day-cell.today .cs2-day-num{color:#fff}
@@ -5094,10 +5094,10 @@ function renderCal(){
     const hm=t=>{if(!t)return'';const[h,mi]=t.slice(0,5).split(':');return mi==='00'?String(+h):(+h)+':'+mi}
     let markHtml=`<span class="cs2-day-dot" style="background:${dotColor}"></span>`
     if(s&&s.status!=='rejected'&&s.start_time){
-      // 申請中=青 / 承認済=オレンジ。当日セルは背景がオレンジのため白文字にする
+      // 申請中=青 / 承認済=オレンジ のバッジ。当日セルは背景がオレンジのため白地+オレンジ文字にする
       const stColor=s.status==='requested'?'#1D4ED8':'#FF9124'
-      const tColor=isToday?'#fff':stColor
-      markHtml=`<span class="cs2-day-time" style="color:${tColor}">${hm(s.start_time)}-${hm(s.end_time)}</span>`
+      const badgeStyle=isToday?'background:#fff;color:#FF9124':`background:${stColor};color:#fff`
+      markHtml=`<span class="cs2-day-time" style="${badgeStyle}">${hm(s.start_time)}-${hm(s.end_time)}</span>`
     }
     html+=`<td><div class="cs2-day-cell${isToday?' today':''}" onclick="selectDay('${ds}')" style="opacity:${opacity};${selStyle}" title="${rvCount?('予約'+rvCount+'件'):''}"><span class="cs2-day-num" style="color:${isToday?'#fff':numColor}">${d}</span>${markHtml}${rvBadge}</div></td>`
     col++
