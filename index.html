@@ -8835,21 +8835,8 @@ async function loadGanttModal(){
     const endH2disp=endH2<startH2?endH2+24:endH2
     const endTimeDisp=String(endH2disp).padStart(2,'0')+':'+endM2
 
-    // --- Action Row（セラピストバッジ＋予約登録ボタン）---
-    const actionRow=`<div style="display:flex;gap:10px;padding:8px 16px 12px 16px;position:sticky;top:0;z-index:20;background:#fff">
-      <div style="flex:1;min-width:0;background:#fff;border-radius:12px;border:1.5px solid #EDE9E1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 13px;min-height:66px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="width:8px;height:8px;border-radius:4px;background:${color};flex-shrink:0"></div>
-          <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:#211C16;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.casts?.name||'?')}</div>
-          ${rvCount?`<div style="background:#FFF1E2;border-radius:999px;padding:2px 8px;flex-shrink:0"><span style="font-size:10px;font-weight:700;color:#FF9124">予約${rvCount}件</span></div>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:5px">
-          <span style="font-size:11px;color:#A89B88">⏱</span>
-          <span style="font-size:12px;font-weight:600;color:#7A6E5E;white-space:nowrap">出勤 ${startTimeDisp}〜${endTimeDisp}</span>
-        </div>
-      </div>
-      <button onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${jsEsc(s.casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)" style="flex:1;background:linear-gradient(115deg,#FFB257 0%,#F4790F 100%);color:#fff;border:none;border-radius:12px;min-height:66px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 5px 14px rgba(255,145,36,.25)"><span style="font-size:17px;line-height:1">＋</span>予約を登録</button>
-    </div>`
+    // 退勤時間までに入る最短コース分数（末尾の「受付終了」判定に使用）
+    const minCourseMod=shortestCourseMin()
 
     // --- 予約・インターバル・空きカード ---
     let layersHtml=gridBgHtml
@@ -8900,6 +8887,7 @@ async function loadGanttModal(){
       .sort((a,b)=>a.checkin_time.localeCompare(b.checkin_time))
     const nowMinForFree=ganttModalDate===todayStr?(now.getHours()<START_H?now.getHours()*60+now.getMinutes()+1440:now.getHours()*60+now.getMinutes()):null
     let prevEnd=s.start_time?.slice(0,5)||''
+    let finalSegmentRendered=false  // 最終枠（退勤までの空き）のカードを描画したか
     ;[...sorted2,{checkin_time:s.end_time?.slice(0,5),checkout_time:s.end_time?.slice(0,5)}].forEach((r,fi)=>{
       const fSMin=timeStrToMin(prevEnd)
       const fEMin=timeStrToMin(r.checkin_time?.slice(0,5))
@@ -8920,15 +8908,57 @@ async function loadGanttModal(){
       const fEY=timeToY(r.checkin_time?.slice(0,5))
       // 本日で、すでに現在時刻を過ぎて終わっている空き枠は表示しない
       const isPastGap=(ganttModalDate===todayStr)&&fEY!==null&&fEY<=nowY
+      // 最終枠（退勤まで）で最短コースが入らない場合は「受付終了」と表示
+      const isShiftEndNoFit=isToShiftEnd&&minCourseMod>0&&bookableMin<minCourseMod
       if(!isPastGap&&fSY!==null&&fEY!==null&&fEY-fSY>10){
         const fH=fEY-fSY
-        layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${fSY+2}px;height:${fH-4}px;background:#fff;border-radius:10px;border:1.5px solid #EDE9E1;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;text-align:center;padding:0 8px">
-          <span style="font-size:13px;font-weight:700;color:#7A6E5E;white-space:nowrap">${gapStartStr}〜 空き ${bookableMin}分</span>
-          ${fH>30?(fitCourse?`<span style="font-size:11px;font-weight:600;color:#FF9124;white-space:nowrap">${escapeHtml(fitCourse[1])}コースまで予約可能</span>`:`<span style="font-size:11px;font-weight:600;color:#C0392B;white-space:nowrap">入るコースなし</span>`):''}
-        </div>`
+        if(isToShiftEnd) finalSegmentRendered=true
+        if(isShiftEndNoFit){
+          layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${fSY+2}px;height:${fH-4}px;background:#FBEDE9;border-radius:10px;border:1.5px solid #E8C5BC;z-index:3;display:flex;align-items:center;justify-content:center;overflow:hidden;text-align:center;padding:0 8px">
+            <span style="font-size:13px;font-weight:700;color:#C0392B;white-space:nowrap">🚫 受付終了（退勤まで空きなし）</span>
+          </div>`
+        } else {
+          layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${fSY+2}px;height:${fH-4}px;background:#fff;border-radius:10px;border:1.5px solid #EDE9E1;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;text-align:center;padding:0 8px">
+            <span style="font-size:13px;font-weight:700;color:#7A6E5E;white-space:nowrap">${gapStartStr}〜 空き ${bookableMin}分</span>
+            ${fH>30?(fitCourse?`<span style="font-size:11px;font-weight:600;color:#FF9124;white-space:nowrap">${escapeHtml(fitCourse[1])}コースまで予約可能</span>`:`<span style="font-size:11px;font-weight:600;color:#C0392B;white-space:nowrap">入るコースなし</span>`):''}
+          </div>`
+        }
       }
       prevEnd=r.checkout_time?.slice(0,5)||prevEnd
     })
+
+    // 最終枠が（高さ不足等で）描画されず、退勤までに最短コースが入らない場合は末尾に「受付終了」カードを表示
+    if(!finalSegmentRendered&&minCourseMod>0&&sorted2.length){
+      const shiftEndMinMod=timeStrToMin(s.end_time?.slice(0,5))
+      const lastRvMod=[...sorted2].reverse().find(r=>r.checkout_time)
+      if(shiftEndMinMod!==null&&lastRvMod){
+        const lastCoMin=timeStrToMin(lastRvMod.checkout_time.slice(0,5))
+        const tailStartMin=(lastCoMin!==null?lastCoMin:shiftEndMinMod)+intervalMin
+        if(shiftEndMinMod-tailStartMin<minCourseMod){
+          const cardH=40
+          const topY=Math.min((timeToY(minToTimeStr(tailStartMin))??chartH),chartH-cardH-2)
+          layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${Math.max(topY,0)+2}px;height:${cardH}px;background:#FBEDE9;border-radius:10px;border:1.5px solid #E8C5BC;z-index:4;display:flex;align-items:center;justify-content:center;overflow:hidden;text-align:center;padding:0 8px">
+            <span style="font-size:13px;font-weight:700;color:#C0392B;white-space:nowrap">🚫 受付終了（退勤まで空きなし）</span>
+          </div>`
+        }
+      }
+    }
+
+    // --- Action Row（セラピストバッジ＋予約登録ボタン）---
+    const actionRow=`<div style="display:flex;gap:10px;padding:8px 16px 12px 16px;position:sticky;top:0;z-index:20;background:#fff">
+      <div style="flex:1;min-width:0;background:#fff;border-radius:12px;border:1.5px solid #EDE9E1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 13px;min-height:66px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:8px;height:8px;border-radius:4px;background:${color};flex-shrink:0"></div>
+          <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:#211C16;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.casts?.name||'?')}</div>
+          ${rvCount?`<div style="background:#FFF1E2;border-radius:999px;padding:2px 8px;flex-shrink:0"><span style="font-size:10px;font-weight:700;color:#FF9124">予約${rvCount}件</span></div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:11px;color:#A89B88">⏱</span>
+          <span style="font-size:12px;font-weight:600;color:#7A6E5E;white-space:nowrap">出勤 ${startTimeDisp}〜${endTimeDisp}</span>
+        </div>
+      </div>
+      <button onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${jsEsc(s.casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)" style="flex:1;background:linear-gradient(115deg,#FFB257 0%,#F4790F 100%);color:#fff;border:none;border-radius:12px;min-height:66px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 5px 14px rgba(255,145,36,.25)"><span style="font-size:17px;line-height:1">＋</span>予約を登録</button>
+    </div>`
 
     sectionsHtml+=actionRow+`<div style="position:relative;height:${chartH}px;margin:0 16px 20px">${gridHtml}${layersHtml}${nowLineHtml}</div>`
   })
