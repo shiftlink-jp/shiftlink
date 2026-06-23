@@ -8769,8 +8769,10 @@ async function loadGanttModal(){
   const GAP=8              // ラベルとチャートの間隔
   const OFFSET=LABEL_W+GAP // チャート本体の左オフセット
   const HOUR_H=102          // 1時間あたりの高さ（縦スクロール前提で広め）
+  const PAD_TOP=28          // 開店ラインの上の余裕（スクロール余白）
+  const PAD_BOT=32          // 閉店ラインの下の余裕（スクロール余白）
   const totalHours=END_H - START_H
-  const chartH=totalHours*HOUR_H
+  const chartH=totalHours*HOUR_H + PAD_TOP + PAD_BOT
 
   // 時刻文字列 "HH:MM" → Y座標（px）
   const timeToY=t=>{
@@ -8778,7 +8780,7 @@ async function loadGanttModal(){
     let[h,mn]=t.split(':').map(Number)
     if(h<START_H) h+=24
     const total=(h - START_H)*60 + mn
-    return Math.max(0,Math.min(chartH,total/60*HOUR_H))
+    return Math.max(0,Math.min(chartH,PAD_TOP + total/60*HOUR_H))
   }
   // 分（深夜考慮）→ 時刻文字列
   const minToTimeStr=n=>{const h=Math.floor(n/60)%24;return String(h).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
@@ -8789,7 +8791,7 @@ async function loadGanttModal(){
   const now=new Date()
   const todayStr=today()
   const nowH=now.getHours()+(now.getHours()<START_H?24:0)
-  const nowY=((nowH-START_H)*60+now.getMinutes())/60*HOUR_H
+  const nowY=PAD_TOP + ((nowH-START_H)*60+now.getMinutes())/60*HOUR_H
   const showNow=ganttModalDate===todayStr&&nowY>=0&&nowY<=chartH
 
   const CAST_COLORS=['#FF9124','#9B72CF','#4ECDC4','#FF6B9D','#45B7D1','#F2A93B']
@@ -8806,7 +8808,7 @@ async function loadGanttModal(){
   // 共通グリッド（時刻ラベル＋横線）
   let gridHtml=''
   for(let h=START_H;h<=END_H;h++){
-    const y=(h-START_H)*HOUR_H
+    const y=PAD_TOP + (h-START_H)*HOUR_H
     const lbl=h>=24?'翌'+(h-24)+':00':h+':00'
     gridHtml+=`<div style="position:absolute;top:${y-6}px;left:0;width:${LABEL_W}px;font-size:9px;color:#A89B88;font-weight:500;text-align:right;font-family:'Inter','Noto Sans JP',sans-serif">${lbl}</div>`
     gridHtml+=`<div style="position:absolute;top:${y}px;left:${OFFSET}px;right:0;height:1px;background:#EDE9E1"></div>`
