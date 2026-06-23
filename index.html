@@ -500,7 +500,9 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #reservation-overlay .rvf-select-wrap::after{content:'';position:absolute;right:.9rem;top:50%;width:9px;height:9px;border-right:1.6px solid #A89B88;border-bottom:1.6px solid #A89B88;transform:translateY(-65%) rotate(45deg);pointer-events:none}
 #reservation-overlay .rvf-row2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
 #reservation-overlay .rvf-with-pay{display:flex;gap:.4rem;align-items:center}
-#reservation-overlay .rvf-pay-btn{width:74px;flex-shrink:0;height:46px;border-radius:10px;border:1.5px solid #EDE9E1;background:#fff;color:#211C16;font-size:.78rem;font-weight:700;font-family:inherit;text-align:center;-webkit-appearance:none;appearance:none}
+#reservation-overlay .rvf-pay-btn{width:74px;flex-shrink:0;height:46px;border-radius:10px;border:1.5px solid #EDE9E1;background:#fff;color:#211C16;font-size:.78rem;font-weight:700;font-family:inherit;text-align:center;-webkit-appearance:none;appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+#reservation-overlay .rvf-pay-btn svg{width:15px;height:15px;flex-shrink:0}
+#reservation-overlay .rvf-pay-btn.is-card{border-color:#5B9BD5;background:#EEF5FC;color:#2E6FAF}
 #reservation-overlay .rvf-box{background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;padding:.3rem .9rem}
 #reservation-overlay .rvf-opt-row{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid #EDE9E1}
 #reservation-overlay .rvf-opt-row:last-child{border-bottom:none}
@@ -2575,14 +2577,14 @@ document.addEventListener('DOMContentLoaded',function(){
             <div class="rvf-lbl">指名区分</div>
             <div class="rvf-with-pay">
               <div class="rvf-select-wrap"><select class="rvf-input" id="rv-shimei"><option value="">-- 選択 --</option><option value="フリー">フリー</option><option value="ネット指名">ネット指名</option><option value="本指名">本指名</option></select></div>
-              <select class="rvf-pay-btn" id="rv-pay-shimei"><option value="現金">現金</option><option value="カード">カード</option></select>
+              <button type="button" class="rvf-pay-btn" id="rv-pay-shimei" value="現金" onclick="togglePay(this)"></button>
             </div>
           </div>
           <div>
             <div class="rvf-lbl">コース</div>
             <div class="rvf-with-pay">
               <div class="rvf-select-wrap"><select class="rvf-input" id="rv-course" onchange="autoCalcCheckout()"></select></div>
-              <select class="rvf-pay-btn" id="rv-pay-course"><option value="現金">現金</option><option value="カード">カード</option></select>
+              <button type="button" class="rvf-pay-btn" id="rv-pay-course" value="現金" onclick="togglePay(this)"></button>
             </div>
           </div>
           <div class="rvf-row2">
@@ -6933,8 +6935,8 @@ async function openReservation(shiftId,castName,date){
     const{data:custs}=await withStoreFilter(sb.from('customers').select('*')).order('customer_no')
     allCustomers=custs||[]
   }
-  if(document.getElementById('rv-pay-course')) document.getElementById('rv-pay-course').value='現金'
-  if(document.getElementById('rv-pay-shimei')) document.getElementById('rv-pay-shimei').value='現金'
+  if(document.getElementById('rv-pay-course')){ document.getElementById('rv-pay-course').value='現金'; renderPayBtn(document.getElementById('rv-pay-course')) }
+  if(document.getElementById('rv-pay-shimei')){ document.getElementById('rv-pay-shimei').value='現金'; renderPayBtn(document.getElementById('rv-pay-shimei')) }
   document.getElementById('rv-note').value=''
   // 自動登録チェックをリセット
   const autoChk=document.getElementById('rv-auto-register')
@@ -7087,6 +7089,19 @@ function bookableCourseLabel(availMin){
   const fit=cand.filter(c=>c.min<=availMin).sort((a,b)=>b.min-a.min)
   if(!fit.length) return '入るコースなし'
   return '最大 '+fit[0].name+'まで可'
+}
+// 支払い方法トグルボタン（現金⇔カード、アイコン付き）
+const _payCashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>'
+const _payCardSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>'
+function renderPayBtn(el){
+  if(!el) return
+  const isCard=el.value==='カード'
+  el.innerHTML=(isCard?_payCardSvg:_payCashSvg)+'<span>'+(isCard?'カード':'現金')+'</span>'
+  el.classList.toggle('is-card',isCard)
+}
+function togglePay(el){
+  el.value=el.value==='カード'?'現金':'カード'
+  renderPayBtn(el)
 }
 function autoCalcCheckout(){
   const checkin=document.getElementById('rv-checkin').value
