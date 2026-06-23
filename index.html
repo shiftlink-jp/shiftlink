@@ -5924,6 +5924,10 @@ async function confirmAddOption() {
     // optPay内にカードがあればoption全体もカードに
     pj.option = Object.values(pj.optPay).includes('カード') ? 'カード' : '現金';
     await withStoreFilter(sb.from('reservations').update({ options: newOpts.join(','), payment: JSON.stringify(pj) })).eq('id', rvId);
+    // 来店履歴(customer_visits)も同期：追加OPが来店履歴に反映されるようにする
+    try {
+      await withStoreFilter(sb.from('customer_visits').update({ options: newOpts.join(',') })).eq('reservation_id', rvId);
+    } catch(e){ console.error('customer_visits同期エラー(追加OP):', e); }
 
     // オーナーに通知
     await sendPushNotification(0, '追加OP', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
