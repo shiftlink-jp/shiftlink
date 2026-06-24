@@ -37,6 +37,49 @@
       background: transparent;
     }
     /* 申込フォームURLは下記の href をまとめて差し替えてください */
+
+    /* 無料トライアル訴求バナー（白×オレンジ） */
+    .trial-band {
+      background: linear-gradient(135deg, #ff8a1e 0%, #ff6a00 100%);
+      color: #fff;
+      text-align: center;
+      padding: 22px 18px;
+    }
+    .trial-band .badge {
+      display: inline-block;
+      background: #fff;
+      color: #ff6a00;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .04em;
+      border-radius: 999px;
+      padding: 5px 14px;
+      margin-bottom: 12px;
+    }
+    .trial-band .headline {
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .trial-band .sub {
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: .95;
+    }
+    .trial-band.before-cta { padding-bottom: 24px; }
+    .trial-band .start-btn {
+      display: inline-block;
+      margin-top: 16px;
+      background: #fff;
+      color: #ff6a00;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 13px 34px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    }
   </style>
 </head>
 <body>
@@ -47,6 +90,13 @@
       <img src="images/01-hero.png" alt="事務作業に追われる店舗運営を、スマホひとつに。ShiftLink">
       <!-- 「無料で始める」ボタン位置（おおよそ。実画像に合わせて top/left/width/height を調整） -->
       <a class="cta-link" href="https://line.me/R/ti/p/@188wjjxv" style="top:59%; left:3%; width:40%; height:7%;"></a>
+    </div>
+
+    <!-- 1.5 無料トライアル訴求（ファーストビュー直下） -->
+    <div class="trial-band">
+      <span class="badge">14日間無料 ／ カード登録なし</span>
+      <div class="headline">まずは無料で、<br>今月の店の数字を見てから決めてください。</div>
+      <div class="sub">クレジットカードの登録は不要。14日間、全機能をそのままお試しいただけます。</div>
     </div>
 
     <!-- 2. お悩み -->
@@ -79,6 +129,14 @@
     <div class="panel">
       <img src="images/07-pricing.png" alt="シンプルな料金体系 スタンダードプラン ¥14,800 税抜・月額">
       <a class="cta-link" href="https://line.me/R/ti/p/@188wjjxv" style="top:85.5%; left:14%; width:72%; height:7%;"></a>
+    </div>
+
+    <!-- 7.5 無料トライアル訴求（CTA直前） -->
+    <div class="trial-band before-cta">
+      <span class="badge">14日間無料 ／ カード登録なし</span>
+      <div class="headline">いきなり契約しなくて大丈夫です。</div>
+      <div class="sub">14日間、無料で全機能をお試しいただけます。<br>クレジットカードの登録は不要。続けるか決めるのは、使ってみた後で。</div>
+      <a class="start-btn" href="https://line.me/R/ti/p/@188wjjxv">無料で始める</a>
     </div>
 
     <!-- 8. FAQ＋フッター -->
