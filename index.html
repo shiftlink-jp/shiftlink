@@ -12332,12 +12332,12 @@ function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_
       <div class="mex-legend">${legend('#3B82F6','固定費',fixedSum)}${legend('#FF9124','変動費',varSum)}</div>
     </div>
     <div class="mex-sec">
-      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#3B82F6"></span><span class="mex-sec-t">固定費</span><span class="mex-sec-s">毎月ほぼ一定</span></div><button class="mex-edit" onclick="openExpenseSheet('fixed')">編集</button></div>
+      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#3B82F6"></span><span class="mex-sec-t">固定費</span><span class="mex-sec-s">毎月ほぼ一定</span></div></div>
       ${fixedRows?`<div class="mex-list">${fixedRows}</div>`:''}
       <button class="mex-add" onclick="openExpenseSheet('fixed')">${svg('plus')}固定費を編集</button>
     </div>
     <div class="mex-sec">
-      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div><button class="mex-edit" onclick="openExpenseSheet('variable')">編集</button></div>
+      <div class="mex-sec-head"><div class="mex-sec-label"><span class="mex-sec-dot" style="background:#FF9124"></span><span class="mex-sec-t">変動費</span><span class="mex-sec-s">売上に応じて変わる</span></div></div>
       <div class="mex-list">${varRows}</div>
       <button class="mex-add" onclick="openExpenseSheet('variable')">${svg('plus')}変動費を編集</button>
     </div>
