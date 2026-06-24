@@ -12683,7 +12683,7 @@ async function fxeSave(){
   fxeSyncFromDOM()
   const allCats=[...fxeState.map(c=>({category:c.category,type:fxeType,items:c.items})),...fxeOther]
   const custom_expenses=[]
-  allCats.forEach(c=>c.items.forEach(it=>{if(it.label&&it.amount!=null)custom_expenses.push({category:c.category,label:it.label,amount:it.amount,type:c.type})}))
+  allCats.forEach(c=>c.items.forEach(it=>{if(it.amount!=null)custom_expenses.push({category:c.category,label:(it.label||c.category||'項目'),amount:it.amount,type:c.type})}))
   const catSum=cc=>custom_expenses.filter(e=>e.category===cc).reduce((s,e)=>s+e.amount,0)
   const total_ad_expense=catSum('広告費'),total_rent=catSum('家賃'),total_utility=catSum('光熱費')
   const total_fixed=custom_expenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+e.amount,0)
