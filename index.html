@@ -3742,6 +3742,8 @@ async function init(){
     // 未ログイン → SaaSログイン画面表示
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
     document.getElementById('s-saas-login').classList.add('on')
+    // deep-link: ?signup=1 が付いていれば登録フォームを自動で開く（LPからの直リンク用）
+    if(new URLSearchParams(location.search).has('signup')) showSaasSignup()
     return
   }
   // ── 従来モード：PINログイン ──
