@@ -2612,7 +2612,7 @@ document.addEventListener('DOMContentLoaded',function(){
             <div id="rv-shimei-hint" style="display:none;font-size:.75rem;padding:.3rem .6rem;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;color:#7a6000;font-weight:600;margin-bottom:.1rem"><svg class="ei" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 本指名のお客様です（このセラピストで2回以上来店）</div>
           </div>
           <div><div class="rvf-lbl">来店区分</div>
-            <div class="rvf-select-wrap"><select class="rvf-input" id="rv-is-new"><option value="">-- 選択 --</option><option value="false">再訪</option><option value="true">新規</option></select></div>
+            <div class="rvf-select-wrap"><select class="rvf-input" id="rv-is-new" onchange="this.dataset.userSet='1'"><option value="">-- 選択 --</option><option value="false">再訪</option><option value="true">新規</option></select></div>
           </div>
           <div>
             <div class="rvf-lbl">指名区分</div>
@@ -7084,7 +7084,7 @@ async function openReservation(shiftId,castName,date){
   document.getElementById('rv-cust-id').value=''
   document.getElementById('rv-name').value=''
   document.getElementById('rv-cust-name').textContent=''
-  document.getElementById('rv-is-new').value=''
+  ;(function(){const _isNew=document.getElementById('rv-is-new');_isNew.value='';delete _isNew.dataset.userSet})()
   // 指名プルダウンを動的生成（店舗設定の指名タイプに追従）
   const _rvShimeiSel=document.getElementById('rv-shimei')
   if(_rvShimeiSel) _rvShimeiSel.innerHTML='<option value="">-- 選択 --</option>'+getShimeiTypes().map(t=>`<option value="${escapeHtml(t.name)}">${escapeHtml(t.name)}</option>`).join('')
@@ -7311,6 +7311,9 @@ async function toggleAutoRegister(chk){
     // 自動登録時は名前欄を「新規のお客様」にリセット
     if(nameInput) nameInput.value=''
     if(nameInput) nameInput.placeholder='お客様名（例：タナカ様）'
+    // 新規顧客の自動登録＝来店履歴なしのため「新規」をデフォルト設定（手動上書き可）
+    const _isNewSel=document.getElementById('rv-is-new')
+    if(_isNewSel && !_isNewSel.dataset.userSet) _isNewSel.value='true'
   } else {
     if(existingArea) existingArea.style.display='block'
     if(autoArea) autoArea.style.display='none'
@@ -7350,6 +7353,16 @@ async function autoFillCustomer(){
         histArea.dataset.custName=c.name
         histArea.dataset.custId=c.id||''
       }
+      // 来店区分の自動判定：来店履歴があれば「再訪」、なければ「新規」
+      // （ユーザーが手動で上書き可能。すでに手動設定済みなら尊重する）
+      if(c.id){
+        const{data:allVisits}=await withStoreFilter(sb.from('customer_visits').select('id')).eq('customer_id',c.id).limit(1)
+        const hasHistory=(allVisits||[]).length>0
+        const isNewSel=document.getElementById('rv-is-new')
+        if(isNewSel && !isNewSel.dataset.userSet){
+          isNewSel.value=hasHistory?'false':'true'
+        }
+      }
       // 本指名判定：同セラピストの来店履歴が2件以上なら本指名
       if(shimeiHint) shimeiHint.style.display='none'
       if(_rvCastName && c.id){
@@ -7367,6 +7380,11 @@ async function autoFillCustomer(){
     document.getElementById('rv-cust-name').style.color='var(--rtx)'
     if(warn){warn.style.display='block';warn.style.color='';warn.textContent='顧客番号が未登録です。予約後に顧客管理から登録してください。'}
     if(histArea) histArea.style.display='none'
+    // 未登録番号＝来店履歴のない新規顧客とみなして「新規」を自動設定（手動上書き可）
+    const isNewSelN=document.getElementById('rv-is-new')
+    if(isNewSelN && !isNewSelN.dataset.userSet){
+      isNewSelN.value='true'
+    }
   }
 }
 function openRvCustHistory(){
