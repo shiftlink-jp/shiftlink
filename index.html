@@ -5309,6 +5309,7 @@ function cancelSelectedDay(){
 }
 
 let _submitShiftLock=false
+let _extConfirmLock={}
 async function submitShift(){
   if(!selectedDate) return
   if(_submitShiftLock) return; _submitShiftLock=true
@@ -6143,6 +6144,17 @@ async function confirmExtend() {
   const { rvId, custName, checkout, extCount, payment, pay } = _extCtx
   const o = _extCtx.options[_extCtx.sel]
   if (!o) { toast('延長時間を選んでください'); return }
+  // (B) 連打ブロック：同一予約の前回延長確定から2秒以内なら弾く
+  const _now = Date.now()
+  if (_extConfirmLock[rvId] && (_now - _extConfirmLock[rvId]) < 2000) {
+    toast('少し待ってからもう一度押してください'); return
+  }
+  // (A) 確認ダイアログ（連打ロック通過後・DB更新前）
+  let _extTotal = (o.price||0)
+  if (pay === 'カード') _extTotal += calcCardSurcharge(_extTotal)
+  if (!confirm('延長を追加しますか？\n+' + o.min + '分 ・ ¥' + _extTotal.toLocaleString())) return
+  // キャンセル時はロックを記録しない（OK後のみ記録してDB更新へ）
+  _extConfirmLock[rvId] = Date.now()
   const saveBtn = document.getElementById('ext-save')
   if (saveBtn.disabled) return
   saveBtn.disabled = true
