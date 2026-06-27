@@ -1281,13 +1281,46 @@ tr:last-child td{border-bottom:none}
   #daily-print-table tr{page-break-inside:avoid}
   #daily-print-table thead{display:table-header-group}
 
+  /* セラピスト明細テーブル：日別と同じく横スクロール領域(.md-scroll)と固定幅テーブルのため、
+     印刷時はスクロールを解除し全列を紙幅に収めて全行印刷する */
+  #cast-print-area .md-scroll{
+    overflow:visible!important;
+    max-height:none!important;
+  }
+  #cast-print-area .md-table{
+    width:100%!important;
+    min-width:0!important;
+    table-layout:auto!important;
+    font-size:.5rem!important;
+    border-collapse:collapse!important;
+  }
+  #cast-print-area .md-table th, #cast-print-area .md-table td{
+    white-space:nowrap!important;
+    min-width:0!important;
+    width:auto!important;
+    padding:.06rem .08rem!important;
+    position:static!important;
+  }
+  #cast-print-area .md-table thead th{
+    background:#fff!important;
+    border-bottom:1px solid #999!important;
+  }
+  #cast-print-area .md-table tr{page-break-inside:avoid}
+  #cast-print-area .md-table thead{display:table-header-group}
+
   /* グラフ・経費タブ：円グラフ(conic-gradient)や凡例・バーは背景色で描いているため、
      印刷時にも背景を出すよう指定しないと円グラフ等が真っ白になって消えてしまう */
   #p-owner-monthly .gr-pie, #p-owner-monthly .gr-donut, #p-owner-monthly .gr-dot,
   #p-owner-monthly .gr-card, #p-owner-monthly .mex-total, #p-owner-monthly .mex-list,
   #p-owner-monthly .mex-bar, #p-owner-monthly .mex-bar-fixed, #p-owner-monthly .mex-bar-var,
   #p-owner-monthly .mex-leg-dot, #p-owner-monthly .mex-sec-dot,
-  #p-owner-monthly .mex-ic, #p-owner-monthly .me-ic{
+  #p-owner-monthly .mex-ic, #p-owner-monthly .me-ic,
+  /* 月まとめ・セラピストタブ：KPIカード・目標バー・ランキングバーも背景色で描いているため保持 */
+  #summary-print-area .mo-kpi-card, #summary-print-area .mo-shimei-card,
+  #summary-print-area .mo-goal-card, #summary-print-area .mo-progress-track,
+  #summary-print-area .mo-progress-fill,
+  #cast-print-area .mo-rank-card, #cast-print-area .mo-rank-badge,
+  #cast-print-area .mo-rank-bar-track, #cast-print-area .mo-rank-bar-fill{
     -webkit-print-color-adjust:exact!important;
     print-color-adjust:exact!important;
   }
@@ -12073,7 +12106,8 @@ function renderMonthlySummary(area,tot,sd,fmt2,total_expenses){
       ${opCell('経費',total_expenses>0?'-¥'+total_expenses.toLocaleString():'¥0','var(--rtx)')}
     </div>
   </div>`
-  area.innerHTML=html
+  area.innerHTML=monthlyExportRow("printMonthlyArea()","pdfMonthlyArea('summary-print-area','月まとめ','月まとめ')")
+    +'<div id="summary-print-area">'+html+'</div>'
 }
 
 // ── 日別テーブル：白背景セル ──
@@ -12248,11 +12282,30 @@ function printMonthlyArea(){ window.print() }
 async function pdfMonthlyArea(elId,title,fileBase){
   const el=document.getElementById(elId)
   if(!el){ toast('内容が見つかりません'); return }
+  // html2canvasは画面表示状態のDOMを撮るため@media printは効かない。
+  // 横スクロール明細（.md-scroll内の固定幅テーブル）は見えている範囲しか写らず右側の列が欠ける。
+  // 撮影直前にスクロールコンテナを一時的に全幅展開し、撮影後に必ず元へ戻す（.md-scrollが無いタブでは対象0件で無害）。
+  const expanded=[]
+  el.querySelectorAll('.md-scroll').forEach(sc=>{
+    expanded.push([sc,sc.getAttribute('style')||''])
+    sc.style.overflow='visible'
+    sc.style.maxHeight='none'
+  })
+  const restore=()=>expanded.forEach(([sc,prev])=>{ if(prev) sc.setAttribute('style',prev); else sc.removeAttribute('style') })
   try{
     toast('PDFを作成中…',6000)
     if(!window.html2canvas) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
     if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
-    const canvas=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0})
+    // 横スクロールテーブルを展開したタブ(セラピスト)のみ、実コンテンツ幅で撮影して右側の列欠けを防ぐ。
+    // 展開対象が無いタブ(経費・グラフ・月まとめ)ではwidth/windowWidthを付けず従来と完全一致の撮影にする
+    // （windowWidth指定はメディアクエリのビューポート評価に影響しうるため）。
+    const h2cOpts={scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0}
+    if(expanded.length){
+      const shotW=Math.max(el.scrollWidth,el.offsetWidth,1) // 0回避ガード（空画像化防止）
+      h2cOpts.width=shotW; h2cOpts.windowWidth=shotW
+    }
+    const canvas=await window.html2canvas(el,h2cOpts)
+    restore() // 撮影完了。DOMを元の表示状態へ戻す
     const img=canvas.toDataURL('image/png')
     const {jsPDF}=window.jspdf
     const pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'})
@@ -12277,6 +12330,7 @@ async function pdfMonthlyArea(elId,title,fileBase){
     toast('PDFを保存しました')
   }catch(e){
     console.error(e)
+    restore() // 例外時も必ずDOMを元へ戻してから印刷ダイアログにフォールバック
     toast('PDF作成に失敗。印刷ダイアログを開きます')
     const orig=document.title
     document.title=fileBase+'_'+(monthlyMonth||'')
@@ -12362,7 +12416,8 @@ function renderMonthlyCast(area,castStats,fmt2){
     <div class="md-scroll"><table class="md-table" style="${tableStyle}">${colgroup}${thead}<tbody>${bodyRows}${totRow}</tbody></table></div>
     <div class="md-foot">保証=最低保証支払額</div>
   </div>`
-  area.innerHTML=html
+  area.innerHTML=monthlyExportRow("printMonthlyArea()","pdfMonthlyArea('cast-print-area','セラピスト','セラピスト')")
+    +'<div id="cast-print-area">'+html+'</div>'
 }
 
 function renderMonthlyExpense(area,sd,fmt2,total_ad,total_rent,total_util,total_fixed,total_vari,total_custom,total_expenses,customExpenses,cardFee){
