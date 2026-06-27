@@ -7244,6 +7244,12 @@ function getCourseMinutes(courseName){
   const m=courseName.match(/(\d+)分/)
   return m?parseInt(m[1]):0
 }
+// 延長1回あたりの標準所要分数を店舗料金設定から取得（confirmExtendと同じソース）。
+// courses内の「延長」項目のduration → COURSE_MINUTES['延長'] → 30 の順でフォールバック。
+function getExtUnitMin(){
+  const ext=(courses||[]).find(c=>c.name&&c.name.includes('延長'))
+  return (ext&&ext.duration) || COURSE_MINUTES['延長'] || 30
+}
 // 空き分数に入る最大コースのラベルを返す（延長は除外）
 // 延長を除いた最短コースの所要分数（受付可否の判定に使用）
 function shortestCourseMin(){
@@ -7668,10 +7674,25 @@ async function loadGantt(){
       const nameStr=r.customer_name?.replace('様','')||''
       const courseStr=escapeHtml(r.course||'')
       const timeStr=(r.checkin_time?.slice(0,5)||'')+'〜'+(r.checkout_time?.slice(0,5)||'')
+      // 延長の視覚分割：コース純粋部分と延長部分を線引き
+      const extCount=r.extension_count||0
+      let splitOverlay=''
+      if(extCount>0&&r.checkout_time){
+        const courseEndMin=timeStrToMinL(r.checkout_time.slice(0,5))-extCount*getExtUnitMin()
+        const splitPos=timeToPos(minToTimeStrL(courseEndMin))
+        if(splitPos!==null&&splitPos>rStart&&splitPos<rEnd){
+          const splitInner=splitPos-rStart
+          const total=rEnd-rStart
+          const extRatio=(rEnd-splitPos)/total*100
+          splitOverlay=`<div style="position:absolute;left:${splitInner/total*100}%;width:${extRatio}%;top:0;bottom:0;background:repeating-linear-gradient(-45deg,rgba(255,179,71,.55),rgba(255,179,71,.55) 3px,rgba(255,149,0,.25) 3px,rgba(255,149,0,.25) 7px);z-index:1;display:flex;align-items:center;justify-content:center;overflow:hidden"><span style="font-size:.42rem;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap">延長</span></div>
+          <div style="position:absolute;left:${splitInner/total*100}%;top:0;bottom:0;width:2px;background:#fff;z-index:2"></div>`
+        }
+      }
       rvBars+=`<div title="${escapeHtml(r.customer_name||'')}\n${r.checkin_time?.slice(0,5)||''}-${r.checkout_time?.slice(0,5)||''}\n${r.course||''}" style="position:absolute;left:${rStart}%;width:${rEnd-rStart}%;top:2px;bottom:2px;background:rgba(255,149,0,.85);border-radius:3px;z-index:5;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3px">
-        <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nameStr)}</span>
-        <span style="font-size:.45rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${courseStr}</span>
-        <span style="font-size:.42rem;color:rgba(255,255,255,.8);white-space:nowrap">${timeStr}</span>
+        ${splitOverlay}
+        <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${escapeHtml(nameStr)}</span>
+        <span style="font-size:.45rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${courseStr}</span>
+        <span style="font-size:.42rem;color:rgba(255,255,255,.8);white-space:nowrap;position:relative;z-index:3">${timeStr}</span>
       </div>`
       // インターバルブロック
       if(intervalMin>0&&r.checkout_time){
@@ -7830,10 +7851,25 @@ async function renderGanttInto(area, date, filterShifts=null){
       const nameStr=r.customer_name?.replace('様','')||''
       const courseStr=escapeHtml(r.course||'')
       const timeStr=(r.checkin_time?.slice(0,5)||'')+'〜'+(r.checkout_time?.slice(0,5)||'')
+      // 延長の視覚分割：コース純粋部分と延長部分を線引き
+      const extCount=r.extension_count||0
+      let splitOverlay=''
+      if(extCount>0&&r.checkout_time){
+        const courseEndMin=timeStrToMin(r.checkout_time.slice(0,5))-extCount*getExtUnitMin()
+        const splitPos=timeToPos(minToTimeStr(courseEndMin))
+        if(splitPos!==null&&splitPos>rStart&&splitPos<rEnd){
+          const splitInner=splitPos-rStart
+          const total=rEnd-rStart
+          const extRatio=(rEnd-splitPos)/total*100
+          splitOverlay=`<div style="position:absolute;left:${splitInner/total*100}%;width:${extRatio}%;top:0;bottom:0;background:repeating-linear-gradient(-45deg,rgba(255,179,71,.55),rgba(255,179,71,.55) 3px,rgba(255,149,0,.25) 3px,rgba(255,149,0,.25) 7px);z-index:1;display:flex;align-items:center;justify-content:center;overflow:hidden"><span style="font-size:.42rem;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap">延長</span></div>
+          <div style="position:absolute;left:${splitInner/total*100}%;top:0;bottom:0;width:2px;background:#fff;z-index:2"></div>`
+        }
+      }
       rvBars+=`<div title="${escapeHtml(r.customer_name||'')}\n${r.checkin_time?.slice(0,5)||''}-${r.checkout_time?.slice(0,5)||''}\n${r.course||''}" style="position:absolute;left:${rStart}%;width:${rEnd-rStart}%;top:2px;bottom:2px;background:rgba(255,149,0,.9);border-radius:3px;z-index:5;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3px">
-        <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(nameStr)}</span>
-        <span style="font-size:.45rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${courseStr}</span>
-        <span style="font-size:.42rem;color:rgba(255,255,255,.8);white-space:nowrap">${timeStr}</span>
+        ${splitOverlay}
+        <span style="font-size:.52rem;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${escapeHtml(nameStr)}</span>
+        <span style="font-size:.45rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${courseStr}</span>
+        <span style="font-size:.42rem;color:rgba(255,255,255,.8);white-space:nowrap;position:relative;z-index:3">${timeStr}</span>
       </div>`
       // インターバルブロック（退室後）
       if(intervalMin>0&&r.checkout_time){
@@ -7892,7 +7928,8 @@ async function renderGanttInto(area, date, filterShifts=null){
     </div>`
   })
   const legend=`<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem;font-size:.62rem">
-    <div style="display:flex;align-items:center;gap:.2rem"><div style="width:10px;height:7px;background:rgba(255,149,0,.9);border-radius:2px"></div>予約</div>
+    <div style="display:flex;align-items:center;gap:.2rem"><div style="width:10px;height:7px;background:rgba(255,149,0,.9);border-radius:2px"></div>予約（コース）</div>
+    <div style="display:flex;align-items:center;gap:.2rem"><div style="width:10px;height:7px;background:repeating-linear-gradient(-45deg,rgba(255,179,71,.55),rgba(255,179,71,.55) 3px,rgba(255,149,0,.25) 3px,rgba(255,149,0,.25) 7px);border-radius:2px"></div>延長</div>
     <div style="display:flex;align-items:center;gap:.2rem"><div style="width:10px;height:7px;background:repeating-linear-gradient(-45deg,rgba(100,100,100,.55),rgba(100,100,100,.55) 2px,rgba(60,60,60,.25) 2px,rgba(60,60,60,.25) 6px);border-radius:2px"></div>インターバル</div>
     <div style="display:flex;align-items:center;gap:.2rem"><div style="width:10px;height:7px;background:rgba(52,199,89,.25);border:1px dashed rgba(52,199,89,.5);border-radius:2px"></div>空き</div>
     ${date===todayStr?'<div style="display:flex;align-items:center;gap:.2rem"><div style="width:2px;height:8px;background:rgba(255,59,48,.7)"></div>現在</div>':''}
