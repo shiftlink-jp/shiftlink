@@ -1148,6 +1148,10 @@ tr:last-child td{border-bottom:none}
 #p-owner-monthly .gr-card{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:18px;margin-bottom:18px}
 #p-owner-monthly .gr-card.bars{padding:16px}
 #p-owner-monthly .gr-title{font-size:13px;font-weight:700;color:#211C16;margin-bottom:14px}
+#p-owner-monthly .gr-trend{display:inline-block;font-size:11px;font-weight:700;margin-left:8px;padding:1px 7px;border-radius:999px;vertical-align:middle}
+#p-owner-monthly .gr-trend.up{color:#10B981;background:#10B98115}
+#p-owner-monthly .gr-trend.down{color:#DC2626;background:#DC262615}
+#p-owner-monthly .gr-trend.flat{color:#9A8F7E;background:#9A8F7E15}
 #p-owner-monthly .gr-donutwrap{display:flex;justify-content:center;padding:4px 0;margin-bottom:14px}
 #p-owner-monthly .gr-pie{position:relative;border-radius:50%;flex-shrink:0}
 #p-owner-monthly .gr-pie-pct{position:absolute;transform:translate(-50%,-50%);font-family:'Inter',sans-serif;font-weight:700;line-height:1}
@@ -12023,6 +12027,48 @@ async function renderMonthlyContent(){
     const other=(s.sales||0)-(courseSale+shimeiSale+optSale);if(other>0)compOther+=other
   })})
   tot.compCourse=compCourse;tot.compOpt=compOpt;tot.compShimei=compShimei;tot.compOther=compOther
+
+  // ── 前月比用：前月の月合計スカラーだけを軽量集計（グラフ6指標の基準値） ──
+  // 追加クエリは前月分3本（works / reservations / monthly_sales）。当月のフル集計は再実行しない。
+  const prevMonth=addMonth(monthlyMonth,-1)
+  const prevTot={comp:0,gross_work:0,count:0,shimei:0,visit:0,route:0,hasWork:false,hasRoute:false}
+  try{
+    const {data:pWorksRaw}=await withStoreFilter(sb.from('works').select('sales,count,sessions')).gte('date',prevMonth+'-01').lt('date',monthlyMonth+'-01')
+    const pWorks=pWorksRaw||[]
+    prevTot.hasWork=pWorks.length>0
+    pWorks.forEach(w=>{
+      prevTot.gross_work+=w.sales||0
+      prevTot.count+=w.count||0
+      ;(w.sessions||[]).forEach(s=>{
+        const co=courses.find(c=>c.name===s.course_name);const courseSale=co?.price||0
+        const shimeiSale=getShimeiPrice(s.shimei_type)
+        let optSale=0;(s.options||[]).forEach(o=>{const op=opts.find(x=>x.name===o.name)||opts.find(x=>o.name&&(o.name.includes(x.name)||x.name.includes(o.name)));let p=op?.price||0;if(!p){if(o.name&&o.name.includes('極液'))p=storeSettings.shop_op_gokueki||2000;else if(o.name&&o.name.includes('衣装')&&o.name.includes('②'))p=storeSettings.shop_op_isho2||3000;else if(o.name&&o.name.includes('衣装'))p=storeSettings.shop_op_isho||3000;}optSale+=p})
+        prevTot.comp+=courseSale+shimeiSale+optSale
+        const other=(s.sales||0)-(courseSale+shimeiSale+optSale);if(other>0)prevTot.comp+=other
+      })
+    })
+    // 前月の指名内訳・来店内訳（予約から本数・新規/再訪を集計）
+    const {data:pShifts}=await withStoreFilter(sb.from('shifts').select('id')).gte('date',prevMonth+'-01').lt('date',monthlyMonth+'-01')
+    let pNew=0,pRepeat=0
+    if(pShifts&&pShifts.length){
+      const {data:pRvs}=await withStoreFilter(sb.from('reservations').select('shimei_type,is_new').in('shift_id',pShifts.map(s=>s.id)))
+      ;(pRvs||[]).forEach(r=>{
+        const k=(resolveShimei(r.shimei_type)||{}).key
+        if(k==='free'||k==='net'||k==='hon') prevTot.shimei++
+        if(r.is_new===true||r.is_new==='true') pNew++; else pRepeat++
+      })
+    }
+    // 前月のmonthly_sales（来店内訳・集客経路の手入力値を優先）
+    const {data:pSd}=await withStoreFilter(sb.from('monthly_sales').select('new_customers,repeat_customers,acquisition_routes')).eq('month',prevMonth).maybeSingle()
+    const pNewV=pSd&&pSd.new_customers!=null?pSd.new_customers:pNew
+    const pRepV=pSd&&pSd.repeat_customers!=null?pSd.repeat_customers:pRepeat
+    prevTot.visit=(pNewV||0)+(pRepV||0)
+    const pRoutes=(pSd&&pSd.acquisition_routes)||{}
+    prevTot.route=Object.values(pRoutes).reduce((s,v)=>s+(Number(v)||0),0)
+    prevTot.hasRoute=Object.keys(pRoutes).length>0
+  }catch(e){/* 前月データ取得失敗時は前月比を出さない */}
+  tot._prev=prevTot
+
   const customExpenses=getExpenseItems(sd)
   const total_ad=customExpenses.filter(e=>e.category==='広告費').reduce((s,e)=>s+e.amount,0)
   const total_rent=customExpenses.filter(e=>e.category==='家賃').reduce((s,e)=>s+e.amount,0)
@@ -12606,9 +12652,18 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
     const total=data.reduce((s,d)=>s+d.value,0)||1
     return data.map((d,i)=>`<div class="gr-leg"><span class="gr-dot" style="background:${colors[i%colors.length]}"></span><span class="gr-leg-n">${escapeHtml(d.label)}</span><span class="gr-leg-p">${Math.round(d.value/total*100)}%</span><span class="gr-leg-a">${fmtVal(d.value)}</span></div>`).join('')
   }
-  const pieCard=(title,data,colors,size,fmtVal)=>`<div class="gr-card"><div class="gr-title">${title}</div>${data.length?`<div class="gr-donutwrap">${pie(data,colors,size)}</div><div>${legend(data,colors,fmtVal)}</div>`:'<div class="gr-empty">データなし</div>'}</div>`
+  // 前月比バッジ：当月合計 cur と前月合計 prev を比較（既存sal2-trendと同じ計算・符号・ゼロ除算対策）
+  // prev<=0（前月実績なし/データ無し）は「前月実績なし」を淡色で表示
+  const trendBadge=(cur,prev)=>{
+    if(prev==null||prev<=0) return '<span class="gr-trend flat">前月実績なし</span>'
+    const diff=(cur||0)-prev
+    const pct=Math.round(Math.abs(diff)/prev*100)
+    const up=diff>=0
+    return `<span class="gr-trend ${up?'up':'down'}">前月比 ${up?'↑':'↓'}${pct}%</span>`
+  }
+  const pieCard=(title,data,colors,size,fmtVal,badge)=>`<div class="gr-card"><div class="gr-title">${title}${badge||''}</div>${data.length?`<div class="gr-donutwrap">${pie(data,colors,size)}</div><div>${legend(data,colors,fmtVal)}</div>`:'<div class="gr-empty">データなし</div>'}</div>`
   // Pencil: 折れ線グラフ（エリア塗り+線+端点ドット+Y軸グリッド+X軸日付）
-  const lineCard=(title,sub,values,days,color,areaColor,yfmt,hv)=>{
+  const lineCard=(title,sub,values,days,color,areaColor,yfmt,hv,badge)=>{
     if(!values.length) return ''
     const n=values.length,denom=n>1?n-1:1
     const maxV=Math.max(...values,1)
@@ -12625,7 +12680,7 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
     const dot=`<div class="gr-enddot" style="left:${last[0].toFixed(2)}%;top:${last[1].toFixed(2)}%;background:${color}"></div>`
     const xaxis=days.map((d,i)=>`<span class="${i===days.length-1?'last':''}">${d}</span>`).join('')
     return `<div class="gr-card line">
-      <div class="gr-line-head"><div><div class="gr-line-t">${title}</div><div class="gr-line-s">${sub}</div></div><div class="gr-line-hr"><div class="gr-line-hl2">最新 ${hv.label}</div><div class="gr-line-hv" style="color:${color}">${hv.value}</div></div></div>
+      <div class="gr-line-head"><div><div class="gr-line-t">${title}${badge||''}</div><div class="gr-line-s">${sub}</div></div><div class="gr-line-hr"><div class="gr-line-hl2">最新 ${hv.label}</div><div class="gr-line-hv" style="color:${color}">${hv.value}</div></div></div>
       <div class="gr-plot">${gl}${svg}${dot}</div>
       <div class="gr-xaxis">${xaxis}</div>
     </div>`
@@ -12654,15 +12709,24 @@ function renderMonthlyChart(area,tot,sd,total_expenses,total_ad,total_rent,total
   const routeData=routeItems.map(([l,k])=>({label:l,value:routes[k]||0})).filter(d=>d.value>0)
   const hon=n=>n+'本',nin=n=>n+'人'
 
+  // 前月比バッジ用：当月の各指標合計と前月合計（tot._prev）を突き合わせる
+  const pv=tot._prev||{}
+  const curComp=(tot.compCourse||0)+(tot.compOpt||0)+(tot.compShimei||0)+(tot.compOther||0)
+  const curGross=tot.gross_work||0
+  const curCount=tot.count||0
+  const curShimei=(tot.free||0)+(tot.net_shimei||0)+(tot.hon_shimei||0)
+  const curVisit=(newV||0)+(repV||0)
+  const curRoute=routeData.reduce((s,d)=>s+(d.value||0),0)
+
   area.innerHTML=
     monthlyExportRow("printMonthlyArea()","pdfMonthlyArea('chart-print-area','グラフ','グラフ')")
     +'<div id="chart-print-area">'
-    +pieCard('売上構成',compData,PIE,180,yen)
-    +lineCard('日別売上','今月の推移',salesData,days,'#FF9124','#FF912422',yManen,{label:lastMD,value:yen(lastRow.gross_work||0)})
-    +lineCard('日別本数','今月の推移',countData,days,'#1D4ED8','#1D4ED822',v=>String(v),{label:lastMD,value:cnt(lastRow.count||0)})
-    +pieCard('指名内訳',shimeiData,PIE,150,hon)
-    +pieCard('来店内訳',visitData,PIE,150,nin)
-    +pieCard('集客経路',routeData,PIE,150,nin)
+    +pieCard('売上構成',compData,PIE,180,yen,trendBadge(curComp,pv.comp))
+    +lineCard('日別売上','今月の推移',salesData,days,'#FF9124','#FF912422',yManen,{label:lastMD,value:yen(lastRow.gross_work||0)},trendBadge(curGross,pv.gross_work))
+    +lineCard('日別本数','今月の推移',countData,days,'#1D4ED8','#1D4ED822',v=>String(v),{label:lastMD,value:cnt(lastRow.count||0)},trendBadge(curCount,pv.count))
+    +pieCard('指名内訳',shimeiData,PIE,150,hon,trendBadge(curShimei,pv.shimei))
+    +pieCard('来店内訳',visitData,PIE,150,nin,trendBadge(curVisit,pv.visit))
+    +pieCard('集客経路',routeData,PIE,150,nin,trendBadge(curRoute,pv.route))
     +'</div>'
 }
 
