@@ -4664,9 +4664,10 @@ function startApp(){
 const _pushRecentKeys = new Map();
 const _castRoomProcessing = new Set();
 
-async function sendPushNotification(castId, title, body) {
+async function sendPushNotification(castId, title, body, dedupeExtra) {
   // 3秒以内の同一通知を重複送信しない
-  const key = `${castId}|${title}|${body}`;
+  // dedupeExtra: 表示本文には含めないが重複判定だけ一意化したい場合に渡す（例: シフトID）
+  const key = `${castId}|${title}|${body}` + (dedupeExtra != null ? `|${dedupeExtra}` : '');
   const now = Date.now();
   const last = _pushRecentKeys.get(key);
   if (last && now - last < 3000) return;
@@ -6206,7 +6207,7 @@ async function saveCastShiftEdit(){
   const notifyBody=wasApproved
     ? me.name+'さんが'+mdStr+'の承認済みシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）再承認をお願いします'
     : me.name+'さんが'+mdStr+'のシフトを訂正しました（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
-  await sendPushNotification(0, notifyTitle, notifyBody);
+  await sendPushNotification(0, notifyTitle, notifyBody, 'shift:'+castShiftEditId);
   toast(wasApproved?'訂正しました（再承認待ちに戻しました）':'シフトを訂正しました')
   closeSheet('cast-shift-edit')
   await loadCal()
@@ -6218,7 +6219,7 @@ async function deleteCastShift(){
   const{error} = await withStoreFilter(sb.from('shifts').delete()).eq('id', castShiftEditId)
   if(error){ toast('エラー: '+error.message); return }
   // 店舗に通知
-  await sendPushNotification(0, 'シフト取消', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフトを取消しました');
+  await sendPushNotification(0, 'シフト取消', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフトを取消しました', 'shift:'+castShiftEditId);
   toast('シフトを取消しました')
   closeSheet('cast-shift-edit')
   loadCal()
