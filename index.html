@@ -3682,6 +3682,21 @@ function closeSheet(id){
   el.style.display=''
   // 日付選択シートを閉じたらカレンダーの選択（オレンジ枠）も解除する
   if(id==='shift-req'){ selectedDate=null; if(typeof renderCal==='function') renderCal() }
+  // 店舗設定シートを閉じる時、未入力のまま放置されたブランク行（初期名のまま＋価格0）を削除。
+  // 「追加」押下で即INSERTする設計上、入力せず閉じると0円コースが予約選択肢に残るため。
+  // 名前か価格を変更した行は正規データとみなして残す。
+  if(id==='store'){ cleanupBlankStoreItems() }
+}
+// 初期値のまま（名前未変更かつ価格0）の残骸ブランク行をDBから掃除する
+async function cleanupBlankStoreItems(){
+  const BLANK_COURSE='新規コース', BLANK_EXT='延長30分', BLANK_OPT='新規オプション'
+  try{
+    const delCourseIds=(courses||[]).filter(c=>(c.duration?c.name===BLANK_EXT:c.name===BLANK_COURSE)&&(!c.price)).map(c=>c.id)
+    const delOptIds=(opts||[]).filter(o=>o.name===BLANK_OPT&&(!o.price)).map(o=>o.id)
+    if(delCourseIds.length) await withStoreFilter(sb.from('courses').delete()).in('id',delCourseIds)
+    if(delOptIds.length) await withStoreFilter(sb.from('options').delete()).in('id',delOptIds)
+    if((delCourseIds.length||delOptIds.length)&&typeof loadGlobalData==='function') await loadGlobalData()
+  }catch(e){}
 }
 
 // ── ログイン ──
@@ -4424,6 +4439,17 @@ async function setupInitialStoreData(storeId){
     {name:'Bルーム', color_bg:'#eff6ff', color_tx:'#1d4ed8', color_bd:'#bfdbfe', color_card:'#dbeafe', sort_order:2},
   ]
   await sb.from('rooms').insert(rooms.map(r=>({store_id:sid,...r})))
+  // 店舗設定の初期行（無ければ作る）。これが無いと設定保存の .update() が0行で無言失敗し、
+  // ログイン時の store_settings 読込も空になり金額計算がデフォルトでズレる。
+  const{data:existSS}=await sb.from('store_settings').select('store_id').eq('store_id',sid).maybeSingle()
+  if(!existSS){
+    await sb.from('store_settings').insert({
+      store_id:sid,
+      open_time:'11:00', close_time:'02:00',
+      shimei_free:0, shimei_net:1000, shimei_hon:2000,
+      card_surcharge_rate:0.1, card_fee_rate:0.06, card_fee_fixed:80
+    })
+  }
   console.log('[setup] Initial data created for store:', sid)
 }
 
@@ -4493,8 +4519,12 @@ async function initSaasApp(session){
   const{data:cs}=await sb.from('courses').select('*').eq('store_id',currentStoreId).order('price')
   const{data:op}=await sb.from('options').select('*').eq('store_id',currentStoreId).order('id')
   const{data:rm}=await sb.from('rooms').select('*').eq('store_id',currentStoreId).order('sort_order')
+  // 店舗設定は store_settings テーブルが正（保存先もこのテーブル）。
+  // 旧コードは stores.settings(JSON列)を読んでいたが空のため指名料金等がデフォルト値で
+  // 計算され金額がズレていた。PINパス(loadStoreDataForPin)と同じく store_settings を読む。
+  const{data:ss}=await sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
   courses=cs||[]; opts=op||[]; roomList=rm||[]
-  storeSettings=store?.settings||{}
+  storeSettings=ss||store?.settings||{}
   // アプリ画面へ
   startApp()
   // Stripe Checkout完了後のハンドリング
