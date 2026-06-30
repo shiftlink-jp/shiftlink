@@ -10127,6 +10127,10 @@ async function deleteCast(castId, name){
     // works・shifts・cast_fees・reservations は税務記録として保持する
     const r1=await withStoreFilter(sb.from('cast_discounts').delete()).eq('cast_id',castId)
     if(r1.error) throw new Error('discounts削除エラー: '+r1.error.message)
+    // homepage_shifts（ホームページ表示用シフト）はFK制約があり、残っていると casts 削除をブロックする。
+    // 会計記録ではない表示用データのため退店時に掃除する。テーブルが無い環境(SaaS等)のエラーは無視。
+    const rh=await sb.from('homepage_shifts').delete().eq('cast_id',castId)
+    if(rh.error && !/exist|find the table|schema cache|relation/i.test(rh.error.message||'')) throw new Error('homepage_shifts削除エラー: '+rh.error.message)
     const r2=await withStoreFilter(sb.from('casts').delete()).eq('id',castId)
     if(r2.error) throw new Error('cast削除エラー: '+r2.error.message)
     toast(name+'を退店処理しました')
