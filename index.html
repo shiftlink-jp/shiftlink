@@ -9187,15 +9187,31 @@ async function loadGanttModal(){
       const custNo=r.customer_no?'No.'+r.customer_no+' ':''
       const name=custNo+(r.customer_name||'').replace(/様\s*$/,'')+' 様'
       const course=r.course||''
-      const shimeiBadge=isPaidShimei(r.shimei_type)?`<div style="background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px;flex-shrink:0"><span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap">${escapeHtml(r.shimei_type)}</span></div>`:''
+      const shimeiBadge=isPaidShimei(r.shimei_type)?`<div style="background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px;flex-shrink:0;position:relative;z-index:3"><span style="font-size:10px;font-weight:600;color:#fff;white-space:nowrap">${escapeHtml(r.shimei_type)}</span></div>`:''
+      // 延長の視覚分割：コース分と延長分の境界に白線を引き、延長部分に斜線を重ねる
+      // 予約ブロックの子要素として重ねる（横型ガントと同じ構造。テキストはz-index:3で前面に残す）
+      const extCount=r.extension_count||0
+      let extOverlay=''
+      if(extCount>0&&coT){
+        const courseEndMin=timeStrToMin(coT)-extCount*getExtUnitMin()
+        const splitY=timeToY(minToTimeStr(courseEndMin))
+        if(splitY!==null&&splitY>rY&&splitY<rBotY){
+          const splitInner=splitY-(rY+2)
+          const extMin=extCount*getExtUnitMin()
+          const extLabel=(rBotY-splitY)>=12?`<span style="font-size:10px;color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap">延長 ${extMin}分</span>`:''
+          extOverlay=`<div style="position:absolute;left:0;right:0;top:${splitInner}px;bottom:0;background:repeating-linear-gradient(-45deg,rgba(255,179,71,.55),rgba(255,179,71,.55) 3px,rgba(244,121,15,.25) 3px,rgba(244,121,15,.25) 7px);z-index:1;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden">${extLabel}</div>
+          <div style="position:absolute;left:0;right:0;top:${splitInner}px;height:2px;background:#fff;z-index:2;pointer-events:none"></div>`
+        }
+      }
       layersHtml+=`<div style="position:absolute;left:${OFFSET+4}px;right:4px;top:${rY+2}px;height:${rH-4}px;background:${color};border-radius:10px;z-index:5;padding:8px 12px;box-sizing:border-box;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;gap:2px"
         onclick="closeGanttModal();setTimeout(()=>openReservation(${s.id},'${jsEsc(s.casts?.name||'')}','${jsEsc(ganttModalDate)}'),150)">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        ${extOverlay}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;position:relative;z-index:3">
           <span style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;font-family:'Inter','Noto Sans JP',sans-serif">${ci}${co?' - '+co:''}</span>
           ${shimeiBadge}
         </div>
-        <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(name)}</div>
-        ${course&&rH>40?`<div style="font-size:11px;color:rgba(255,255,255,.87);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(course)}</div>`:''}
+        <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${escapeHtml(name)}</div>
+        ${course&&rH>40?`<div style="font-size:11px;color:rgba(255,255,255,.87);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:3">${escapeHtml(course)}</div>`:''}
       </div>`
 
       // インターバルブロック
