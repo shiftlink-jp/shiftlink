@@ -7387,8 +7387,11 @@ function autoCalcRveCheckout(){
   if(!checkin||!course)return
   const mins=getCourseMinutes(course)
   if(!mins)return
+  // 延長チェック分（最大回数×延長1回の所要分）を退室時間に加算
+  const extChecked=[...document.querySelectorAll('.rve-ext:checked')].map(c=>parseInt(c.value))
+  const extCount=extChecked.length?Math.max(...extChecked):0
   const[h,m]=checkin.split(':').map(Number)
-  const total=h*60+m+mins
+  const total=h*60+m+mins+extCount*getExtUnitMin()
   const nh=Math.floor(total/60)%24
   const nm=total%60
   const el=document.getElementById('rve-checkout')
@@ -11445,11 +11448,11 @@ async function openRvEdit(rvId){
       </div>`:''}
       ${discItems?`<div><div class="fi-lbl">割引</div>${discItems}</div>`:''}
       <div>
-        <div class="fi-lbl">延長（30分単位）</div>
+        <div class="fi-lbl">延長（${getExtUnitMin()}分単位）</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:.4rem;align-items:center">
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             ${[1,2,3].map(n=>`<label style="display:flex;align-items:center;gap:.3rem;font-size:.88rem;padding:.25rem .5rem;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface2)">
-              <input type="checkbox" class="rve-ext" value="${n}" ${(r.extension_count||0)>=n?'checked':''} style="width:16px;height:16px;accent-color:var(--accent)"> ${n}回
+              <input type="checkbox" class="rve-ext" value="${n}" ${(r.extension_count||0)>=n?'checked':''} onchange="onRveExtChange(this)" style="width:16px;height:16px;accent-color:var(--accent)"> ${n}回
             </label>`).join('')}
           </div>
           <select class="fi" id="rve-pay-ext" style="width:80px;align-self:flex-start">
@@ -11464,6 +11467,18 @@ async function openRvEdit(rvId){
         <button class="btn btn-gray" onclick="backToShiftReservations()">← 一覧に戻る</button>
       </div>
     </div>`
+}
+
+// 延長チェック（1回/2回/3回）を「回数＝最大値」の意味に揃えてから退室時間を再計算する
+function onRveExtChange(el){
+  const n=parseInt(el.value)
+  const boxes=[...document.querySelectorAll('.rve-ext')]
+  if(el.checked){
+    boxes.forEach(b=>{ if(parseInt(b.value)<n) b.checked=true })
+  } else {
+    boxes.forEach(b=>{ if(parseInt(b.value)>n) b.checked=false })
+  }
+  autoCalcRveCheckout()
 }
 
 async function saveRvEdit(rvId){
