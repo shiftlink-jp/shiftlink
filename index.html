@@ -8897,9 +8897,10 @@ function renderStoreRoomList(){
   const rooms=roomList
   if(!rooms.length){el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">ルームが登録されていません</div>';return}
   el.innerHTML=rooms.map(r=>`
-    <div class="f2-itemrow2">
+    <div class="f2-itemrow2" style="flex-wrap:wrap">
       <input type="text" class="f2-name-input" value="${escapeHtml(r.name)}" id="rn-${r.id}">
       <button class="f2-trash" onclick="deleteStoreRoom(${r.id})" aria-label="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+      <input type="text" class="f2-name-input" style="flex:1 0 100%;margin-top:.35rem;font-size:.82rem" placeholder="住所（予約確認URLに表示されます）" value="${escapeHtml(r.address||'')}" id="ra-${r.id}">
     </div>`).join('')
 }
 async function reloadRoomList(){
@@ -10978,7 +10979,8 @@ async function saveAllStoreRooms(){
   for(const r of rows){
     const nm=r.querySelector('[id^="rn-"]'); if(!nm)continue
     const id=nm.id.slice(3); const name=nm.value.trim(); if(!name)continue
-    await withStoreFilter(sb.from('rooms').update({name})).eq('id',id)
+    const address=(document.getElementById('ra-'+id)?.value||'').trim()
+    await withStoreFilter(sb.from('rooms').update({name,address})).eq('id',id)
   }
   toast('ルームを保存しました'); await reloadRoomList(); renderStoreRoomList()
 }
@@ -11367,12 +11369,120 @@ async function openRvDetail(rvId, shiftId, castName){
       </div>`:''}
       ${memoHtml}
       ${visitHtml}
+      <button class="rvd-btn-url" onclick="copyRvUrl(${r.id})" style="width:100%;margin-top:.2rem;padding:.7rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff9e3d);color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
+        <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        お客様用 予約確認URLをコピー
+      </button>
       <div class="rvd-actions">
         <button class="rvd-btn-edit" onclick="openRvEdit(${r.id})">編集</button>
         <button class="rvd-btn-del" onclick="deleteRv(${r.id})">削除</button>
       </div>
     </div>`
   document.getElementById('rv-detail-overlay').classList.add('on')
+}
+
+// お客様用「予約確認URL」を生成してクリップボードにコピー
+//   ・トークン(推測不能なUUID)を発行し、その時点の予約内容をスナップショットとして保存
+//   ・URLは r.html?t=<token>。予約日を過ぎると自動で無効（Edge Function側で判定）
+async function copyRvUrl(rvId){
+  try{
+    const {data:r} = await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
+    if(!r){toast('予約データが見つかりません');return}
+    // 予約日・セラピスト・ルームは shift から取得
+    const shId = r.shift_id || currentRvShiftId
+    let shift=null
+    if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,room,cast_id').eq('id',shId)).maybeSingle(); shift=s }
+    let castName = currentRvCastName || ''
+    if(!castName && shift?.cast_id){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',shift.cast_id)).maybeSingle(); castName=c?.name||'' }
+    // ルーム住所
+    let address='', roomName=shift?.room||''
+    if(roomName){ const rm=(roomList||[]).find(x=>x.name===roomName); address=rm?.address||'' }
+
+    // 金額計算（openPayConfirm と同じ・カード手数料込み）
+    const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
+    const {data:optList} = await withStoreFilter(sb.from('options').select('*'))
+    const {data:discListAll} = await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
+    let pj={}; try{pj=JSON.parse(r.payment||'{}')}catch(e){}
+    const courseObj=(courseList||[]).find(c=>c.name===r.course)
+    const coursePrice=courseObj?.price||0
+    const shimeiPrice=getShimeiPrice(r.shimei_type)
+    const optNames=r.options?r.options.split(',').filter(Boolean):[]
+    const extCount=r.extension_count||0
+    const extCourseObj=(courseList||[]).find(c=>c.name&&c.name.includes('延長'))
+    const extUnitPrice=extCourseObj?.price||6000
+    const extTotal=extCount*extUnitPrice
+    const payCourse=pj.course||'現金', payShimei=pj.shimei||'現金', payOpt=pj.option||'現金', payExt=pj.ext||'現金'
+    const optPayMap=pj.optPay||{}
+    const hasOptPay=Object.keys(optPayMap).length>0
+    const optPayOf=n=>hasOptPay?(optPayMap[n]||payOpt):payOpt
+    let optCardAmt=0, optBaseTotal=0
+    optNames.forEach(n=>{const o=(optList||[]).find(x=>x.name===n);const p=o?.price||0;optBaseTotal+=p;if(optPayOf(n)==='カード')optCardAmt+=p})
+    const cardAmt=(payCourse==='カード'?coursePrice:0)+(payShimei==='カード'?shimeiPrice:0)+optCardAmt+(payExt==='カード'?extTotal:0)
+    const baseTotal=coursePrice+shimeiPrice+optBaseTotal+extTotal
+    const discs=r.discount?r.discount.split(',').filter(Boolean):[]
+    const discTotal=discs.reduce((s,n)=>{const d=(discListAll||[]).find(x=>x.name===n);return s+(d?.amount||0)},0)
+    const surcharge=calcCardSurcharge(cardAmt)
+    const cardPay=cardAmt+surcharge
+    const cashPay=baseTotal-cardAmt-discTotal
+    const totalPay=cashPay+cardPay
+
+    // 明細（お客様向け表示用）
+    const items=[]
+    if(shimeiPrice) items.push({name:'指名料'+(r.shimei_type&&r.shimei_type!=='なし'?'（'+r.shimei_type+'）':''),amount:shimeiPrice,pay:payShimei})
+    if(coursePrice) items.push({name:r.course||'コース',amount:coursePrice,pay:payCourse})
+    optNames.forEach(n=>{const o=(optList||[]).find(x=>x.name===n);items.push({name:n,amount:o?.price||0,pay:optPayOf(n)})})
+    if(extTotal) items.push({name:'延長×'+extCount,amount:extTotal,pay:payExt})
+    if(discTotal) items.push({name:'割引',amount:-discTotal,pay:''})
+
+    // 予約日ラベル（曜日付き）
+    const wd=['日','月','火','水','木','金','土']
+    const dstr=shift?.date||''
+    let dateLabel=dstr
+    if(dstr){const d=new Date(dstr+'T00:00:00');if(!isNaN(d))dateLabel=`${d.getMonth()+1}月${d.getDate()}日(${wd[d.getDay()]})`}
+
+    const snapshot={
+      store: storeSettings.store_name||storeSettings.name||'',
+      date: dstr,
+      dateLabel,
+      checkin: r.checkin_time?r.checkin_time.slice(0,5):'',
+      cast: castName,
+      customerName: r.customer_name||'',
+      shimei: r.shimei_type||'',
+      course: r.course||'',
+      items,
+      total: (cashPay>0?cashPay:0)+(cardPay>0?cardPay:0),
+      cash: cashPay>0?cashPay:0,
+      card: cardPay>0?cardPay:0,
+      address,
+      roomName,
+      note: r.note||''
+    }
+
+    // トークン（なければ発行）
+    let token=r.public_token
+    if(!token){
+      if(crypto.randomUUID){ token=crypto.randomUUID() }
+      else if(crypto.getRandomValues){
+        // RFC4122 v4（randomUUID非対応環境向けフォールバック）
+        const b=crypto.getRandomValues(new Uint8Array(16))
+        b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80
+        const h=[...b].map(x=>x.toString(16).padStart(2,'0'))
+        token=`${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
+      } else { toast('この環境ではURLを発行できません');return }
+    }
+    const {error}=await withStoreFilter(sb.from('reservations').update({public_token:token,public_snapshot:snapshot})).eq('id',rvId)
+    if(error){toast('URL作成に失敗しました: '+error.message);return}
+
+    const url=`${location.origin}/r.html?t=${token}`
+    let copied=false
+    try{ await navigator.clipboard.writeText(url); copied=true }catch(e){}
+    if(!copied){
+      const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select()
+      try{document.execCommand('copy');copied=true}catch(e){}
+      document.body.removeChild(ta)
+    }
+    toast(copied?'予約確認URLをコピーしました！LINE等に貼り付けてください':'コピー失敗: '+url)
+  }catch(e){ toast('エラー: '+(e?.message||e)) }
 }
 
 function backToShiftReservations(){
