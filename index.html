@@ -11463,6 +11463,7 @@ async function copyRvUrl(rvId){
       date: dstr,
       dateLabel,
       checkin: r.checkin_time?r.checkin_time.slice(0,5):'',
+      checkout: r.checkout_time?r.checkout_time.slice(0,5):'',
       cast: castName,
       customerName: r.customer_name||'',
       shimei: r.shimei_type||'',
