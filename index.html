@@ -2929,6 +2929,13 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <button class="f2-savebtn-sm" onclick="saveCardFeeSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
+    <!-- 予約確認URLの挨拶文 -->
+    <div class="f2-card">
+      <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="f2-card-title">予約確認URLの挨拶文</span></div>
+      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">お客様に送る予約確認URLの先頭に表示される文章です（店名やお礼など）。</div>
+      <textarea id="st-rv-greeting" rows="4" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="例）KYOUKANO NAGOYAです。&#10;この度はご予約いただき誠にありがとうございます。&#10;当日お会いできることを楽しみにしております。"></textarea>
+      <button class="f2-savebtn-sm" onclick="saveRvGreeting()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
+    </div>
     <!-- ルーム設定 -->
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg></span><span class="f2-card-title">ルーム</span></div>
@@ -8939,6 +8946,13 @@ async function saveBusinessHours(){
   storeSettings.close_time=closeT
   toast('営業時間を保存しました')
 }
+async function saveRvGreeting(){
+  const greeting=(document.getElementById('st-rv-greeting')?.value||'').trim()
+  const{error}=await withStoreFilter(sb.from('store_settings').update({public_greeting:greeting}))
+  if(error){toast('保存失敗: '+error.message);return}
+  storeSettings.public_greeting=greeting
+  toast('挨拶文を保存しました')
+}
 async function saveCardFeeSettings(){
   const surcharge=parseFloat(document.getElementById('st-card-surcharge')?.value)
   const feeRate=parseFloat(document.getElementById('st-card-fee-rate')?.value)
@@ -10852,6 +10866,9 @@ async function openStoreSettings(){
     if(scEl) scEl.value=ss.card_surcharge_rate!=null?Math.round(ss.card_surcharge_rate*1000)/10:10
     if(cfrEl) cfrEl.value=ss.card_fee_rate!=null?Math.round(ss.card_fee_rate*1000)/10:6
     if(cffEl) cffEl.value=ss.card_fee_fixed!=null?ss.card_fee_fixed:80
+    // 予約確認URLの挨拶文
+    const grEl=document.getElementById('st-rv-greeting')
+    if(grEl) grEl.value=ss.public_greeting||''
   }
   document.getElementById('store-overlay').classList.add('on')
   // 現在の店舗PINを表示（端末にログイン中のオーナーのPIN）
@@ -11442,6 +11459,7 @@ async function copyRvUrl(rvId){
 
     const snapshot={
       store: storeSettings.store_name||storeSettings.name||'',
+      greeting: storeSettings.public_greeting||'',
       date: dstr,
       dateLabel,
       checkin: r.checkin_time?r.checkin_time.slice(0,5):'',
