@@ -22,7 +22,7 @@
     display:inline-block;padding:.2rem .7rem;border-radius:999px;font-weight:700}
   .card{background:var(--card);border-radius:16px;padding:1rem 1.1rem;margin-top:1rem;
     box-shadow:0 2px 10px rgba(0,0,0,.04)}
-  .sec{font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.05em;
+  .sec{font-size:.72rem;font-weight:700;color:var(--ink);letter-spacing:.05em;
     margin:0 0 .5rem;text-transform:none}
   .greeting{font-size:.92rem;line-height:1.8;color:#444;white-space:normal}
   .row{display:flex;justify-content:space-between;align-items:baseline;
@@ -36,19 +36,19 @@
   .fee .pay{font-size:.66rem;color:var(--sub);border:1px solid var(--line);
     border-radius:999px;padding:.05rem .5rem;margin-left:.4rem}
   .fee .amt{font-weight:700;margin-left:auto;padding-left:.6rem}
-  .total-box{background:linear-gradient(135deg,#fff7ee,#fff);border:1.5px solid #ffe0bd;
+  .total-box{background:#f7f7f7;border:1px solid var(--line);
     border-radius:14px;padding:.9rem 1.1rem;margin-top:.8rem;display:flex;
     justify-content:space-between;align-items:center}
   .total-box .l{font-size:.85rem;color:var(--sub);font-weight:700}
-  .total-box .v{font-size:1.5rem;font-weight:800;color:var(--accent)}
+  .total-box .v{font-size:1.5rem;font-weight:800;color:var(--ink)}
   .split{display:flex;gap:.6rem;margin-top:.6rem}
   .split .b{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;
     padding:.6rem;text-align:center}
   .split .b .l{font-size:.72rem;color:var(--sub)}
   .split .b .v{font-size:1.05rem;font-weight:800;margin-top:.1rem}
   .addr{font-size:.9rem;font-weight:700}
-  .maplink{display:inline-block;margin-top:.5rem;font-size:.8rem;color:var(--accent);
-    font-weight:700;text-decoration:none;border:1.5px solid var(--accent);
+  .maplink{display:inline-block;margin-top:.5rem;font-size:.8rem;color:var(--ink);
+    font-weight:700;text-decoration:none;border:1.5px solid var(--ink);
     border-radius:999px;padding:.35rem .9rem}
   .note{font-size:.85rem;white-space:pre-wrap;color:#555}
   .foot{text-align:center;color:var(--sub);font-size:.72rem;margin-top:1.5rem;line-height:1.7}
@@ -114,13 +114,13 @@
         <div class="wrap" style="padding:0">
           ${s.store?`<div class="store">${esc(s.store)}</div>`:''}
           <div class="ttl">ご予約内容の確認</div>
-          ${s.customerName?`<div class="cust">${esc(s.customerName)}</div>`:''}
         </div>
       </div>
       <div class="wrap">
         ${s.greeting?`<div class="card greeting">${esc(s.greeting).replace(/\n/g,'<br>')}</div>`:''}
         <div class="card">
           <div class="sec">ご予約</div>
+          ${s.customerName?row('ご予約者様', s.customerName):''}
           ${row('ご予約日', s.dateLabel || s.date || '')}
           ${s.checkin?row('ご案内時間', s.checkin, true):''}
           ${s.cast?row('担当セラピスト', s.cast):''}
