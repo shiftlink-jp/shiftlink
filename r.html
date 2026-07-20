@@ -42,11 +42,10 @@
   .fee .pay{font-size:.66rem;color:var(--sub);border:1px solid var(--line);
     border-radius:999px;padding:.05rem 0;text-align:center;min-width:3.4em}
   .fee .amt{font-weight:700;text-align:right}
-  .total-box{background:#f7f7f7;border:1px solid var(--line);
-    border-radius:14px;padding:.9rem 1.1rem;margin-top:.8rem;display:flex;
-    justify-content:space-between;align-items:center}
-  .total-box .l{font-size:.85rem;color:var(--sub);font-weight:700}
-  .total-box .v{font-size:1.5rem;font-weight:800;color:var(--ink)}
+  .total-row{display:flex;justify-content:space-between;align-items:center;
+    margin-top:.5rem;padding-top:.7rem;border-top:2px solid var(--line)}
+  .total-row .l{font-size:.92rem;font-weight:700;color:var(--ink)}
+  .total-row .v{font-size:1.35rem;font-weight:800;color:var(--ink)}
   .split{display:flex;gap:.6rem;margin-top:.6rem}
   .split .b{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;
     padding:.6rem;text-align:center}
@@ -154,7 +153,7 @@
         ${items.length?`<div class="card">
           <div class="sec">料金</div>
           ${feeRows}
-          <div class="total-box"><div class="l">合計</div><div class="v">${yen(s.total)}</div></div>
+          <div class="total-row"><div class="l">合計</div><div class="v">${yen(s.total)}</div></div>
           ${hasSplit?`<div class="split">
             <div class="b"><div class="l">現金</div><div class="v">${yen(s.cash)}</div></div>
             <div class="b"><div class="l">カード</div><div class="v">${yen(s.card)}</div></div>
