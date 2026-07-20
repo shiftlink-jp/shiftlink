@@ -31,6 +31,12 @@ function todayJST(): string {
   return now.toISOString().slice(0, 10)
 }
 
+// YYYY-MM-DD に n 日加算
+function addDays(ymd: string, n: number): string {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -63,8 +69,9 @@ Deno.serve(async (req) => {
     const snap = data.public_snapshot as Record<string, unknown>
 
     // 予約日を過ぎていたら無効
+    // 予約日の翌日いっぱいまで有効（深夜0時台の予約でも来店時に表示できるよう1日の猶予）
     const date = String(snap.date || '')
-    if (date && date < todayJST()) return json({ error: 'expired' }, 410)
+    if (date && todayJST() > addDays(date, 1)) return json({ error: 'expired' }, 410)
 
     return json({ ok: true, snapshot: snap })
   } catch (_e) {
