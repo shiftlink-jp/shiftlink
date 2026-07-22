@@ -1899,10 +1899,7 @@ tr:last-child td{border-bottom:none}
 #p-shift .cs2-day-dot{width:5px;height:5px;border-radius:50%;margin-top:4px;background:transparent}
 #p-shift .cs2-day-time{font-family:'Inter','Noto Sans JP',sans-serif;font-size:9px;font-weight:700;line-height:1;margin-top:3px;white-space:nowrap;border-radius:999px;padding:2px 5px;color:#fff}
 #p-shift .cs2-day-badge{font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:700;line-height:1;border-radius:999px;padding:2px 5px;margin-top:3px;background:#EAF2FD;color:#2E6FD6;white-space:nowrap}
-#p-shift .cs2-day-cell.today{background:#FF9124}
-#p-shift .cs2-day-cell.today .cs2-day-num{color:#fff}
-#p-shift .cs2-day-cell.today .cs2-day-dot{background:#fff!important}
-#p-shift .cs2-day-cell.today .cs2-day-badge{background:#fff;color:#FF9124}
+#p-shift .cs2-day-cell.today .cs2-day-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF9124;color:#fff!important;font-weight:700}
 #p-shift .cs2-cal-legend{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:.7rem;font-size:11px;color:#A89B88}
 #p-shift .cs2-leg{display:flex;align-items:center;gap:.25rem}
 #p-shift .cs2-leg-dot{width:5px;height:5px;border-radius:50%;display:inline-block}
@@ -5323,7 +5320,7 @@ function renderCal(){
     if(s&&s.status!=='rejected'&&s.start_time){
       // 申請中=青 / 承認済=オレンジ のバッジ。当日セルは背景がオレンジのため白地+オレンジ文字にする
       const stColor=s.status==='requested'?'#1D4ED8':'#FF9124'
-      const badgeStyle=isToday?'background:#fff;color:#FF9124':`background:${stColor};color:#fff`
+      const badgeStyle=`background:${stColor};color:#fff`
       markHtml=`<span class="cs2-day-time" style="${badgeStyle}">${hm(s.start_time)}-${hm(s.end_time)}</span>`
     }
     html+=`<td><div class="cs2-day-cell${isToday?' today':''}" onclick="selectDay('${ds}')" style="opacity:${opacity};${selStyle}" title="${rvCount?('予約'+rvCount+'件'):''}"><span class="cs2-day-num" style="color:${isToday?'#fff':numColor}">${d}</span>${markHtml}${rvBadge}</div></td>`
