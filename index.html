@@ -5307,9 +5307,9 @@ function renderCal(){
     const isToday=ds===td
     const isSelected=ds===selectedDate
     const numColor=isSelected?'#FF9124':dow===0?'#D9534F':dow===6?'#1D4ED8':'#211C16'
-    const opacity=isPast?'0.35':'1'
+    const opacity='1'
     let dotColor='transparent'
-    if(!isPast&&s){
+    if(s){
       if(s.status==='requested')dotColor='#1D4ED8'
       else if(s.status==='approved')dotColor='#FF9124'
       else dotColor='#D9534F'
