@@ -1720,6 +1720,12 @@ tr:last-child td{border-bottom:none}
 #store-overlay .f2-itemrow2 .f2-num-input{background:#fff;border:1.5px solid #EDE9E1;border-radius:9px;height:42px;padding:0 10px;font-size:13px;font-weight:600;color:#211C16;text-align:right;font-family:'Inter','Noto Sans JP',sans-serif;outline:none;-webkit-appearance:none;-moz-appearance:textfield;appearance:none}
 #store-overlay .f2-itemrow2 .f2-num-input::-webkit-outer-spin-button,#store-overlay .f2-itemrow2 .f2-num-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #store-overlay .f2-addrow-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:42px;background:#fff;border:1.5px solid #EDE9E1;border-radius:9px;font-size:13px;font-weight:600;color:#7A6E5E;cursor:pointer;font-family:inherit;margin-top:4px}
+/* Pencil: ルーム1件分（名前・住所・駐車場）をひとまとめのカードで区切る */
+#store-room-list .f2-room-card{background:#FAF8F4;border:1.5px solid #EDE9E1;border-radius:12px;padding:10px;margin-bottom:10px}
+#store-room-list .f2-room-card:last-child{margin-bottom:0}
+#store-room-list .f2-room-card .f2-itemrow2{padding:0 0 6px}
+#store-room-list .f2-room-card .f2-itemrow2:last-child{padding-bottom:0}
+#store-room-list .f2-room-sub-lbl{font-size:11px;font-weight:600;color:#A89B88;margin:2px 2px 3px}
 #store-overlay .f2-addrow-btn svg{width:14px;height:14px;flex-shrink:0}
 /* Pencil: 営業時間（開店/閉店 縦積みドロップダウン2列） */
 #store-overlay .f2-hours-row{display:flex;align-items:flex-end;gap:10px}
@@ -8901,11 +8907,19 @@ function renderStoreRoomList(){
   const rooms=roomList
   if(!rooms.length){el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">ルームが登録されていません</div>';return}
   el.innerHTML=rooms.map(r=>`
-    <div class="f2-itemrow2" style="flex-wrap:wrap">
-      <input type="text" class="f2-name-input" value="${escapeHtml(r.name)}" id="rn-${r.id}">
-      <button class="f2-trash" onclick="deleteStoreRoom(${r.id})" aria-label="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
-      <input type="text" class="f2-name-input" style="flex:1 0 100%;margin-top:.35rem;font-size:.82rem" placeholder="住所（予約確認URLに表示されます）" value="${escapeHtml(r.address||'')}" id="ra-${r.id}">
-      <input type="text" class="f2-name-input" style="flex:1 0 100%;margin-top:.35rem;font-size:.82rem" placeholder="最寄りの駐車場（予約確認URLに表示されます）" value="${escapeHtml(r.parking||'')}" id="rpk-${r.id}">
+    <div class="f2-room-card">
+      <div class="f2-itemrow2">
+        <input type="text" class="f2-name-input" placeholder="ルーム名" value="${escapeHtml(r.name)}" id="rn-${r.id}">
+        <button class="f2-trash" onclick="deleteStoreRoom(${r.id})" aria-label="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+      </div>
+      <div class="f2-room-sub-lbl">住所</div>
+      <div class="f2-itemrow2">
+        <input type="text" class="f2-name-input" style="font-size:.82rem" placeholder="住所（予約確認URLに表示されます）" value="${escapeHtml(r.address||'')}" id="ra-${r.id}">
+      </div>
+      <div class="f2-room-sub-lbl">最寄りの駐車場</div>
+      <div class="f2-itemrow2">
+        <input type="text" class="f2-name-input" style="font-size:.82rem" placeholder="最寄りの駐車場（予約確認URLに表示されます）" value="${escapeHtml(r.parking||'')}" id="rpk-${r.id}">
+      </div>
     </div>`).join('')
 }
 async function reloadRoomList(){
