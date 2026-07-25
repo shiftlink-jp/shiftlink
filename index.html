@@ -8905,6 +8905,7 @@ function renderStoreRoomList(){
       <input type="text" class="f2-name-input" value="${escapeHtml(r.name)}" id="rn-${r.id}">
       <button class="f2-trash" onclick="deleteStoreRoom(${r.id})" aria-label="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
       <input type="text" class="f2-name-input" style="flex:1 0 100%;margin-top:.35rem;font-size:.82rem" placeholder="住所（予約確認URLに表示されます）" value="${escapeHtml(r.address||'')}" id="ra-${r.id}">
+      <input type="text" class="f2-name-input" style="flex:1 0 100%;margin-top:.35rem;font-size:.82rem" placeholder="最寄りの駐車場（予約確認URLに表示されます）" value="${escapeHtml(r.parking||'')}" id="rpk-${r.id}">
     </div>`).join('')
 }
 async function reloadRoomList(){
@@ -10994,7 +10995,8 @@ async function saveAllStoreRooms(){
     const nm=r.querySelector('[id^="rn-"]'); if(!nm)continue
     const id=nm.id.slice(3); const name=nm.value.trim(); if(!name)continue
     const address=(document.getElementById('ra-'+id)?.value||'').trim()
-    await withStoreFilter(sb.from('rooms').update({name,address})).eq('id',id)
+    const parking=(document.getElementById('rpk-'+id)?.value||'').trim()
+    await withStoreFilter(sb.from('rooms').update({name,address,parking})).eq('id',id)
   }
   toast('ルームを保存しました'); await reloadRoomList(); renderStoreRoomList()
 }
@@ -11408,9 +11410,9 @@ async function copyRvUrl(rvId){
     if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,room,cast_id').eq('id',shId)).maybeSingle(); shift=s }
     let castName = currentRvCastName || ''
     if(!castName && shift?.cast_id){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',shift.cast_id)).maybeSingle(); castName=c?.name||'' }
-    // ルーム住所
-    let address='', roomName=shift?.room||''
-    if(roomName){ const rm=(roomList||[]).find(x=>x.name===roomName); address=rm?.address||'' }
+    // ルーム住所・駐車場
+    let address='', parking='', roomName=shift?.room||''
+    if(roomName){ const rm=(roomList||[]).find(x=>x.name===roomName); address=rm?.address||''; parking=rm?.parking||'' }
 
     // 金額計算（openPayConfirm と同じ・カード手数料込み）
     const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
@@ -11470,6 +11472,7 @@ async function copyRvUrl(rvId){
       cash: cashPay>0?cashPay:0,
       card: cardPay>0?cardPay:0,
       address,
+      parking,
       roomName,
       note: r.note||''
     }

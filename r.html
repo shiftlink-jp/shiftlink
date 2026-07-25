@@ -165,6 +165,7 @@
           ${s.roomName?`<div class="row"><span class="lbl">ルーム</span><span class="val">${esc(s.roomName)}</span></div>`:''}
           ${s.address?`<div style="padding-top:.5rem"><div class="addr">${esc(s.address)}</div>
             <a class="maplink" href="${esc(mapUrl)}" target="_blank" rel="noopener">地図で見る</a></div>`:''}
+          ${s.parking?`<div class="row" style="padding-top:.5rem"><span class="lbl">最寄りの駐車場</span><span class="val">${esc(s.parking)}</span></div>`:''}
         </div>`:''}
 
         ${s.note?`<div class="card"><div class="sec">ご案内</div><div class="note">${esc(s.note)}</div></div>`:''}
