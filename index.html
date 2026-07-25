@@ -11461,7 +11461,7 @@ async function copyRvUrl(rvId){
       dateLabel,
       checkin: r.checkin_time?r.checkin_time.slice(0,5):'',
       checkout: r.checkout_time?r.checkout_time.slice(0,5):'',
-      cast: castName,
+      cast: (r.shimei_type&&r.shimei_type!=='フリー')?castName:'',
       customerName: r.customer_name||'',
       shimei: r.shimei_type||'',
       course: r.course||'',
