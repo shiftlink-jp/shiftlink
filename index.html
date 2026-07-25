@@ -13064,7 +13064,13 @@ async function openExpenseSheet(type){
   ov.classList.remove('is-fixed','is-var');ov.classList.add(type==='fixed'?'is-fixed':'is-var')
   document.getElementById('fxe-title').textContent=type==='fixed'?'固定費の設定':'変動費の設定'
   fxeCardFee=(monthlyCachedData&&monthlyCachedData.tot)?(monthlyCachedData.tot.cardFee||0):0
-  const {data}=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
+  let data
+  if(monthlyCachedData&&monthlyCachedData.sd){
+    data=monthlyCachedData.sd
+  }else{
+    const res=await withStoreFilter(sb.from('monthly_sales').select('*')).eq('month',monthlyMonth).maybeSingle()
+    data=res.data
+  }
   const cats=fxeItemsToCats(getExpenseItems(data||{}))
   fxeState=cats.filter(c=>c.type===type)
   fxeOther=cats.filter(c=>c.type!==type)
