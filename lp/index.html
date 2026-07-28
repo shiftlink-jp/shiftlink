@@ -697,6 +697,34 @@
   </div>
 
   <script>
+    // 保険：素早いスクロール（フリック等）で判定エリアを一瞬で通過してしまい
+    // 表示されないまま残ってしまう要素を救済する（全フェードイン共通の仕組み）
+    var pendingReveals = [];
+    function watchPendingReveal(el, onReveal) {
+      pendingReveals.push({ el: el, onReveal: onReveal });
+    }
+    function clearPendingReveal(el) {
+      pendingReveals = pendingReveals.filter(function (p) { return p.el !== el; });
+    }
+    var safetyTicking = false;
+    function safetyCheck() {
+      safetyTicking = false;
+      if (!pendingReveals.length) return;
+      pendingReveals = pendingReveals.filter(function (p) {
+        if (p.el.getBoundingClientRect().top < window.innerHeight) {
+          p.onReveal();
+          return false;
+        }
+        return true;
+      });
+    }
+    window.addEventListener('scroll', function () {
+      if (!safetyTicking) {
+        safetyTicking = true;
+        requestAnimationFrame(safetyCheck);
+      }
+    }, { passive: true });
+
     // 汎用フェードイン
     var targets = document.querySelectorAll('.reveal:not(.hero)');
     if ('IntersectionObserver' in window) {
@@ -704,11 +732,15 @@
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add('show');
+            clearPendingReveal(entry.target);
             io.unobserve(entry.target);
           }
         });
       }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
-      targets.forEach(function (el) { io.observe(el); });
+      targets.forEach(function (el) {
+        io.observe(el);
+        watchPendingReveal(el, function () { el.classList.add('show'); });
+      });
     } else {
       targets.forEach(function (el) { el.classList.add('show'); });
     }
@@ -717,25 +749,49 @@
     function staggerReveal(containerId, selector, delayStep, threshold, rootMargin) {
       var container = document.getElementById(containerId);
       if (!container || !('IntersectionObserver' in window)) return;
+      var revealItems = function () {
+        var items = container.querySelectorAll(selector);
+        items.forEach(function (el, i) {
+          setTimeout(function () { el.classList.add('show'); }, delayStep * i);
+        });
+      };
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            var items = container.querySelectorAll(selector);
-            items.forEach(function (el, i) {
-              setTimeout(function () { el.classList.add('show'); }, delayStep * i);
-            });
+            revealItems();
+            clearPendingReveal(container);
             io.unobserve(entry.target);
           }
         });
       }, { threshold: threshold || 0.25, rootMargin: rootMargin || '0px' });
       io.observe(container);
+      watchPendingReveal(container, revealItems);
     }
 
     // 01.5: 900時間の内訳（積み上げ式に順番表示）
     staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0.2);
 
-    // 02: 問題リスト（左右交互スライドイン）
-    staggerReveal('problemList', '.problem-item', 260, 0, '-40% 0px -40% 0px');
+    // 02: 問題リスト（各項目が画面中央あたりに来たら個別にスライドイン）
+    (function () {
+      var items = document.querySelectorAll('#problemList .problem-item');
+      if (!items.length || !('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('show'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+            clearPendingReveal(entry.target);
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0, rootMargin: '-35% 0px -35% 0px' });
+      items.forEach(function (el) {
+        io.observe(el);
+        watchPendingReveal(el, function () { el.classList.add('show'); });
+      });
+    })();
 
     // 03: 一気通貫フロー（アイコン→矢印の順で）
     staggerReveal('flowRow', '.flow-box, .flow-arrow', 160, 0.3);
