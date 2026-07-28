@@ -168,14 +168,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="gate" class="gate">
-    <h1>🔒 LPアナリティクス</h1>
-    <input id="pw" type="password" placeholder="パスワード" autocomplete="off">
-    <button onclick="unlock()">表示する</button>
-    <div class="err" id="err"></div>
-  </div>
-
-  <div id="dash" class="hidden">
+  <div id="dash">
     <h1>📊 LPアナリティクス</h1>
     <div class="range" id="rangeButtons"></div>
     <div id="loading" class="loading">読み込み中…</div>
@@ -213,18 +206,6 @@
   var FN_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/lp-analytics-summary';
   var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
   var currentDays = 7;
-  var password = '';
-
-  function unlock() {
-    var pw = document.getElementById('pw').value.trim();
-    if (!pw) return;
-    password = pw;
-    load(currentDays, true);
-  }
-
-  document.getElementById('pw').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') unlock();
-  });
 
   function renderRangeButtons() {
     var opts = [{ d: 7, label: '7日間' }, { d: 30, label: '30日間' }, { d: 90, label: '90日間' }];
@@ -244,10 +225,9 @@
     return m > 0 ? (m + '分' + s + '秒') : (s + '秒');
   }
 
-  function load(days, isFirst) {
+  function load(days) {
     document.getElementById('loading').classList.remove('hidden');
     document.getElementById('content').classList.add('hidden');
-    document.getElementById('err').textContent = '';
 
     fetch(FN_URL, {
       method: 'POST',
@@ -256,34 +236,25 @@
         'Authorization': 'Bearer ' + ANON,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ password: password, days: days })
+      body: JSON.stringify({ days: days })
     })
       .then(function (res) {
-        if (res.status === 401) throw new Error('unauthorized');
         if (!res.ok) throw new Error('server');
         return res.json();
       })
       .then(function (data) {
-        if (isFirst) {
-          document.getElementById('gate').classList.add('hidden');
-          document.getElementById('dash').classList.remove('hidden');
-          renderRangeButtons();
-        } else {
-          renderRangeButtons();
-        }
+        renderRangeButtons();
         render(data);
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('content').classList.remove('hidden');
       })
-      .catch(function (e) {
-        if (e.message === 'unauthorized') {
-          document.getElementById('err').textContent = 'パスワードが違います';
-          document.getElementById('loading').classList.add('hidden');
-        } else {
-          document.getElementById('loading').textContent = '読み込みに失敗しました。時間をおいて再度お試しください。';
-        }
+      .catch(function () {
+        document.getElementById('loading').textContent = '読み込みに失敗しました。時間をおいて再度お試しください。';
       });
   }
+
+  renderRangeButtons();
+  load(currentDays);
 
   function render(data) {
     document.getElementById('v-visitors').textContent = data.visitors;
