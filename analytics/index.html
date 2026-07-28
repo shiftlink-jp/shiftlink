@@ -141,6 +141,12 @@
     color: var(--ink);
   }
   .cta-row:last-child { border-bottom: none; }
+  .funnel-row { padding: 10px 2px; border-bottom: 1px solid rgba(140, 200, 255, 0.1); }
+  .funnel-row:last-child { border-bottom: none; }
+  .funnel-row .funnel-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--ink-soft); }
+  .funnel-row .funnel-top span:last-child { color: var(--ink); font-weight: 700; }
+  .funnel-track { background: rgba(140, 200, 255, 0.08); border-radius: 6px; height: 8px; overflow: hidden; }
+  .funnel-fill { height: 100%; background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3)); border-radius: 6px; box-shadow: 0 0 10px rgba(0, 255, 200, 0.35); }
   .range { display: flex; gap: 10px; margin-bottom: 22px; }
   .range button {
     background: var(--panel);
@@ -180,10 +186,20 @@
         <div class="card"><div class="label">CTAクリック数</div><div class="value" id="v-clicks">-</div></div>
         <div class="card"><div class="label">クリック率</div><div class="value" id="v-rate">-<span class="unit">%</span></div></div>
         <div class="card"><div class="label">平均滞在時間</div><div class="value" id="v-dwell">-</div></div>
+        <div class="card"><div class="label">申し込み完了数</div><div class="value" id="v-conv">-</div></div>
+        <div class="card"><div class="label">申し込み完了率</div><div class="value" id="v-convrate">-<span class="unit">%</span></div></div>
       </div>
       <div class="section">
         <h2>日別 訪問者数</h2>
         <div class="bars" id="bars"></div>
+      </div>
+      <div class="section">
+        <h2>セクション到達率（ファネル）</h2>
+        <div id="funnelList"></div>
+      </div>
+      <div class="section">
+        <h2>離脱したセクション</h2>
+        <div id="exitList"></div>
       </div>
       <div class="section">
         <h2>CTAボタン別クリック内訳</h2>
@@ -275,6 +291,8 @@
     document.getElementById('v-clicks').textContent = data.ctaClicks;
     document.getElementById('v-rate').innerHTML = data.clickRate + '<span class="unit">%</span>';
     document.getElementById('v-dwell').textContent = formatDwell(data.avgDwellSeconds);
+    document.getElementById('v-conv').textContent = data.conversions;
+    document.getElementById('v-convrate').innerHTML = data.conversionRate + '<span class="unit">%</span>';
 
     var bars = document.getElementById('bars');
     bars.innerHTML = '';
@@ -305,6 +323,38 @@
         row.className = 'cta-row';
         row.innerHTML = '<span>' + e[0].replace(/</g, '&lt;') + '</span><span>' + e[1] + '回</span>';
         ctaList.appendChild(row);
+      });
+    }
+
+    var funnelList = document.getElementById('funnelList');
+    funnelList.innerHTML = '';
+    var funnel = data.funnel || [];
+    if (!funnel.length) {
+      funnelList.innerHTML = '<div class="empty">まだデータがありません</div>';
+    } else {
+      var funnelMax = Math.max.apply(null, funnel.map(function (f) { return f.sessions; }).concat([1]));
+      funnel.forEach(function (f) {
+        var row = document.createElement('div');
+        row.className = 'funnel-row';
+        var pct = Math.round((f.sessions / funnelMax) * 100);
+        row.innerHTML =
+          '<div class="funnel-top"><span>' + f.section.replace(/</g, '&lt;') + '</span><span>' + f.sessions + '人</span></div>' +
+          '<div class="funnel-track"><div class="funnel-fill" style="width:' + Math.max(2, pct) + '%"></div></div>';
+        funnelList.appendChild(row);
+      });
+    }
+
+    var exitList = document.getElementById('exitList');
+    exitList.innerHTML = '';
+    var exits = Object.entries(data.exitBreakdown || {}).sort(function (a, b) { return b[1] - a[1]; });
+    if (!exits.length) {
+      exitList.innerHTML = '<div class="empty">まだデータがありません</div>';
+    } else {
+      exits.forEach(function (e) {
+        var row = document.createElement('div');
+        row.className = 'cta-row';
+        row.innerHTML = '<span>' + e[0].replace(/</g, '&lt;') + '</span><span>' + e[1] + '人</span>';
+        exitList.appendChild(row);
       });
     }
   }

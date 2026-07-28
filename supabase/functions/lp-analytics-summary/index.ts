@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from('lp_analytics_events')
-      .select('event_type, session_id, cta_text, dwell_ms, created_at')
+      .select('event_type, session_id, cta_text, dwell_ms, section, max_section, created_at')
       .gte('created_at', since)
 
     if (error) return json({ error: 'server' }, 500)
@@ -66,6 +66,8 @@ Deno.serve(async (req) => {
     const pageviews = rows.filter((r) => r.event_type === 'pageview')
     const clicks = rows.filter((r) => r.event_type === 'cta_click')
     const dwells = rows.filter((r) => r.event_type === 'dwell' && typeof r.dwell_ms === 'number')
+    const sectionViews = rows.filter((r) => r.event_type === 'section_view')
+    const conversions = rows.filter((r) => r.event_type === 'conversion')
 
     const visitors = new Set(pageviews.map((r) => r.session_id)).size
     const avgDwellSeconds = dwells.length
@@ -77,6 +79,27 @@ Deno.serve(async (req) => {
       const key = c.cta_text || '(不明)'
       ctaBreakdown[key] = (ctaBreakdown[key] || 0) + 1
     }
+
+    // セクション到達率(ファネル): 各セクションを見たユニークセッション数
+    const sectionSessions: Record<string, Set<string>> = {}
+    for (const r of sectionViews) {
+      const key = r.section || '(不明)'
+      if (!sectionSessions[key]) sectionSessions[key] = new Set()
+      sectionSessions[key].add(r.session_id)
+    }
+    const funnel = Object.entries(sectionSessions)
+      .map(([section, sessionSet]) => ({ section, sessions: sessionSet.size }))
+      .sort((a, b) => a.section.localeCompare(b.section, 'ja'))
+
+    // 離脱箇所: dwellイベントのmax_section別カウント
+    const exitBreakdown: Record<string, number> = {}
+    for (const d of dwells) {
+      const key = d.max_section || '(不明)'
+      exitBreakdown[key] = (exitBreakdown[key] || 0) + 1
+    }
+
+    const conversionCount = new Set(conversions.map((r) => r.session_id)).size
+    const conversionRate = visitors ? Math.round((conversionCount / visitors) * 1000) / 10 : 0
 
     const dailyMap: Record<string, { pageviews: number; clicks: number }> = {}
     for (let i = days - 1; i >= 0; i--) {
@@ -101,6 +124,10 @@ Deno.serve(async (req) => {
       avgDwellSeconds,
       ctaBreakdown,
       daily: Object.entries(dailyMap).map(([date, v]) => ({ date, ...v })),
+      funnel,
+      exitBreakdown,
+      conversions: conversionCount,
+      conversionRate,
     })
   } catch (_e) {
     return json({ error: 'server' }, 500)

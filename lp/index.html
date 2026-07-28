@@ -799,10 +799,12 @@
         }).catch(function () {});
       };
 
+      var maxSectionLabel = '';
+
       function sendDwell() {
         if (dwellSent) return;
         dwellSent = true;
-        trackEvent('dwell', { dwell_ms: Date.now() - startedAt });
+        trackEvent('dwell', { dwell_ms: Date.now() - startedAt, max_section: maxSectionLabel });
       }
 
       trackEvent('pageview');
@@ -810,6 +812,38 @@
         if (document.visibilityState === 'hidden') sendDwell();
       });
       window.addEventListener('pagehide', sendDwell);
+
+      // セクション到達率(ファネル)・離脱箇所の計測
+      var sections = Array.prototype.slice.call(document.querySelectorAll('.lp > .section'));
+      var seenSections = {};
+      sections.forEach(function (sec, idx) {
+        var eyebrow = sec.querySelector('.eyebrow');
+        var label = (idx + 1) + '. ' + (eyebrow ? eyebrow.textContent.trim() : (sec.id || 'section'));
+        sec.setAttribute('data-lp-section-label', label);
+      });
+      if ('IntersectionObserver' in window && sections.length) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var label = entry.target.getAttribute('data-lp-section-label');
+            maxSectionLabel = label;
+            if (!seenSections[label]) {
+              seenSections[label] = true;
+              trackEvent('section_view', { section: label });
+            }
+          });
+        }, { threshold: 0.4 });
+        sections.forEach(function (sec) { io.observe(sec); });
+      }
+
+      // CTAリンクにセッションIDを付与（アプリ側で申し込み完了と紐づけるため）
+      document.querySelectorAll('.cta-btn, .cta-link').forEach(function (el) {
+        try {
+          var u = new URL(el.href, location.href);
+          u.searchParams.set('lp_sid', sessionId);
+          el.href = u.toString();
+        } catch (e) {}
+      });
     })();
   </script>
 </body>

@@ -4416,7 +4416,23 @@ async function doSaasSignup(){
     }catch(e){
       console.warn('Initial data setup failed (non-critical):', e)
     }
-    // 5. オンボーディング → アプリ起動
+    // 5. LPアナリティクス: 申し込み完了(コンバージョン)を記録（LP経由のアクセスのみ。失敗しても登録は継続）
+    try{
+      const lpSid=new URLSearchParams(location.search).get('lp_sid')
+      if(lpSid){
+        fetch('https://qgcgkrcrfzonmmygcdju.supabase.co/rest/v1/lp_analytics_events',{
+          method:'POST',
+          keepalive:true,
+          headers:{
+            'Content-Type':'application/json',
+            'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE',
+            'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE',
+          },
+          body:JSON.stringify({event_type:'conversion',session_id:lpSid,path:location.pathname}),
+        }).catch(()=>{})
+      }
+    }catch(e){}
+    // 6. オンボーディング → アプリ起動
     currentStoreId=storeId
     showOnboarding(authData.session, storeName)
   }catch(e){
