@@ -765,13 +765,15 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: threshold || 0.25, rootMargin: rootMargin || '0px' });
+      }, { threshold: (typeof threshold === 'number') ? threshold : 0.25, rootMargin: rootMargin || '0px' });
       io.observe(container);
       watchPendingReveal(container, revealItems);
     }
 
     // 01.5: 900時間の内訳（積み上げ式に順番表示）
-    staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0.2);
+    // ※画面下から20%入った時点で発火すると、画面上部に来る頃には演出が
+    //   終わってしまうため、セクションが画面の一番上に来たタイミングで発火させる
+    staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0, '0px 0px -92% 0px');
 
     // 02: 問題リスト（各項目が画面下から入ってきたら個別にスライドイン）
     // ※中央付近の狭い判定帯だと速いスクロールで検知自体を取りこぼすため、
