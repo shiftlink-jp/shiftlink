@@ -726,8 +726,23 @@
     // 01.5: 900時間の内訳（積み上げ式に順番表示）
     staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0.2);
 
-    // 02: 問題リスト（左右交互スライドイン）
-    staggerReveal('problemList', '.problem-item', 260, 0, '-40% 0px -40% 0px');
+    // 02: 問題リスト（各項目が画面中央あたりに来たら個別にスライドイン）
+    (function () {
+      var items = document.querySelectorAll('#problemList .problem-item');
+      if (!items.length || !('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('show'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0, rootMargin: '-45% 0px -45% 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    })();
 
     // 03: 一気通貫フロー（アイコン→矢印の順で）
     staggerReveal('flowRow', '.flow-box, .flow-arrow', 160, 0.3);
