@@ -765,7 +765,9 @@
     // 01.5: 900時間の内訳（積み上げ式に順番表示）
     staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0.2);
 
-    // 02: 問題リスト（各項目が画面中央あたりに来たら個別にスライドイン）
+    // 02: 問題リスト（各項目が画面下から入ってきたら個別にスライドイン）
+    // ※中央付近の狭い判定帯だと速いスクロールで検知自体を取りこぼすため、
+    //   他セクションと同じ「画面下から入ったら」という広い条件に統一
     (function () {
       var items = document.querySelectorAll('#problemList .problem-item');
       if (!items.length || !('IntersectionObserver' in window)) {
@@ -780,7 +782,7 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: 0, rootMargin: '-35% 0px -35% 0px' });
+      }, { threshold: 0, rootMargin: '0px 0px -15% 0px' });
       items.forEach(function (el) {
         io.observe(el);
         watchPendingReveal(el, function () { el.classList.add('show'); });
