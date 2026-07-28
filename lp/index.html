@@ -808,6 +808,13 @@
       var q = item.querySelector('.faq-q');
       q.addEventListener('click', function () { item.classList.toggle('open'); });
     });
+
+    // 保険の即時チェック：ページ更新時にブラウザが直前のスクロール位置を
+    // 復元するケースでは、スクロール操作なしにすでに通り過ぎた要素が
+    // 出てくるため、読み込み直後にも一度チェックする
+    safetyCheck();
+    window.addEventListener('load', safetyCheck);
+    window.addEventListener('pageshow', safetyCheck);
   </script>
 </body>
 </html>
