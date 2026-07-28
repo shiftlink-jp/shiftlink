@@ -740,8 +740,19 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: 0, rootMargin: '-45% 0px -45% 0px' });
+      }, { threshold: 0, rootMargin: '-35% 0px -35% 0px' });
       items.forEach(function (el) { io.observe(el); });
+
+      // 保険：素早いスクロールで判定エリアを一瞬で通過してしまい
+      // 表示されないまま画面外に出てしまう項目を救済する
+      var checkPassed = function () {
+        items.forEach(function (el) {
+          if (!el.classList.contains('show') && el.getBoundingClientRect().bottom < 0) {
+            el.classList.add('show');
+          }
+        });
+      };
+      window.addEventListener('scroll', checkPassed, { passive: true });
     })();
 
     // 03: 一気通貫フロー（アイコン→矢印の順で）
