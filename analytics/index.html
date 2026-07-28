@@ -6,33 +6,158 @@
 <meta name="robots" content="noindex, nofollow">
 <title>LPアナリティクス</title>
 <style>
-  :root { --orange: #ff7a30; --ink: #222; --ink-soft: #666; --bg: #f7f7f8; }
+  :root {
+    --aurora-1: #00ffc8;
+    --aurora-2: #7b5cff;
+    --aurora-3: #ff5ce0;
+    --ink: #eaf6ff;
+    --ink-soft: #94a8c7;
+    --bg: #060812;
+    --panel: rgba(20, 26, 46, 0.55);
+    --panel-border: rgba(140, 200, 255, 0.16);
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: var(--bg); color: var(--ink); }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
-  h1 { font-size: 20px; margin: 0 0 24px; }
-  .gate { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 16px; }
-  .gate input { font-size: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid #ddd; width: 220px; text-align: center; }
-  .gate button, .range button { background: var(--orange); color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
-  .gate .err { color: #d33; font-size: 13px; min-height: 18px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
-  .card { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-  .card .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
-  .card .value { font-size: 26px; font-weight: 800; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -20%;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 15%, rgba(0, 255, 200, 0.35), transparent 60%),
+      radial-gradient(ellipse 55% 45% at 80% 10%, rgba(123, 92, 255, 0.35), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 50% 90%, rgba(255, 92, 224, 0.25), transparent 60%),
+      linear-gradient(180deg, #05060f 0%, #090b1a 100%);
+    filter: blur(40px) saturate(140%);
+    animation: auroraDrift 18s ease-in-out infinite alternate;
+  }
+  @keyframes auroraDrift {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(3%, -4%) rotate(4deg); }
+  }
+  .wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 40px 20px 70px; }
+  h1 {
+    font-size: 21px;
+    margin: 0 0 24px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2) 55%, var(--aurora-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gate { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 18px; }
+  .gate input {
+    font-size: 16px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    color: var(--ink);
+    width: 220px;
+    text-align: center;
+    outline: none;
+  }
+  .gate input:focus { border-color: rgba(0, 255, 200, 0.5); box-shadow: 0 0 0 3px rgba(0, 255, 200, 0.15); }
+  .gate input::placeholder { color: var(--ink-soft); }
+  .gate button, .range button {
+    background: linear-gradient(120deg, var(--aurora-1), var(--aurora-2));
+    color: #05060f;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 255, 200, 0.2);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .gate button:hover, .range button:hover { transform: translateY(-1px); box-shadow: 0 6px 26px rgba(123, 92, 255, 0.35); }
+  .gate .err { color: #ff6b8b; font-size: 13px; min-height: 18px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 18px;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(0, 255, 200, 0.25), transparent 70%);
+    pointer-events: none;
+  }
+  .card .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; letter-spacing: 0.02em; }
+  .card .value {
+    font-size: 27px;
+    font-weight: 800;
+    background: linear-gradient(120deg, #ffffff, var(--aurora-1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .card .value .unit { font-size: 14px; font-weight: 500; margin-left: 2px; }
-  .section { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-  .section h2 { font-size: 14px; margin: 0 0 14px; color: var(--ink-soft); }
+  .section {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+  .section h2 { font-size: 13px; margin: 0 0 16px; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
   .bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
   .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
-  .bar { width: 100%; background: var(--orange); border-radius: 4px 4px 0 0; min-height: 2px; }
-  .bar-date { font-size: 10px; color: #999; margin-top: 6px; white-space: nowrap; }
-  .cta-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .bar {
+    width: 100%;
+    background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2) 70%, var(--aurora-3));
+    border-radius: 6px 6px 2px 2px;
+    min-height: 2px;
+    box-shadow: 0 0 14px rgba(0, 255, 200, 0.35);
+  }
+  .bar-date { font-size: 10px; color: var(--ink-soft); margin-top: 8px; white-space: nowrap; }
+  .cta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 10px 2px;
+    border-bottom: 1px solid rgba(140, 200, 255, 0.1);
+    color: var(--ink);
+  }
   .cta-row:last-child { border-bottom: none; }
-  .range { display: flex; gap: 8px; margin-bottom: 20px; }
-  .range button { background: #eee; color: #333; padding: 8px 14px; font-size: 13px; }
-  .range button.active { background: var(--orange); color: #fff; }
+  .range { display: flex; gap: 10px; margin-bottom: 22px; }
+  .range button {
+    background: var(--panel);
+    color: var(--ink-soft);
+    border: 1px solid var(--panel-border);
+    padding: 9px 16px;
+    font-size: 13px;
+    box-shadow: none;
+  }
+  .range button.active {
+    background: linear-gradient(120deg, var(--aurora-1), var(--aurora-2));
+    color: #05060f;
+    border-color: transparent;
+    box-shadow: 0 4px 20px rgba(0, 255, 200, 0.2);
+  }
   .hidden { display: none; }
-  .loading, .empty { text-align: center; color: #999; padding: 40px 0; }
+  .loading, .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; }
 </style>
 </head>
 <body>
