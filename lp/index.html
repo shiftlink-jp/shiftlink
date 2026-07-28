@@ -152,6 +152,14 @@
     .breakdown-final .fs { font-size: 12.5px; color: var(--ink); font-weight: 700; margin-top: 4px; }
     .breakdown-note { font-size: 11px; color: #999; text-align: center; line-height: 1.7; position: relative; z-index: 1; margin-top: 16px; }
 
+    /* ===== 08: 現状維持バイアスの払拭 ===== */
+    .turnaround-quote {
+      max-width: 380px; margin: 0 auto 16px; text-align: center; font-size: 15.5px; font-weight: 700; color: var(--ink);
+      background: #f7f5f2; border-radius: 12px; padding: 14px 18px; position: relative; z-index: 1; line-height: 1.6;
+    }
+    .turnaround-invest { max-width: 380px; }
+    .turnaround-invest .fv { font-size: 21px; line-height: 1.5; }
+
     /* ===== 02: 問題提起 ===== */
     .problem-list { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
     .problem-item {
@@ -220,27 +228,6 @@
     .feature-card.wide { grid-column: 1 / -1; display: flex; flex-direction: row; gap: 12px; align-items: center; min-height: 0; }
     .feature-note { text-align: center; font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin-top: 20px; position: relative; z-index: 1; }
     .feature-note b { color: var(--orange-1); font-weight: 800; }
-
-    /* ===== 08: 経営の見える化（ダッシュボード風カード） ===== */
-    .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; z-index: 1; }
-    .insight-card {
-      position: relative; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 16px;
-      padding: 18px 14px 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-      opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .insight-card.show { opacity: 1; transform: translateY(0); }
-    .insight-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--orange-1), var(--orange-2)); }
-    .insight-card .no {
-      position: absolute; top: 8px; right: 12px; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums;
-      color: var(--bg-soft); -webkit-text-stroke: 1px var(--line); line-height: 1;
-    }
-    .insight-card .ic { width: 24px; height: 24px; margin-bottom: 10px; position: relative; z-index: 1; }
-    .insight-card .ic svg { width: 100%; height: 100%; display: block; }
-    .insight-card .ti { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 5px; position: relative; z-index: 1; }
-    .insight-card .tx { font-size: 11.5px; color: var(--ink-soft); line-height: 1.6; position: relative; z-index: 1; }
-    .insight-card.wide { grid-column: 1 / -1; display: flex; flex-direction: row; align-items: center; gap: 14px; padding: 16px 18px; }
-    .insight-card.wide .no { position: static; margin-right: -6px; }
-    .insight-card.wide .ic { margin-bottom: 0; flex: none; }
     .feature-card.wide .ic { width: 26px; height: 26px; margin-bottom: 0; flex: none; }
 
     /* ===== 08.5: お客様の声 ===== */
@@ -533,42 +520,24 @@
       <p class="ba-note">空いた時間で、次の集客を考えられる。</p>
     </section>
 
-    <!-- 08. 経営の見える化 -->
-    <section class="section white reveal" id="statPanel" style="background-image:url('images/08-bg.webp')">      <div class="eyebrow">VISIBILITY</div>
-      <h2 class="section-title">どんぶり勘定の経営から、<br><span class="hl">数字で判断できる経営</span>へ。</h2>
+    <!-- 08. 現状維持バイアスの払拭 -->
+    <section class="section soft reveal" id="turnaroundPanel">      <div class="eyebrow">BEFORE YOU GO</div>
+      <h2 class="section-title">ここまで読んで、<br>こう思っていませんか？</h2>
       <div class="section-underline"></div>
-      <p class="section-lead">感覚や記憶ではなく、リアルタイムの数字を見ながら判断できるようになります。</p>
-      <div class="insight-grid" id="visibilityList">
-        <div class="insight-card">
-          <div class="no">01</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="ti">売上</div>
-          <div class="tx">売上高・委託金・経費・粗利益・平均客単価など、経営に必要な数字を細かく分析</div>
-        </div>
-        <div class="insight-card">
-          <div class="no">02</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 7.5V16.5M9.3 15.2C9.3 16.4 10.4 16.9 12 16.9C13.6 16.9 14.7 16.2 14.7 14.9C14.7 13.5 13.3 13.1 12 12.8C10.7 12.5 9.5 12.1 9.5 10.8C9.5 9.6 10.5 8.9 12 8.9C13.4 8.9 14.4 9.5 14.5 10.6" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-          <div class="ti">委託金</div>
-          <div class="tx">セラピストの指名内訳などを細かく記録。売上順位ごとにランキングも表示</div>
-        </div>
-        <div class="insight-card">
-          <div class="no">03</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 4a8 8 0 0 1 7 11.8" stroke="url(#flowGrad)" stroke-width="3.2" stroke-linecap="round"/></svg></div>
-          <div class="ti">グラフ</div>
-          <div class="tx">売上・本数・指名内訳・来店内訳・集客経路などをグラフ化</div>
-        </div>
-        <div class="insight-card">
-          <div class="no">04</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5.5 3h13v18l-2.3-1.4L14 21l-2-1.4L10 21l-2.2-1.4L5.5 21V3Z" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.3 8h7.4M8.3 12h7.4M8.3 16h4.5" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-          <div class="ti">経費</div>
-          <div class="tx">固定費・変動費別に経費登録が可能。無駄なランニングコストのカットに役立つ</div>
-        </div>
-        <div class="insight-card wide">
-          <div class="no">05</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div><div class="ti">本日の状況</div><div class="tx">本日の出勤・予約状況をトップ画面で一目で把握できる</div></div>
-        </div>
+      <div class="turnaround-quote">「便利そうだけど、今更導入するのもな…」</div>
+      <p class="section-lead">その気持ち、すごくよくわかります。</p>
+      <p class="problem-note">でも、その"今更"を続けている間も、<br>年間900時間は今年も、来年も、同じだけ消えていきます。</p>
+      <div class="breakdown-final turnaround-invest show">
+        <div class="fl">月々のご利用料金は、</div>
+        <div class="fv">コストではなく、投資です。</div>
+        <div class="fs">900時間を取り戻すための。</div>
       </div>
+      <ul class="relay-check">
+        <li>予約が入るだけで、シフト調整もバック計算も自動で終わる</li>
+        <li>電話・LINEでの「入りました」確認連絡がまるごと不要に</li>
+        <li>初期費用0円・14日間無料・カード登録不要で、まず試せる</li>
+      </ul>
+      <p class="feature-note">実際に"今のやり方"から乗り換えた店舗の声を、次でご紹介します。</p>
     </section>
 
     <!-- 08.5. お客様の声 -->
@@ -798,7 +767,6 @@
     staggerReveal('featureGrid', '.feature-card', 100, 0.2);
 
     // 08: 経営の見える化カード
-    staggerReveal('visibilityList', '.insight-card', 120, 0.2);
 
     // 08.5: お客様の声
     staggerReveal('voiceList', '.voice-card', 120, 0.2);
