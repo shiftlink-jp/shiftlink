@@ -711,7 +711,9 @@
       safetyTicking = false;
       if (!pendingReveals.length) return;
       pendingReveals = pendingReveals.filter(function (p) {
-        if (p.el.getBoundingClientRect().top < window.innerHeight) {
+        // 要素が完全に画面上を通り過ぎてしまった場合のみ救済する
+        // （画面に入った直後に発火すると、本来のスクロール連動より早く表示されてしまうため）
+        if (p.el.getBoundingClientRect().bottom < 0) {
           p.onReveal();
           return false;
         }
