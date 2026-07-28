@@ -3,8 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShiftLink｜予約が入ったら自動でセラピストに通知。メンズエステ経営管理アプリ</title>
-  <meta name="description" content="予約確定と同時に、セラピストのスマホへ自動でプッシュ通知。電話もLINE連絡も要りません。売上・委託金・シフトまで一気通貫。無料トライアル14日間、カード登録不要で今すぐ試せます。">
+  <title>ShiftLink｜年間900時間をゼロにするメンズエステ専用WEBアプリ</title>
+  <meta name="description" content="予約が入るだけで、シフト・売上・委託金の集計が全部自動。電話もLINE連絡も、電卓での手計算ももう要りません。無料トライアル14日間、カード登録不要で今すぐ試せます。">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ShiftLink｜年間900時間をゼロにするメンズエステ専用WEBアプリ">
+  <meta property="og:description" content="予約が入るだけで、シフト・売上・委託金の集計が全部自動。電話もLINE連絡も、電卓での手計算ももう要りません。無料トライアル14日間、カード登録不要で今すぐ試せます。">
+  <meta property="og:image" content="https://lp.shiftlink-app.jp/images/og-image.jpg">
+  <meta property="og:url" content="https://lp.shiftlink-app.jp/">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ShiftLink｜年間900時間をゼロにするメンズエステ専用WEBアプリ">
+  <meta name="twitter:description" content="予約が入るだけで、シフト・売上・委託金の集計が全部自動。電話もLINE連絡も、電卓での手計算ももう要りません。">
+  <meta name="twitter:image" content="https://lp.shiftlink-app.jp/images/og-image.jpg">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -24,7 +40,11 @@
     .lp img { display: block; width: 100%; height: auto; margin: 0; padding: 0; vertical-align: top; }
     a.cta-link { display: block; cursor: pointer; }
 
-    h1 { font-size: 0; height: 0; overflow: hidden; margin: 0; }
+    /* 見た目には出さないが、検索エンジン・スクリーンリーダーには認識される標準的な隠し方 */
+    h1 {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
 
     .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.8s ease, transform 0.8s ease; will-change: opacity, transform; }
     .reveal.show { opacity: 1; transform: translateY(0); }
@@ -39,38 +59,13 @@
     }
 
     .hero-wrap { position: relative; }
-    .hero-phone {
-      position: absolute; right: 4%; top: 44%; width: 42%; aspect-ratio: 714 / 1395;
-      z-index: 2; pointer-events: none;
-      transform: translateX(140%);
-      transition: transform 0.9s cubic-bezier(.16,.8,.3,1);
+    .hero-below { padding: 20px 24px 28px; background: #fff; }
+    .hero-badges-flow {
+      display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
+      font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 14px;
     }
-    .hero-phone.in { transform: translateX(0); }
-    .hero-phone-frame { position: relative; width: 100%; height: 100%; display: block; z-index: 1; border-radius: 9% / 5%; overflow: hidden; }
-    .hero-phone-screen {
-      position: absolute; left: 4.9%; right: 4.9%; top: 4.2%; bottom: 4.2%;
-      border-radius: 7% / 5%; overflow: hidden; z-index: 2;
-    }
-    .hero-shot {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; object-position: top center;
-      opacity: 0; transition: opacity 0.7s ease;
-    }
-    .hero-shot.show { opacity: 1; }
-    @media (prefers-reduced-motion: reduce) {
-      .hero-phone { transform: none; transition: none; }
-    }
-    .hero-badges {
-      position: absolute; left: 6%; top: 50%; width: 46%; z-index: 2;
-      display: flex; flex-direction: column; gap: 6px;
-      font-size: 12.5px; font-weight: 700; color: var(--ink);
-    }
-    .hero-badges span { display: flex; align-items: center; gap: 5px; }
-    .hero-badges .ok { color: var(--orange-1); font-weight: 800; }
-    .hero-cta {
-      position: absolute; left: 6%; top: 91%; width: 88%; z-index: 3;
-      margin-top: 0; font-size: 18px; padding: 18px;
-    }
+    .hero-badges-flow span { display: flex; align-items: center; gap: 5px; }
+    .hero-badges-flow .ok { color: var(--orange-1); font-weight: 800; }
 
     /* ===== セクション共通（背景装飾画像＋実HTML） ===== */
     .section {
@@ -129,16 +124,44 @@
       position: relative; z-index: 1; margin-top: 8px;
     }
 
+    /* ===== 01.5: 900時間の内訳（FVの数字の根拠） ===== */
+    .breakdown-steps { display: flex; flex-direction: column; align-items: center; gap: 0; position: relative; z-index: 1; margin-bottom: 8px; }
+    .breakdown-step {
+      width: 100%; max-width: 360px; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 14px 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .breakdown-step.show { opacity: 1; transform: translateY(0); }
+    .breakdown-step .lb { font-size: 12.5px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+    .breakdown-step .lb small { display: block; font-size: 10.5px; color: var(--ink-soft); font-weight: 600; margin-top: 2px; }
+    .breakdown-step .val { flex: none; font-size: 20px; font-weight: 900; color: var(--orange-1); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .breakdown-arrow-v {
+      width: 2px; height: 22px; background: linear-gradient(var(--orange-1), var(--orange-2));
+      opacity: 0; transition: opacity 0.4s ease;
+    }
+    .breakdown-arrow-v.show { opacity: 1; }
+    .breakdown-arrow-v::after { content: ""; }
+    .breakdown-final {
+      width: 100%; max-width: 360px; margin: 14px auto 0; text-align: center; background: linear-gradient(135deg, #fff3e8, #fff);
+      border: 1.5px solid var(--orange-1); border-radius: 16px; padding: 20px; box-shadow: 0 10px 22px rgba(255,122,26,0.12);
+      opacity: 0; transform: scale(0.92); transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .breakdown-final.show { opacity: 1; transform: scale(1); }
+    .breakdown-final .fl { font-size: 12px; color: var(--ink-soft); font-weight: 700; margin-bottom: 4px; }
+    .breakdown-final .fv { font-size: 34px; font-weight: 900; background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .breakdown-final .fs { font-size: 12.5px; color: var(--ink); font-weight: 700; margin-top: 4px; }
+    .breakdown-note { font-size: 11px; color: #999; text-align: center; line-height: 1.7; position: relative; z-index: 1; margin-top: 16px; }
+
     /* ===== 02: 問題提起 ===== */
     .problem-list { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
     .problem-item {
       display: flex; gap: 12px; align-items: flex-start; background: #fff;
       border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      opacity: 0; transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.16,.8,.3,1);
+      opacity: 0; transition: opacity 1.1s ease, transform 1.1s cubic-bezier(.16,.8,.3,1);
     }
-    .problem-item.dir-l { transform: translateX(-40px); }
-    .problem-item.dir-r { transform: translateX(40px); }
+    .problem-item.dir-l { transform: translateX(-90px); }
+    .problem-item.dir-r { transform: translateX(90px); }
     .problem-item.show { opacity: 1; transform: translateX(0); }
     .problem-item .num {
       flex: none; width: 24px; height: 24px; border-radius: 50%;
@@ -146,8 +169,9 @@
       color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
     }
     .problem-item p { font-size: 14px; line-height: 1.7; color: var(--ink); font-weight: 600; }
-    .problem-owner { text-align: center; margin-top: 20px; position: relative; z-index: 1; }
-    .problem-owner img { max-width: 46%; margin: 0 auto; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.15)); }
+    .problem-note { text-align: center; font-size: 14px; font-weight: 800; color: var(--orange-1); line-height: 1.7; margin-top: 22px; position: relative; z-index: 1; }
+    .problem-owner { text-align: center; margin-top: 8px; position: relative; z-index: 1; }
+    .problem-owner img { max-width: 78%; margin: 0 auto; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.15)); }
 
     /* ===== 03: 一気通貫フロー ===== */
     .flow-row { display: flex; align-items: center; justify-content: center; gap: 6px; position: relative; z-index: 1; margin-bottom: 22px; flex-wrap: nowrap; }
@@ -157,7 +181,8 @@
       opacity: 0; transform: scale(0.7); transition: opacity 0.45s ease, transform 0.45s cubic-bezier(.34,1.56,.64,1);
     }
     .flow-box.show { opacity: 1; transform: scale(1); }
-    .flow-box .ic { font-size: 20px; margin-bottom: 4px; }
+    .flow-box .ic { width: 22px; height: 22px; margin: 0 auto 4px; }
+    .flow-box .ic svg { width: 100%; height: 100%; display: block; }
     .flow-box .lb { font-size: 11.5px; font-weight: 800; color: var(--ink); }
     .flow-arrow { flex: none; width: 16px; height: 2px; background: linear-gradient(90deg, var(--orange-1), var(--orange-2)); position: relative; transform: scaleX(0); transform-origin: left; transition: transform 0.35s ease; }
     .flow-arrow.show { transform: scaleX(1); }
@@ -166,45 +191,77 @@
     .flow-caption { text-align: center; font-size: 15px; font-weight: 800; color: var(--ink); margin-top: 6px; position: relative; z-index: 1; }
 
     /* ===== 04: 予約→即時通知（最重要） ===== */
-    .relay { display: flex; align-items: center; justify-content: center; gap: 6px; position: relative; z-index: 1; margin-bottom: 22px; }
-    .relay-phone { position: relative; width: 38%; aspect-ratio: 714 / 1395; flex: none; }
-    .relay-phone-label { text-align: center; font-size: 10px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+    .relay { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; position: relative; z-index: 1; margin-bottom: 22px; }
+    .relay-phone { position: relative; width: 76%; aspect-ratio: 714 / 1395; flex: none; margin: 0 auto; }
+    .relay-phone-label { text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-bottom: 8px; }
     .relay-phone-frame { width: 100%; height: 100%; display: block; position: relative; z-index: 1; border-radius: 9% / 5%; overflow: hidden; }
     .relay-phone-screen { position: absolute; left: 4.9%; right: 4.9%; top: 4.2%; bottom: 4.2%; border-radius: 7% / 5%; overflow: hidden; z-index: 2; }
-    .relay-phone-screen img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-    .relay-arrow-wrap { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
-    .relay-arrow-wrap .txt { font-size: 9.5px; font-weight: 700; color: var(--orange-1); white-space: nowrap; }
-    .relay-arrow-wrap svg { width: 26px; height: 14px; }
+    .relay-phone-screen img, .relay-phone-screen video { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+    .relay-arrow-wrap { flex: none; display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 2px 0; }
+    .relay-arrow-wrap .txt { font-size: 11px; font-weight: 700; color: var(--orange-1); white-space: nowrap; }
+    .relay-arrow-wrap svg { width: 22px; height: 22px; transform: rotate(90deg); }
     .relay-check { display: flex; flex-direction: column; gap: 10px; max-width: 380px; margin: 0 auto; position: relative; z-index: 1; }
     .relay-check li { list-style: none; display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--ink); font-weight: 600; }
     .relay-check li::before { content: ""; flex: none; width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); }
 
-    /* ===== 05: 電話/LINE/自動通知の比較 ===== */
-    .compare-grid { display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; max-width: 380px; margin: 0 auto; }
-    .compare-card {
-      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px;
-      display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      opacity: 0; transform: translateX(-24px); transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.16,.8,.3,1);
-    }
-    .compare-card.show { opacity: 1; transform: translateX(0); }
-    .compare-card.win { border: 1.5px solid var(--orange-1); box-shadow: 0 10px 22px rgba(255,122,26,0.15); }
-    .compare-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; font-size: 16px; }
-    .compare-card.win .compare-ic { background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); }
-    .compare-tag { font-size: 10.5px; font-weight: 800; color: #b3462e; background: #fdeee9; display: inline-block; padding: 2px 8px; border-radius: 6px; margin-bottom: 4px; }
-    .compare-card.win .compare-tag { color: var(--orange-1); background: #fff3e8; }
-    .compare-title { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
-    .compare-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+    /* ===== 05: 委託金の自動計算（見出し・訴求すべて1枚絵に焼き込み済み） ===== */
+    .fee-visual { width: 100%; display: block; }
 
     /* ===== 06: 特徴（土台機能） ===== */
-    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; z-index: 1; }
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; z-index: 1; align-items: stretch; }
     .feature-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-      opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease; }
+      opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease;
+      display: flex; flex-direction: column; min-height: 128px; }
     .feature-card.show { opacity: 1; transform: translateY(0); }
-    .feature-card .ic { font-size: 20px; margin-bottom: 6px; }
+    .feature-card .ic { width: 22px; height: 22px; margin-bottom: 6px; flex: none; }
+    .feature-card .ic svg { width: 100%; height: 100%; display: block; }
     .feature-card .ti { font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
     .feature-card .tx { font-size: 11.5px; color: var(--ink-soft); line-height: 1.6; }
-    .feature-card.wide { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; }
-    .feature-card.wide .ic { font-size: 24px; margin-bottom: 0; }
+    .feature-card.wide { grid-column: 1 / -1; display: flex; flex-direction: row; gap: 12px; align-items: center; min-height: 0; }
+    .feature-note { text-align: center; font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin-top: 20px; position: relative; z-index: 1; }
+    .feature-note b { color: var(--orange-1); font-weight: 800; }
+
+    /* ===== 08: 経営の見える化（ダッシュボード風カード） ===== */
+    .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; z-index: 1; }
+    .insight-card {
+      position: relative; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 18px 14px 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+      opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .insight-card.show { opacity: 1; transform: translateY(0); }
+    .insight-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--orange-1), var(--orange-2)); }
+    .insight-card .no {
+      position: absolute; top: 8px; right: 12px; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--bg-soft); -webkit-text-stroke: 1px var(--line); line-height: 1;
+    }
+    .insight-card .ic { width: 24px; height: 24px; margin-bottom: 10px; position: relative; z-index: 1; }
+    .insight-card .ic svg { width: 100%; height: 100%; display: block; }
+    .insight-card .ti { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 5px; position: relative; z-index: 1; }
+    .insight-card .tx { font-size: 11.5px; color: var(--ink-soft); line-height: 1.6; position: relative; z-index: 1; }
+    .insight-card.wide { grid-column: 1 / -1; display: flex; flex-direction: row; align-items: center; gap: 14px; padding: 16px 18px; }
+    .insight-card.wide .no { position: static; margin-right: -6px; }
+    .insight-card.wide .ic { margin-bottom: 0; flex: none; }
+    .feature-card.wide .ic { width: 26px; height: 26px; margin-bottom: 0; flex: none; }
+
+    /* ===== 08.5: お客様の声 ===== */
+    .voice-list { display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
+    .voice-card {
+      background: var(--bg-soft); border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px 22px;
+      position: relative; opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .voice-card.show { opacity: 1; transform: translateY(0); }
+    .voice-store-badge {
+      display: table; background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); color: #fff;
+      font-size: 11.5px; font-weight: 800; padding: 5px 16px; border-radius: 999px;
+      margin: 0 auto 14px; position: relative; z-index: 1; writing-mode: horizontal-tb; white-space: nowrap;
+    }
+    .voice-quote {
+      position: absolute; top: 44px; left: 18px; font-size: 56px; font-weight: 900; line-height: 1;
+      color: var(--orange-1); opacity: 0.25; font-family: Georgia, serif;
+    }
+    .voice-text { position: relative; z-index: 1; font-size: 13.5px; line-height: 1.9; color: var(--ink); }
+    .voice-person { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed #f0d9c2; }
+    .voice-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: #fff; }
 
     /* ===== 07: 現状比較 (Before/After) ===== */
     .ba-wrap { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; margin-bottom: 20px; }
@@ -216,15 +273,6 @@
     .ba-arrow { flex: none; font-size: 20px; color: var(--orange-1); }
     .ba-note { text-align: center; font-size: 15px; font-weight: 800; color: var(--orange-1); position: relative; z-index: 1; }
 
-    /* ===== 08: 利益の試算 ===== */
-    .stat-row { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; margin-bottom: 12px; }
-    .stat-box { background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 18px; text-align: center; }
-    .stat-box .label { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.08em; margin-bottom: 6px; text-transform: uppercase; }
-    .stat-box .num { font-variant-numeric: tabular-nums; }
-    .stat-box .num .val { font-size: 42px; font-weight: 900; background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .stat-box .num .unit { font-size: 15px; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
-    .stat-box .sub { font-size: 11.5px; color: var(--ink-soft); margin-top: 6px; }
-    .stat-annot { font-size: 11px; color: #999; text-align: center; line-height: 1.7; position: relative; z-index: 1; }
 
     /* ===== 09: 導入ステップ ===== */
     .step-row { display: flex; align-items: flex-start; justify-content: center; gap: 4px; position: relative; z-index: 1; margin-bottom: 20px; }
@@ -237,8 +285,33 @@
     .step-support { background: var(--ink); color: #fff; text-align: center; font-size: 12.5px; padding: 12px; border-radius: 10px; position: relative; z-index: 1; }
 
     /* ===== 10: 期間限定特典 ===== */
-    .offer-badge { display: inline-block; background: linear-gradient(135deg, var(--orange-1), var(--orange-2)); color: #fff; font-size: 12px; font-weight: 800; padding: 5px 14px; border-radius: 999px; margin: 0 auto 14px; position: relative; z-index: 1; }
-    .offer-badge-wrap { text-align: center; }
+    .offer-badge-wrap { text-align: center; margin-bottom: 4px; }
+    .offer-burst {
+      position: relative; width: 100%; max-width: 320px; aspect-ratio: 15 / 9; margin: 0 auto; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-6deg);
+      animation: burstPulse 1.6s cubic-bezier(.36,.07,.19,.97) infinite;
+    }
+    .offer-burst .spike {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--orange-1), var(--orange-2));
+      box-shadow: 0 14px 28px rgba(255,106,0,0.4);
+      clip-path: polygon(50.0% 0.0%, 55.5% 22.5%, 69.1% 3.8%, 65.6% 26.7%, 85.4% 14.6%, 73.3% 34.4%, 96.2% 30.9%, 77.5% 44.5%, 100.0% 50.0%, 77.5% 55.5%, 96.2% 69.1%, 73.3% 65.6%, 85.4% 85.4%, 65.6% 73.3%, 69.1% 96.2%, 55.5% 77.5%, 50.0% 100.0%, 44.5% 77.5%, 30.9% 96.2%, 34.4% 73.3%, 14.6% 85.4%, 26.7% 65.6%, 3.8% 69.1%, 22.5% 55.5%, 0.0% 50.0%, 22.5% 44.5%, 3.8% 30.9%, 26.7% 34.4%, 14.6% 14.6%, 34.4% 26.7%, 30.9% 3.8%, 44.5% 22.5%);
+    }
+    .offer-burst .txt { position: relative; z-index: 1; color: #fff; text-align: center; transform: rotate(6deg); }
+    .offer-burst .txt .l1 { display: block; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; }
+    .offer-burst .txt .l2 { display: block; font-size: 40px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .offer-burst .txt .l3 { display: block; font-size: 13px; font-weight: 800; letter-spacing: 0.05em; }
+    @keyframes burstPulse {
+      0% { transform: rotate(-6deg) scale(1); }
+      10% { transform: rotate(-3deg) scale(1.18); }
+      20% { transform: rotate(-9deg) scale(0.95); }
+      30% { transform: rotate(-6deg) scale(1.06); }
+      40%, 100% { transform: rotate(-6deg) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .offer-burst { animation: none; }
+    }
     .offer-price-card { background: #fff; border: 2px solid var(--orange-1); border-radius: 18px; padding: 24px 20px; text-align: center; position: relative; z-index: 1; margin-bottom: 18px; box-shadow: 0 10px 24px rgba(255,122,26,0.15); }
     .offer-price-card .old { font-size: 14px; color: #aaa; text-decoration: line-through; margin-bottom: 4px; }
     .offer-price-card .new { font-size: 34px; font-weight: 800; color: var(--orange-1); }
@@ -271,14 +344,14 @@
     .faq-item.dir-r { transform: translateX(30px); }
     .faq-item.show { opacity: 1; transform: translateX(0); }
     .faq-q { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; text-align: left; cursor: pointer; padding: 18px; font: inherit; color: #1a1a1a; font-weight: 700; font-size: 14.5px; -webkit-tap-highlight-color: transparent; }
-    .faq-q .badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--orange-1); color: var(--orange-1); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    .faq-q .badge { flex: none; box-sizing: border-box; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--orange-1); color: var(--orange-1); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
     .faq-q .q-text { flex: 1; }
     .faq-q .chevron { flex-shrink: 0; width: 18px; height: 18px; color: var(--orange-1); transition: transform 0.25s ease; }
     .faq-item.open .faq-q .chevron { transform: rotate(180deg); }
     .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; padding: 0 18px; }
     .faq-item.open .faq-a { max-height: 220px; padding: 0 18px 18px; }
     .faq-a-inner { display: flex; gap: 12px; border-top: 1px dashed #f0d9c2; padding-top: 14px; }
-    .faq-a .badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--orange-1); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    .faq-a .badge { flex: none; box-sizing: border-box; width: 26px; height: 26px; border-radius: 50%; background: var(--orange-1); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
     .faq-a p { font-size: 13.5px; line-height: 1.7; color: #444; }
 
     .closing { text-align: center; position: relative; z-index: 1; margin-bottom: 28px; }
@@ -300,63 +373,94 @@
 <body>
   <div class="lp">
 
-    <h1>予約が入った瞬間、セラピストに自動で伝わる。メンズエステ経営管理アプリ ShiftLink</h1>
+    <h1>年間900時間を"ゼロ"にするメンズエステ専用WEBアプリ ShiftLink。予約50件の店舗で112営業日分の手作業を削減</h1>
 
-    <!-- 01. ファーストビュー（スマホは独立要素・右からスライドイン＋画面3枚切り替え） -->
+    <!-- 01. ファーストビュー（人物イラスト＋見出し＋実績カードを1枚に統合した画像） -->
     <div class="reveal hero hero-wrap">
       <a class="cta-link" href="https://shiftlink-app.jp/?signup=1">
-        <img src="images/01-bg.png?v=2" alt="予約が入った瞬間、セラピストに自動で伝わる。ShiftLink">
+        <img src="images/01-bg.webp" alt="年間900時間をゼロにするメンズエステ専用WEBアプリ ShiftLink">
       </a>
-      <div class="hero-phone" id="heroPhone">
-        <img class="hero-phone-frame" src="images/asset-phone-realistic.png?v=5" alt="">
-        <div class="hero-phone-screen">
-          <img class="hero-shot show" src="images/hero-shot-1.png" alt="ShiftLinkの本日の予約一覧画面">
-          <img class="hero-shot" src="images/hero-shot-2.png" alt="ShiftLinkの売上ダッシュボード画面">
-          <img class="hero-shot" src="images/hero-shot-3.png" alt="ShiftLinkの委託金明細画面">
+      <div class="hero-below">
+        <div class="hero-badges-flow">
+          <span><span class="ok">✓</span>初期費用 0円</span>
+          <span><span class="ok">✓</span>14日間 無料</span>
+          <span><span class="ok">✓</span>カード登録 不要</span>
         </div>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
       </div>
-      <div class="hero-badges">
-        <span><span class="ok">✓</span>初期費用 0円</span>
-        <span><span class="ok">✓</span>14日間 無料</span>
-        <span><span class="ok">✓</span>カード登録 不要</span>
-      </div>
-      <a class="cta-btn hero-cta" href="https://shiftlink-app.jp/?signup=1">14日間、無料ではじめる</a>
     </div>
 
+    <!-- 01.5. 900時間の内訳（FVの数字の根拠をすぐに割る） -->
+    <section class="section soft reveal">      <div class="eyebrow">THE BREAKDOWN</div>
+      <h2 class="section-title">なぜ、<span class="hl">年間900時間</span><br>なのか。</h2>
+      <div class="section-underline"></div>
+      <p class="section-lead">その数字の内訳を、予約1件から積み上げてみました。</p>
+      <div id="breakdownWrap">
+      <div class="breakdown-steps">
+        <div class="breakdown-step" data-i="0">
+          <div class="lb">予約1件あたりの手作業<small>LINE確認・エクセル転記・委託金計算</small></div>
+          <div class="val">5分</div>
+        </div>
+        <div class="breakdown-arrow-v" data-i="1"></div>
+        <div class="breakdown-step" data-i="2">
+          <div class="lb">1日30件の予約が入る店舗の場合<small>5分 ×︎ 30件</small></div>
+          <div class="val">150分</div>
+        </div>
+        <div class="breakdown-arrow-v" data-i="3"></div>
+        <div class="breakdown-step" data-i="4">
+          <div class="lb">年中無休30日稼働の場合<small>150分 ×︎ 30日</small></div>
+          <div class="val">75時間<small style="margin-top:0;display:inline">/月</small></div>
+        </div>
+        <div class="breakdown-arrow-v" data-i="5"></div>
+        <div class="breakdown-step" data-i="6">
+          <div class="lb">1年間では<small>75時間 ×︎ 12ヶ月</small></div>
+          <div class="val">900時間</div>
+        </div>
+      </div>
+      <div class="breakdown-final">
+        <div class="fl">つまり、1年間で丸ごと</div>
+        <div class="fv">900時間</div>
+        <div class="fs">が、手作業だけで消えている計算です。</div>
+      </div>
+      </div>
+      <p class="breakdown-note">※1件の予約対応に平均5分、1日30件・年中無休30日稼働（11時〜翌5時の18時間営業を想定）の店舗を想定した試算です。実際の削減時間は店舗の営業時間・予約件数によって異なります。</p>
+    </section>
+
     <!-- 02. 問題提起 -->
-    <section class="section white reveal" style="background-image:url('images/02-bg.png')">
-      <h2 class="section-title">メンズエステ経営で<br><span class="hl">よくある悩み</span></h2>
+    <section class="section white reveal" style="background-image:url('images/02-bg.webp')">
+      <h2 class="section-title">こんな<span class="hl">お悩み</span><br>ありませんか？</h2>
       <div class="section-underline"></div>
       <div class="problem-list" id="problemList">
-        <div class="problem-item dir-l"><span class="num">1</span><p>売上は月末にならないと本当のところが分からない</p></div>
-        <div class="problem-item dir-r"><span class="num">2</span><p>委託金の計算が毎回バラバラで「これ合ってますか?」と聞かれる</p></div>
-        <div class="problem-item dir-l"><span class="num">3</span><p>シフトはLINE、予約はノート。転記ミスと二重入力が起きる</p></div>
-        <div class="problem-item dir-r"><span class="num">4</span><p>電卓・エクセル・レジ…道具がバラバラで頭の中だけで管理している</p></div>
-        <div class="problem-item dir-l"><span class="num">5</span><p>気づいたらキャストが辞めていた。理由が数字で見えない</p></div>
+        <div class="problem-item dir-l"><span class="num">1</span><p>予約が入るたびに、セラピストへの共有がめんどくさい</p></div>
+        <div class="problem-item dir-r"><span class="num">2</span><p>セラピストのバック計算が大変</p></div>
+        <div class="problem-item dir-l"><span class="num">3</span><p>提出されたシフトの調整がめんどくさい</p></div>
+        <div class="problem-item dir-r"><span class="num">4</span><p>経営に必要な数字を細かく把握できていない</p></div>
+        <div class="problem-item dir-l"><span class="num">5</span><p>スタッフによる横領などの心配</p></div>
       </div>
-      <div class="problem-owner"><img src="images/asset-owner.png" alt="経営の悩みを抱えるメンズエステ店オーナー"></div>
+      <p class="problem-note">この中に一つでも当てはまったら、<br>最後までご覧ください。</p>
+      <div class="problem-owner"><img loading="lazy" src="images/asset-owner.webp" alt="経営の悩みを抱えるメンズエステ店オーナー"></div>
     </section>
 
     <!-- 03. 解決宣言（一気通貫） -->
-    <section class="section soft reveal" id="flowPanel" style="background-image:url('images/03-bg.png')">
-      <div class="eyebrow">ALL IN ONE</div>
-      <h2 class="section-title">予約・売上・委託金・シフトが<br><span class="hl">1本につながる</span>設計</h2>
+    <section class="section soft reveal" id="flowPanel" style="background-image:url('images/03-bg.webp')">      <div class="eyebrow">ALL IN ONE</div>
+      <h2 class="section-title">シフト・予約・委託金・売上が<br><span class="hl">1本につながる</span>設計</h2>
       <div class="section-underline"></div>
       <div class="flow-tag">自動でつながる</div>
       <div class="flow-row" id="flowRow">
-        <div class="flow-box" data-i="0"><div class="ic">📅</div><div class="lb">予約</div></div>
+        <div class="flow-box" data-i="0"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="16" rx="2.5" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M3 9.5H21" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M8 2.5V6.5M16 2.5V6.5" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 13.5L11 17L16.5 11" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lb">シフト</div></div>
         <div class="flow-arrow" data-i="1"></div>
-        <div class="flow-box" data-i="2"><div class="ic">📈</div><div class="lb">売上</div></div>
+        <div class="flow-box" data-i="2"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="16" rx="2.5" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M3 9.5H21" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M8 2.5V6.5M16 2.5V6.5" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.5" r="2.2" stroke="url(#flowGrad)" stroke-width="1.6"/></svg></div><div class="lb">予約</div></div>
         <div class="flow-arrow" data-i="3"></div>
-        <div class="flow-box" data-i="4"><div class="ic">💰</div><div class="lb">委託金</div></div>
+        <div class="flow-box" data-i="4"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 7.5V16.5M9.3 15.2C9.3 16.4 10.4 16.9 12 16.9C13.6 16.9 14.7 16.2 14.7 14.9C14.7 13.5 13.3 13.1 12 12.8C10.7 12.5 9.5 12.1 9.5 10.8C9.5 9.6 10.5 8.9 12 8.9C13.4 8.9 14.4 9.5 14.5 10.6" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="lb">委託金</div></div>
         <div class="flow-arrow" data-i="5"></div>
-        <div class="flow-box" data-i="6"><div class="ic">🗓️</div><div class="lb">シフト</div></div>
+        <div class="flow-box" data-i="6"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lb">売上</div></div>
       </div>
+      <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7a1a"/><stop offset="100%" stop-color="#ffb46b"/></linearGradient></defs></svg>
       <p class="flow-caption">その悩みは、すべて"つながっていない"ことが原因です。<br>ShiftLinkは、そのすべてを1本につなぎます。</p>
     </section>
 
     <!-- 04. 差別化の核心：予約→即時通知 -->
-    <section class="section white reveal" style="background-image:url('images/04-bg.png')">
+    <section class="section white reveal" style="background-image:url('images/04-bg.webp')">
       <div class="eyebrow">MOST IMPORTANT</div>
       <h2 class="section-title">予約が入った瞬間、<br><span class="hl">スマホが鳴る。</span></h2>
       <div class="section-underline"></div>
@@ -365,8 +469,8 @@
         <div>
           <div class="relay-phone-label">オーナー・受付側</div>
           <div class="relay-phone">
-            <img class="relay-phone-frame" src="images/asset-phone-realistic.png?v=5" alt="">
-            <div class="relay-phone-screen"><img src="images/asset-screen-booking.png" alt="ShiftLinkの予約確定画面"></div>
+            <img class="relay-phone-frame" loading="lazy" src="images/asset-phone-realistic.webp" alt="">
+            <div class="relay-phone-screen"><video src="videos/booking-demo.mp4" poster="images/booking-demo-poster.jpg" autoplay muted loop playsinline aria-label="ShiftLinkで実際に予約を登録する画面"></video></div>
           </div>
         </div>
         <div class="relay-arrow-wrap">
@@ -376,8 +480,8 @@
         <div>
           <div class="relay-phone-label">セラピスト側</div>
           <div class="relay-phone">
-            <img class="relay-phone-frame" src="images/asset-phone-realistic.png?v=5" alt="">
-            <div class="relay-phone-screen"><img src="images/asset-screen-notify.png" alt="ShiftLinkの通知画面。新しい予約が入りましたと表示"></div>
+            <img class="relay-phone-frame" loading="lazy" src="images/asset-phone-realistic.webp" alt="">
+            <div class="relay-phone-screen"><video src="videos/notify-demo.mp4" poster="images/notify-demo-poster.jpg" autoplay muted loop playsinline aria-label="ShiftLinkの通知画面。新しい予約が入りましたと表示"></video></div>
           </div>
         </div>
       </div>
@@ -386,78 +490,109 @@
         <li>電話・LINEでの「入りました」連絡が丸ごと不要になる</li>
         <li>ルーム（部屋）の重複も自動でチェックしてから通知される</li>
       </ul>
-      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間、無料ではじめる</a>
+      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
     </section>
 
-    <!-- 05. 証拠：電話/LINEとの比較 -->
-    <section class="section soft reveal" id="comparePanel" style="background-image:url('images/05-bg.png')">
-      <div class="eyebrow">WHY IT WORKS</div>
-      <h2 class="section-title">なぜ、電話もLINEも<br><span class="hl">要らなくなる</span>のか。</h2>
-      <div class="section-underline"></div>
-      <p class="section-lead">今までの連絡方法と、何が違うのかを並べてみました。</p>
-      <div class="compare-grid" id="compareGrid">
-        <div class="compare-card">
-          <div class="compare-ic">📞</div>
-          <div><div class="compare-tag">電話</div><div class="compare-title">施術中は出られない</div><div class="compare-desc">セラピストが施術中・移動中だと<span class="accent">着信に気づけず</span>、折り返しを待つ時間が発生する。</div></div>
-        </div>
-        <div class="compare-card">
-          <div class="compare-ic">💬</div>
-          <div><div class="compare-tag">LINE連絡</div><div class="compare-title">他のメッセージに埋もれる</div><div class="compare-desc">グループLINEや個人LINEに流れると、<span class="accent">後から探しづらい</span>。予約情報が埋もれてしまう。</div></div>
-        </div>
-        <div class="compare-card win">
-          <div class="compare-ic">🔔</div>
-          <div><div class="compare-tag">自動通知</div><div class="compare-title">確実に届き、あとから一覧でも見返せる</div><div class="compare-desc">予約確定と同時にアプリへ通知。<span class="accent">手が空いたタイミング</span>で確認でき、予約一覧にも自動で反映されている。</div></div>
-        </div>
+    <!-- 05. 委託金の自動計算 -->
+    <section class="section soft reveal" id="feePanel" style="padding-left:0; padding-right:0;">
+      <img class="fee-visual" loading="lazy" src="images/asset-fee-therapist.webp" alt="委託金を、1円もズラさない。コース・オプション・指名・雑費を設定するだけで自動計算。毎日のバック計算は予約を入れるだけで自動計算、退勤時の委託金精算はボタンを2回押すだけで完了">
+      <div style="padding: 24px 24px 0;">
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
       </div>
     </section>
 
     <!-- 06. 特徴（土台機能） -->
-    <section class="section white reveal" id="featurePanel" style="background-image:url('images/06-bg.png')">
-      <div class="eyebrow">FEATURES</div>
-      <h2 class="section-title">シフト・売上・委託金も<br><span class="hl">これ1つ</span>で管理</h2>
+    <section class="section white reveal" id="featurePanel" style="background-image:url('images/06-bg.webp')">      <div class="eyebrow">ALL FEATURES</div>
+      <h2 class="section-title">ShiftLinkで<br><span class="hl">できること</span>、全部。</h2>
       <div class="section-underline"></div>
       <div class="feature-grid" id="featureGrid">
-        <div class="feature-card"><div class="ic">📅</div><div class="ti">予約管理</div><div class="tx">電話・LINEで受けた予約をその場で登録</div></div>
-        <div class="feature-card"><div class="ic">📊</div><div class="ti">売上ダッシュボード</div><div class="tx">本日・今月の売上をリアルタイムで確認</div></div>
-        <div class="feature-card wide"><div class="ic">💰</div><div><div class="ti">委託金を、1円もズラさない</div><div class="tx">コース・オプション・指名区分ごとにバック率を設定するだけで、予約が入るたびに自動で正確に積み上がる。「これ合ってますか?」と聞かれることは、もうありません。</div></div></div>
-        <div class="feature-card"><div class="ic">🗓️</div><div class="ti">シフト管理</div><div class="tx">キャストが自分で出勤希望を提出</div></div>
-        <div class="feature-card"><div class="ic">📱</div><div class="ti">キャスト側アプリ</div><div class="tx">自分の売上・取り分をいつでも確認</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="16" rx="2.5" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M3 9.5H21" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M8 2.5V6.5M16 2.5V6.5" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.5" r="2.2" stroke="url(#flowGrad)" stroke-width="1.6"/></svg></div><div class="ti">予約管理</div><div class="tx">電話・LINEで受けた予約をその場で登録</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="16" rx="2.5" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M3 9.5H21" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M8 2.5V6.5M16 2.5V6.5" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 13.5L11 17L16.5 11" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ti">シフト管理</div><div class="tx">キャストが自分で出勤希望を提出、オーナーが調整</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 7.5V16.5M9.3 15.2C9.3 16.4 10.4 16.9 12 16.9C13.6 16.9 14.7 16.2 14.7 14.9C14.7 13.5 13.3 13.1 12 12.8C10.7 12.5 9.5 12.1 9.5 10.8C9.5 9.6 10.5 8.9 12 8.9C13.4 8.9 14.4 9.5 14.5 10.6" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="ti">委託金自動計算</div><div class="tx">バック率を設定するだけで自動集計</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ti">売上ダッシュボード</div><div class="tx">本日・今月の売上をリアルタイムで確認</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M10 19.2H14" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="ti">キャスト側アプリ</div><div class="tx">自分の売上・取り分・シフトをいつでも確認</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5a5.2 5.2 0 0 0-5.2 5.2v3.4c0 .7-.3 1.4-.8 1.9L4.5 15.5h15l-1.5-1.5c-.5-.5-.8-1.2-.8-1.9V8.7A5.2 5.2 0 0 0 12 3.5Z" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 18.5a2 2 0 0 0 4 0" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linecap="round"/></svg></div><div class="ti">プッシュ通知</div><div class="tx">予約確定・出勤時間などを自動でお知らせ</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="url(#flowGrad)" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linecap="round"/><circle cx="17" cy="9" r="2.3" stroke="url(#flowGrad)" stroke-width="1.5"/><path d="M15.5 13a4.7 4.7 0 0 1 5 6" stroke="url(#flowGrad)" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ti">顧客管理</div><div class="tx">来店履歴・指名状況を自動で記録</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="1.5" stroke="url(#flowGrad)" stroke-width="1.8"/><circle cx="14.3" cy="12" r="1.1" fill="url(#flowGrad)"/></svg></div><div class="ti">ルーム管理</div><div class="tx">部屋の空き状況を自動でチェックし重複防止</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="ti">出退勤管理</div><div class="tx">ワンタップで出退勤を記録</div></div>
+        <div class="feature-card"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5.5 3h13v18l-2.3-1.4L14 21l-2-1.4L10 21l-2.2-1.4L5.5 21V3Z" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.3 8h7.4M8.3 12h7.4M8.3 16h4.5" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="ti">月次経費管理</div><div class="tx">固定費・変動費もまとめて管理</div></div>
+        <div class="feature-card wide"><div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M9.5 14.5L14.5 9.5" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M11 6.7l1.1-1.1a4.2 4.2 0 0 1 6 6l-1.6 1.6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M13 17.3l-1.1 1.1a4.2 4.2 0 0 1-6-6l1.6-1.6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/></svg></div><div><div class="ti">予約確認URL <span class="tag-dark" style="font-size:9px;padding:2px 8px;margin-left:4px;">NEW</span></div><div class="tx">お客様に予約内容確認用のURLを自動で送付</div></div></div>
       </div>
+      <p class="feature-note">その他にも、ここでは書ききれないほど<b>たくさんの機能</b>を搭載しています。</p>
     </section>
 
     <!-- 07. 現状比較 -->
-    <section class="section soft reveal" style="background-image:url('images/07-bg.png')">
-      <div class="eyebrow">COMPARISON</div>
+    <section class="section soft reveal" style="background-image:url('images/07-bg.webp')">      <div class="eyebrow">COMPARISON</div>
       <h2 class="section-title">今の運用と、<br><span class="hl">ShiftLink</span>を比較</h2>
       <div class="section-underline"></div>
       <div class="ba-wrap">
-        <div class="ba-panel before"><div class="ba-label">BEFORE</div><img src="images/asset-before.png" alt="散らかったノートと電卓で管理していた頃の机"></div>
+        <div class="ba-panel before"><div class="ba-label">BEFORE</div><img loading="lazy" src="images/asset-before.webp" alt="散らかったノートと電卓で管理していた頃の机"></div>
         <div class="ba-arrow">→</div>
-        <div class="ba-panel after"><div class="ba-label">AFTER</div><img src="images/asset-after.png" alt="ShiftLink導入後、スマホ1台だけの整然としたデスク"></div>
+        <div class="ba-panel after"><div class="ba-label">AFTER</div><img loading="lazy" src="images/asset-after.webp" alt="ShiftLink導入後、スマホ1台だけの整然としたデスク"></div>
       </div>
       <p class="ba-note">空いた時間で、次の集客を考えられる。</p>
     </section>
 
-    <!-- 08. 利益の試算 -->
-    <section class="section white reveal" id="statPanel" style="background-image:url('images/08-bg.png')">
-      <div class="eyebrow">THE EFFECT</div>
-      <h2 class="section-title">ShiftLink導入で見える、<br><span class="hl">店の利益</span></h2>
+    <!-- 08. 経営の見える化 -->
+    <section class="section white reveal" id="statPanel" style="background-image:url('images/08-bg.webp')">      <div class="eyebrow">VISIBILITY</div>
+      <h2 class="section-title">どんぶり勘定の経営から、<br><span class="hl">数字で判断できる経営</span>へ。</h2>
       <div class="section-underline"></div>
-      <div class="stat-row">
-        <div class="stat-box"><div class="label">1日あたり</div><div class="num"><span class="val" data-target="30">0</span><span class="unit">分</span></div><div class="sub">集計と手計算に使っていた時間</div></div>
-        <div class="stat-box"><div class="label">1ヶ月あたり</div><div class="num"><span class="val" data-target="15">0</span><span class="unit">時間</span></div><div class="sub">およそ2日ぶんの働く時間</div></div>
-        <div class="stat-box"><div class="label">転記ミス</div><div class="num"><span class="val" data-target="0">0</span><span class="unit">件</span></div><div class="sub">二重入力そのものがなくなるため</div></div>
+      <p class="section-lead">感覚や記憶ではなく、リアルタイムの数字を見ながら判断できるようになります。</p>
+      <div class="insight-grid" id="visibilityList">
+        <div class="insight-card">
+          <div class="no">01</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="ti">売上</div>
+          <div class="tx">売上高・委託金・経費・粗利益・平均客単価など、経営に必要な数字を細かく分析</div>
+        </div>
+        <div class="insight-card">
+          <div class="no">02</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 7.5V16.5M9.3 15.2C9.3 16.4 10.4 16.9 12 16.9C13.6 16.9 14.7 16.2 14.7 14.9C14.7 13.5 13.3 13.1 12 12.8C10.7 12.5 9.5 12.1 9.5 10.8C9.5 9.6 10.5 8.9 12 8.9C13.4 8.9 14.4 9.5 14.5 10.6" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+          <div class="ti">委託金</div>
+          <div class="tx">セラピストの指名内訳などを細かく記録。売上順位ごとにランキングも表示</div>
+        </div>
+        <div class="insight-card">
+          <div class="no">03</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="url(#flowGrad)" stroke-width="1.8"/><path d="M12 4a8 8 0 0 1 7 11.8" stroke="url(#flowGrad)" stroke-width="3.2" stroke-linecap="round"/></svg></div>
+          <div class="ti">グラフ</div>
+          <div class="tx">売上・本数・指名内訳・来店内訳・集客経路などをグラフ化</div>
+        </div>
+        <div class="insight-card">
+          <div class="no">04</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M5.5 3h13v18l-2.3-1.4L14 21l-2-1.4L10 21l-2.2-1.4L5.5 21V3Z" stroke="url(#flowGrad)" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.3 8h7.4M8.3 12h7.4M8.3 16h4.5" stroke="url(#flowGrad)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+          <div class="ti">経費</div>
+          <div class="tx">固定費・変動費別に経費登録が可能。無駄なランニングコストのカットに役立つ</div>
+        </div>
+        <div class="insight-card wide">
+          <div class="no">05</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 20V13.5M9 20V9M15 20V11.5M21 20V6" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10.5L9.5 5L14 8.5L20 3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 3H20V7.3" stroke="url(#flowGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><div class="ti">本日の状況</div><div class="tx">本日の出勤・予約状況をトップ画面で一目で把握できる</div></div>
+        </div>
       </div>
-      <p class="stat-annot">※1日20件程度の予約を手入力している店舗を想定した試算です。実際の削減時間・効果は店舗の運用によって異なります。</p>
+    </section>
+
+    <!-- 08.5. お客様の声 -->
+    <section class="section white reveal" id="voicePanel">      <div class="eyebrow">VOICE</div>
+      <h2 class="section-title">導入店舗様の<br><span class="hl">生の声</span></h2>
+      <div class="section-underline"></div>
+      <div class="voice-list" id="voiceList">
+        <div class="voice-card">
+          <div class="voice-store-badge">愛知県 K店 オーナー S様</div>
+          <div class="voice-quote">"</div>
+          <p class="voice-text">もともとExcelや他社の管理ツールを使っていました。Excelは細かく入力することが多く、大変でした。他社の管理ツールは操作性で使いにくいなと思うことが多々ありました。<br><br>ShiftLinkに変えてからは、入力することは予約情報がほとんどで、それ以外は全て自動で計算を出してくれるので、かなり楽になりました。シフトなども今まではパズルのようにルームを振り分けていましたが、ShiftLinkにしてからはセラピストが提出してきたシフトに対して振り分けるだけなので、すごく楽です。空いた時間に他のことができるので、すごく効率的だなと思います。<br><br>一度使い始めたら、これなしではメンズエステの経営をしていくのが大変だと思います。</p>
+          <div class="voice-person">
+            <img class="voice-avatar" loading="lazy" src="images/voice-01-k.jpg" alt="愛知県K店 S様">
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 09. 導入ステップ -->
-    <section class="section soft reveal" id="stepPanel" style="background-image:url('images/09-bg.png')">
-      <div class="eyebrow">HOW TO START</div>
+    <section class="section soft reveal" id="stepPanel" style="background-image:url('images/09-bg.webp')">      <div class="eyebrow">HOW TO START</div>
       <h2 class="section-title">はじめかたは、<br><span class="hl">3ステップ。</span></h2>
       <div class="section-underline"></div>
       <div class="step-row" id="stepRow">
-        <div class="step-item"><div class="medal">1</div><div class="ti">公式LINEを<br>友だち追加</div><div class="tx">所要およそ30秒</div></div>
+        <div class="step-item"><div class="medal">1</div><div class="ti">このページから<br>登録フォームへ</div><div class="tx">所要およそ1分</div></div>
         <div class="step-dots"></div>
         <div class="step-item"><div class="medal">2</div><div class="ti">店舗情報を<br>かんたん登録</div><div class="tx">カード登録は不要</div></div>
         <div class="step-dots"></div>
@@ -467,8 +602,12 @@
     </section>
 
     <!-- 10. 期間限定特典 -->
-    <section class="section white reveal" style="background-image:url('images/10-bg.png')">
-      <div class="offer-badge-wrap"><span class="offer-badge">先着10店舗限定</span></div>
+    <section class="section white reveal" style="background-image:url('images/10-bg.webp')">      <div class="offer-badge-wrap">
+        <div class="offer-burst">
+          <span class="spike"></span>
+          <div class="txt"><span class="l1">先着</span><span class="l2">10店舗</span><span class="l3">限定</span></div>
+        </div>
+      </div>
       <h2 class="section-title">今なら、月額料金が<br><span class="hl">ずっと半額。</span></h2>
       <div class="section-underline"></div>
       <div class="offer-price-card">
@@ -480,12 +619,11 @@
         <div class="offer-card">コース・オプション・バック率の初期登録を無料代行</div>
         <div class="offer-card">14日間、全機能無料。カード登録は不要</div>
       </div>
-      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間、無料ではじめる</a>
+      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
     </section>
 
     <!-- 11. 料金＋FAQ＋クロージング -->
-    <section class="section soft reveal faq-section" id="contact" style="background-image:url('images/11-bg.png')">
-      <div class="eyebrow">PRICING</div>
+    <section class="section soft reveal faq-section" id="contact" style="background-image:url('images/11-bg.webp')">      <div class="eyebrow">PRICING</div>
       <h2 class="section-title">料金プラン</h2>
       <div class="section-underline"></div>
       <div class="pricing-card">
@@ -500,7 +638,7 @@
           <span><span class="ok">✓</span>カード登録 不要</span>
           <span><span class="ok">✓</span>いつでも解約可能</span>
         </div>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間、無料ではじめる</a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
       </div>
 
       <div class="eyebrow">FAQ</div>
@@ -509,43 +647,31 @@
 
       <div class="faq-list" id="faqList">
         <div class="faq-item dir-l">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">メンズエステの委託金計算って自動化できますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>できます。指名区分・バック率・オプションの組み合わせに対応しており、コースごとに条件を設定するだけで自動計算されます。</p></div></div>
-        </div>
-        <div class="faq-item dir-r">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">今使ってるExcelやLINEのやり方、変えなきゃダメですか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>急に全部変える必要はありません。今のやり方と並行して試していただけます。</p></div></div>
-        </div>
-        <div class="faq-item dir-l">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">無料トライアルって本当にお金かかりませんか？カード登録は必要？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>はい。14日間、全機能を無料で。カード登録も不要ですので、勝手に課金されることはありません。</p></div></div>
-        </div>
-        <div class="faq-item dir-r">
           <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">導入の設定、自分でできますか？難しくないですか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>初期設定はこちらが伴走いたします。コース・オプション・バック率の登録も一緒に進めますのでご安心ください。</p></div></div>
         </div>
+        <div class="faq-item dir-r">
+          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">パソコンからでも使えますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>はい、パソコンのブラウザからもご利用いただけます。スマホでの操作を中心に設計していますが、パソコンでも同じ画面で操作できます。</p></div></div>
+        </div>
         <div class="faq-item dir-l">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">途中でやめたくなったらどうなりますか？データは消えますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">今使っているツールからデータを移行することはできますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>できます。データ移行はこちらで請け負いますので、お気軽にご相談ください。</p></div></div>
+        </div>
+        <div class="faq-item dir-r">
+          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">途中で解約したいときはどうすればいいですか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>いつでも解約できます。解約方法・データの取り扱いについても事前にご説明いたします。</p></div></div>
         </div>
-        <div class="faq-item dir-r">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">キャストが多い店でも委託金計算に対応できますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>対応しております。人数が多い店舗様でも、キャストごとに個別の条件を設定できます。</p></div></div>
-        </div>
         <div class="faq-item dir-l">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">スマホだけで全部できますか？パソコンは必要？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>スマホひとつで完結します。パソコンは不要です。</p></div></div>
-        </div>
-        <div class="faq-item dir-r">
-          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">セラピスト（キャスト）側も操作しますか？難しくないですか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>キャスト側は、出勤希望の提出と自分の売上確認だけのシンプルな作りです。</p></div></div>
+          <button type="button" class="faq-q"><span class="badge">Q</span><span class="q-text">何人までセラピストを登録できますか？</span><svg class="chevron" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="faq-a"><div class="faq-a-inner"><span class="badge">A</span><p>人数の上限はございません。少人数の店舗様から多店舗展開まで、同じ料金でご利用いただけます。</p></div></div>
         </div>
       </div>
 
       <div class="closing">
         <h3>"なんとなく経営"を、<br><span class="hl">今日で終わりに</span>しませんか。</h3>
         <p>予約が入るだけで、売上も委託金もシフトも自動で整う。</p>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間、無料ではじめる</a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
         <p class="note">カード登録なし・初期費用0円・いつでも解約可能</p>
       </div>
 
@@ -579,24 +705,8 @@
       targets.forEach(function (el) { el.classList.add('show'); });
     }
 
-    // ヒーロー：スマホが右からスライドイン＋画面の中身が3枚自動で切り替わる
-    window.addEventListener('load', function () {
-      var heroPhone = document.getElementById('heroPhone');
-      if (heroPhone) setTimeout(function () { heroPhone.classList.add('in'); }, 300);
-
-      var shots = document.querySelectorAll('.hero-shot');
-      if (shots.length > 1) {
-        var shotIndex = 0;
-        setInterval(function () {
-          shots[shotIndex].classList.remove('show');
-          shotIndex = (shotIndex + 1) % shots.length;
-          shots[shotIndex].classList.add('show');
-        }, 2800);
-      }
-    });
-
     // 汎用：要素群を順番にshowクラス付与するヘルパー
-    function staggerReveal(containerId, selector, delayStep, threshold) {
+    function staggerReveal(containerId, selector, delayStep, threshold, rootMargin) {
       var container = document.getElementById(containerId);
       if (!container || !('IntersectionObserver' in window)) return;
       var io = new IntersectionObserver(function (entries) {
@@ -609,52 +719,30 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: threshold || 0.25 });
+      }, { threshold: threshold || 0.25, rootMargin: rootMargin || '0px' });
       io.observe(container);
     }
 
+    // 01.5: 900時間の内訳（積み上げ式に順番表示）
+    staggerReveal('breakdownWrap', '.breakdown-step, .breakdown-arrow-v, .breakdown-final', 220, 0.2);
+
     // 02: 問題リスト（左右交互スライドイン）
-    staggerReveal('problemList', '.problem-item', 130, 0.2);
+    staggerReveal('problemList', '.problem-item', 260, 0, '-40% 0px -40% 0px');
 
     // 03: 一気通貫フロー（アイコン→矢印の順で）
     staggerReveal('flowRow', '.flow-box, .flow-arrow', 160, 0.3);
 
-    // 05: 比較カード
-    staggerReveal('compareGrid', '.compare-card', 150, 0.25);
-
     // 06: 特徴カード
     staggerReveal('featureGrid', '.feature-card', 100, 0.2);
 
+    // 08: 経営の見える化カード
+    staggerReveal('visibilityList', '.insight-card', 120, 0.2);
+
+    // 08.5: お客様の声
+    staggerReveal('voiceList', '.voice-card', 120, 0.2);
+
     // 09: 導入ステップ
     staggerReveal('stepRow', '.step-item', 180, 0.3);
-
-    // 08: 利益試算の数字カウントアップ
-    (function () {
-      var panel = document.getElementById('statPanel');
-      if (!panel || !('IntersectionObserver' in window)) return;
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            panel.querySelectorAll('.num .val').forEach(function (el) {
-              var target = parseInt(el.getAttribute('data-target'), 10);
-              var current = 0;
-              var duration = 900;
-              var startTime = null;
-              function step(ts) {
-                if (!startTime) startTime = ts;
-                var progress = Math.min((ts - startTime) / duration, 1);
-                current = Math.round(progress * target);
-                el.textContent = current;
-                if (progress < 1) requestAnimationFrame(step);
-              }
-              requestAnimationFrame(step);
-            });
-            io.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.3 });
-      io.observe(panel);
-    })();
 
     // 11: FAQアコーディオン開閉 ＋ 出現アニメーション
     staggerReveal('faqList', '.faq-item', 100, 0.15);
