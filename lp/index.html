@@ -369,6 +369,14 @@
     .lp-footer .links a:hover { text-decoration: underline; }
     .lp-footer .copyright { font-size: 11px; color: #bbb; }
   </style>
+  <!-- Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RPMFZ8CM5X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-RPMFZ8CM5X');
+  </script>
 </head>
 <body>
   <div class="lp">
@@ -749,6 +757,15 @@
     document.querySelectorAll('.faq-item').forEach(function (item) {
       var q = item.querySelector('.faq-q');
       q.addEventListener('click', function () { item.classList.toggle('open'); });
+    });
+
+    // GA4: CTAボタンのクリック計測
+    document.querySelectorAll('.cta-btn, .cta-link').forEach(function (el, i) {
+      el.addEventListener('click', function () {
+        if (typeof gtag === 'function') {
+          gtag('event', 'cta_click', { cta_index: i, cta_text: el.textContent.trim() });
+        }
+      });
     });
   </script>
 </body>
