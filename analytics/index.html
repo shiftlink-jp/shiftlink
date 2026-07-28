@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>LPアナリティクス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --aurora-1: #00ffc8;
@@ -15,12 +18,15 @@
     --bg: #060812;
     --panel: rgba(20, 26, 46, 0.55);
     --panel-border: rgba(140, 200, 255, 0.16);
+    --track: rgba(140, 200, 255, 0.08);
+    --font-jp: "Noto Sans JP", sans-serif;
+    --font-num: "Inter", sans-serif;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    font-family: var(--font-jp);
     background: var(--bg);
     color: var(--ink);
     position: relative;
@@ -43,10 +49,11 @@
     0% { transform: translate(0, 0) rotate(0deg); }
     100% { transform: translate(3%, -4%) rotate(4deg); }
   }
-  .wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 40px 20px 70px; }
+  .wrap { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 36px 48px 60px; }
+  .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
   h1 {
-    font-size: 21px;
-    margin: 0 0 24px;
+    font-size: 24px;
+    margin: 0;
     font-weight: 700;
     letter-spacing: 0.03em;
     background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2) 55%, var(--aurora-3));
@@ -83,14 +90,16 @@
   }
   .gate button:hover, .range button:hover { transform: translateY(-1px); box-shadow: 0 6px 26px rgba(123, 92, 255, 0.35); }
   .gate .err { color: #ff6b8b; font-size: 13px; min-height: 18px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .cards { display: flex; gap: 12px; margin-bottom: 24px; }
   .card {
+    flex: 1;
+    min-width: 0;
     background: var(--panel);
     border: 1px solid var(--panel-border);
     border-radius: 16px;
-    padding: 18px;
+    padding: 16px 14px;
     backdrop-filter: blur(18px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     position: relative;
     overflow: hidden;
   }
@@ -102,75 +111,105 @@
     background: radial-gradient(circle, rgba(0, 255, 200, 0.25), transparent 70%);
     pointer-events: none;
   }
-  .card .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; letter-spacing: 0.02em; }
+  .card .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; line-height: 1.3; }
   .card .value {
-    font-size: 27px;
-    font-weight: 800;
-    background: linear-gradient(120deg, #ffffff, var(--aurora-1));
+    font-family: var(--font-num);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--aurora-1), var(--aurora-2) 55%, var(--aurora-3));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .card .value .unit { font-size: 14px; font-weight: 500; margin-left: 2px; }
+  .main-row { display: flex; flex-direction: column; gap: 20px; }
   .section {
     background: var(--panel);
     border: 1px solid var(--panel-border);
     border-radius: 16px;
     padding: 20px;
-    margin-bottom: 20px;
     backdrop-filter: blur(18px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
   }
-  .section h2 { font-size: 13px; margin: 0 0 16px; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
+  .chart-section { margin-bottom: 20px; }
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+  .bottom-row { display: flex; flex-direction: column; gap: 20px; }
+  .bottom-row .section { flex: 1; }
+  .section h2 { font-size: 12px; margin: 0 0 16px; color: var(--ink-soft); letter-spacing: 0.08em; text-transform: uppercase; }
   .bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
   .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
   .bar {
     width: 100%;
     background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2) 70%, var(--aurora-3));
-    border-radius: 6px 6px 2px 2px;
+    border-radius: 3px 3px 2px 2px;
     min-height: 2px;
     box-shadow: 0 0 14px rgba(0, 255, 200, 0.35);
   }
-  .bar-date { font-size: 10px; color: var(--ink-soft); margin-top: 8px; white-space: nowrap; }
+  .bar-date { font-family: var(--font-num); font-size: 10px; color: var(--ink-soft); margin-top: 8px; white-space: nowrap; }
   .cta-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 13px;
-    padding: 10px 2px;
-    border-bottom: 1px solid rgba(140, 200, 255, 0.1);
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--panel-border);
     color: var(--ink);
   }
   .cta-row:last-child { border-bottom: none; }
-  .funnel-row { padding: 10px 2px; border-bottom: 1px solid rgba(140, 200, 255, 0.1); }
-  .funnel-row:last-child { border-bottom: none; }
-  .funnel-row .funnel-top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--ink-soft); }
-  .funnel-row .funnel-top span:last-child { color: var(--ink); font-weight: 700; }
-  .funnel-track { background: rgba(140, 200, 255, 0.08); border-radius: 6px; height: 8px; overflow: hidden; }
-  .funnel-fill { height: 100%; background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3)); border-radius: 6px; box-shadow: 0 0 10px rgba(0, 255, 200, 0.35); }
-  .range { display: flex; gap: 10px; margin-bottom: 22px; }
+  .cta-row span:last-child { font-family: var(--font-num); font-weight: 700; }
+  .funnel-row { padding-bottom: 0; }
+  .funnel-row .funnel-top { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: var(--ink); }
+  .funnel-row .funnel-top span:first-child { font-weight: 500; }
+  .funnel-row .funnel-top span:last-child { font-family: var(--font-num); font-weight: 600; }
+  .funnel-track { background: var(--track); border-radius: 999px; height: 8px; overflow: hidden; }
+  .funnel-fill { height: 100%; background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3)); border-radius: 999px; box-shadow: 0 0 10px rgba(0, 255, 200, 0.35); }
+  #funnelList { display: flex; flex-direction: column; gap: 18px; }
+  .range { display: flex; gap: 10px; }
   .range button {
+    font-family: var(--font-jp);
     background: var(--panel);
     color: var(--ink-soft);
     border: 1px solid var(--panel-border);
+    border-radius: 12px;
     padding: 9px 16px;
     font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
     box-shadow: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
+  .range button:hover { transform: translateY(-1px); }
   .range button.active {
     background: linear-gradient(120deg, var(--aurora-1), var(--aurora-2));
     color: #05060f;
+    font-weight: 700;
     border-color: transparent;
     box-shadow: 0 4px 20px rgba(0, 255, 200, 0.2);
   }
   .hidden { display: none; }
   .loading, .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; }
+  @media (min-width: 1100px) {
+    .main-row { flex-direction: row; align-items: stretch; }
+    .chart-section { margin-bottom: 0; width: 728px; flex-shrink: 0; display: flex; flex-direction: column; }
+    .chart-section .bars { flex: 1; }
+    .right-col { flex: 1; min-width: 0; }
+    .bottom-row { flex-direction: row; }
+  }
+  @media (max-width: 700px) {
+    .wrap { padding: 28px 16px 50px; }
+    .cards { flex-wrap: wrap; }
+    .card { flex: 1 1 calc(50% - 12px); }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="dash">
-    <h1>📊 LPアナリティクス</h1>
-    <div class="range" id="rangeButtons"></div>
+    <div class="header-bar">
+      <h1>📊 LPアナリティクス</h1>
+      <div class="range" id="rangeButtons"></div>
+    </div>
     <div id="loading" class="loading">読み込み中…</div>
     <div id="content" class="hidden">
       <div class="cards">
@@ -182,21 +221,27 @@
         <div class="card"><div class="label">申し込み完了数</div><div class="value" id="v-conv">-</div></div>
         <div class="card"><div class="label">申し込み完了率</div><div class="value" id="v-convrate">-<span class="unit">%</span></div></div>
       </div>
-      <div class="section">
-        <h2>日別 訪問者数</h2>
-        <div class="bars" id="bars"></div>
-      </div>
-      <div class="section">
-        <h2>セクション到達率（ファネル）</h2>
-        <div id="funnelList"></div>
-      </div>
-      <div class="section">
-        <h2>離脱したセクション</h2>
-        <div id="exitList"></div>
-      </div>
-      <div class="section">
-        <h2>CTAボタン別クリック内訳</h2>
-        <div id="ctaList"></div>
+      <div class="main-row">
+        <div class="section chart-section">
+          <h2>日別 訪問者数</h2>
+          <div class="bars" id="bars"></div>
+        </div>
+        <div class="right-col">
+          <div class="section">
+            <h2>セクション到達率（ファネル）</h2>
+            <div id="funnelList"></div>
+          </div>
+          <div class="bottom-row">
+            <div class="section">
+              <h2>離脱したセクション</h2>
+              <div id="exitList"></div>
+            </div>
+            <div class="section">
+              <h2>CTAボタン別クリック内訳</h2>
+              <div id="ctaList"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
