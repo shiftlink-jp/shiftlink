@@ -108,8 +108,14 @@
     document.getElementById('content').classList.add('hidden');
     document.getElementById('err').textContent = '';
 
-    fetch(FN_URL + '?password=' + encodeURIComponent(password) + '&days=' + days, {
-      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    fetch(FN_URL, {
+      method: 'POST',
+      headers: {
+        'apikey': ANON,
+        'Authorization': 'Bearer ' + ANON,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password: password, days: days })
     })
       .then(function (res) {
         if (res.status === 401) throw new Error('unauthorized');
