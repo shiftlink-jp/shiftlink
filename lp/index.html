@@ -765,8 +765,52 @@
         if (typeof gtag === 'function') {
           gtag('event', 'cta_click', { cta_index: i, cta_text: el.textContent.trim() });
         }
+        trackEvent('cta_click', { cta_text: el.textContent.trim() });
       });
     });
+
+    // 自前アナリティクス（訪問数・滞在時間・CTAクリック）: Supabaseへ直接記録
+    (function () {
+      var SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co';
+      var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
+      var sessionId = sessionStorage.getItem('lp_session_id');
+      if (!sessionId) {
+        sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+        sessionStorage.setItem('lp_session_id', sessionId);
+      }
+      var startedAt = Date.now();
+      var dwellSent = false;
+
+      window.trackEvent = function (eventType, extra) {
+        var payload = Object.assign({
+          event_type: eventType,
+          session_id: sessionId,
+          path: location.pathname,
+        }, extra || {});
+        fetch(SUPABASE_URL + '/rest/v1/lp_analytics_events', {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify(payload),
+        }).catch(function () {});
+      };
+
+      function sendDwell() {
+        if (dwellSent) return;
+        dwellSent = true;
+        trackEvent('dwell', { dwell_ms: Date.now() - startedAt });
+      }
+
+      trackEvent('pageview');
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') sendDwell();
+      });
+      window.addEventListener('pagehide', sendDwell);
+    })();
   </script>
 </body>
 </html>

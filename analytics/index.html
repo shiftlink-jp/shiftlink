@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>LPアナリティクス</title>
+<style>
+  :root { --orange: #ff7a30; --ink: #222; --ink-soft: #666; --bg: #f7f7f8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: var(--bg); color: var(--ink); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 24px; }
+  .gate { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 16px; }
+  .gate input { font-size: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid #ddd; width: 220px; text-align: center; }
+  .gate button, .range button { background: var(--orange); color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .gate .err { color: #d33; font-size: 13px; min-height: 18px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .card { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+  .card .value { font-size: 26px; font-weight: 800; }
+  .card .value .unit { font-size: 14px; font-weight: 500; margin-left: 2px; }
+  .section { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .section h2 { font-size: 14px; margin: 0 0 14px; color: var(--ink-soft); }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar { width: 100%; background: var(--orange); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar-date { font-size: 10px; color: #999; margin-top: 6px; white-space: nowrap; }
+  .cta-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .cta-row:last-child { border-bottom: none; }
+  .range { display: flex; gap: 8px; margin-bottom: 20px; }
+  .range button { background: #eee; color: #333; padding: 8px 14px; font-size: 13px; }
+  .range button.active { background: var(--orange); color: #fff; }
+  .hidden { display: none; }
+  .loading, .empty { text-align: center; color: #999; padding: 40px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate" class="gate">
+    <h1>🔒 LPアナリティクス</h1>
+    <input id="pw" type="password" placeholder="パスワード" autocomplete="off">
+    <button onclick="unlock()">表示する</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="dash" class="hidden">
+    <h1>📊 LPアナリティクス</h1>
+    <div class="range" id="rangeButtons"></div>
+    <div id="loading" class="loading">読み込み中…</div>
+    <div id="content" class="hidden">
+      <div class="cards">
+        <div class="card"><div class="label">訪問者数</div><div class="value" id="v-visitors">-</div></div>
+        <div class="card"><div class="label">ページ表示回数</div><div class="value" id="v-pageviews">-</div></div>
+        <div class="card"><div class="label">CTAクリック数</div><div class="value" id="v-clicks">-</div></div>
+        <div class="card"><div class="label">クリック率</div><div class="value" id="v-rate">-<span class="unit">%</span></div></div>
+        <div class="card"><div class="label">平均滞在時間</div><div class="value" id="v-dwell">-</div></div>
+      </div>
+      <div class="section">
+        <h2>日別 訪問者数</h2>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="section">
+        <h2>CTAボタン別クリック内訳</h2>
+        <div id="ctaList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var FN_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co/functions/v1/lp-analytics-summary';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
+  var currentDays = 7;
+  var password = '';
+
+  function unlock() {
+    var pw = document.getElementById('pw').value.trim();
+    if (!pw) return;
+    password = pw;
+    load(currentDays, true);
+  }
+
+  document.getElementById('pw').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') unlock();
+  });
+
+  function renderRangeButtons() {
+    var opts = [{ d: 7, label: '7日間' }, { d: 30, label: '30日間' }, { d: 90, label: '90日間' }];
+    var el = document.getElementById('rangeButtons');
+    el.innerHTML = '';
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.textContent = o.label;
+      if (o.d === currentDays) b.className = 'active';
+      b.onclick = function () { currentDays = o.d; load(currentDays, false); };
+      el.appendChild(b);
+    });
+  }
+
+  function formatDwell(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? (m + '分' + s + '秒') : (s + '秒');
+  }
+
+  function load(days, isFirst) {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('content').classList.add('hidden');
+    document.getElementById('err').textContent = '';
+
+    fetch(FN_URL + '?password=' + encodeURIComponent(password) + '&days=' + days, {
+      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    })
+      .then(function (res) {
+        if (res.status === 401) throw new Error('unauthorized');
+        if (!res.ok) throw new Error('server');
+        return res.json();
+      })
+      .then(function (data) {
+        if (isFirst) {
+          document.getElementById('gate').classList.add('hidden');
+          document.getElementById('dash').classList.remove('hidden');
+          renderRangeButtons();
+        } else {
+          renderRangeButtons();
+        }
+        render(data);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+      })
+      .catch(function (e) {
+        if (e.message === 'unauthorized') {
+          document.getElementById('err').textContent = 'パスワードが違います';
+          document.getElementById('loading').classList.add('hidden');
+        } else {
+          document.getElementById('loading').textContent = '読み込みに失敗しました。時間をおいて再度お試しください。';
+        }
+      });
+  }
+
+  function render(data) {
+    document.getElementById('v-visitors').textContent = data.visitors;
+    document.getElementById('v-pageviews').textContent = data.pageviews;
+    document.getElementById('v-clicks').textContent = data.ctaClicks;
+    document.getElementById('v-rate').innerHTML = data.clickRate + '<span class="unit">%</span>';
+    document.getElementById('v-dwell').textContent = formatDwell(data.avgDwellSeconds);
+
+    var bars = document.getElementById('bars');
+    bars.innerHTML = '';
+    var max = Math.max.apply(null, data.daily.map(function (d) { return d.pageviews; }).concat([1]));
+    data.daily.forEach(function (d) {
+      var col = document.createElement('div');
+      col.className = 'bar-col';
+      var bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = Math.max(2, Math.round((d.pageviews / max) * 100)) + '%';
+      bar.title = d.date + ': ' + d.pageviews + '件';
+      var label = document.createElement('div');
+      label.className = 'bar-date';
+      label.textContent = d.date.slice(5);
+      col.appendChild(bar);
+      col.appendChild(label);
+      bars.appendChild(col);
+    });
+
+    var ctaList = document.getElementById('ctaList');
+    ctaList.innerHTML = '';
+    var entries = Object.entries(data.ctaBreakdown || {}).sort(function (a, b) { return b[1] - a[1]; });
+    if (!entries.length) {
+      ctaList.innerHTML = '<div class="empty">まだクリックがありません</div>';
+    } else {
+      entries.forEach(function (e) {
+        var row = document.createElement('div');
+        row.className = 'cta-row';
+        row.innerHTML = '<span>' + e[0].replace(/</g, '&lt;') + '</span><span>' + e[1] + '回</span>';
+        ctaList.appendChild(row);
+      });
+    }
+  }
+</script>
+</body>
+</html>
