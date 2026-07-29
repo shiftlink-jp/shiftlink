@@ -126,10 +126,9 @@
 
     /* セクションとセクションの境目にボタンを浮かせて配置する */
     .cta-seam { position: relative; height: 0; z-index: 5; }
+    .cta-seam-inner { position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); }
     .cta-seam .cta-btn {
-      position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%);
       display: inline-flex; width: max-content; padding: 16px 32px; margin-top: 0; white-space: nowrap;
-      animation: none;
     }
 
     /* ===== 01.5: 900時間の内訳（FVの数字の根拠） ===== */
@@ -540,7 +539,9 @@
     </section>
 
     <div class="cta-seam">
-      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
+      <div class="cta-seam-inner">
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
+      </div>
     </div>
 
     <!-- 08.5. お客様の声 -->
