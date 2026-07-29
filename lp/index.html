@@ -124,6 +124,14 @@
       position: relative; z-index: 1; margin-top: 8px;
     }
 
+    /* セクションとセクションの境目にボタンを浮かせて配置する */
+    .cta-seam { position: relative; height: 0; z-index: 5; }
+    .cta-seam .cta-btn {
+      position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%);
+      display: inline-flex; width: max-content; padding: 16px 32px; margin-top: 0; white-space: nowrap;
+      animation: none;
+    }
+
     /* ===== 01.5: 900時間の内訳（FVの数字の根拠） ===== */
     .breakdown-steps { display: flex; flex-direction: column; align-items: center; gap: 0; position: relative; z-index: 1; margin-bottom: 8px; }
     .breakdown-step {
@@ -528,9 +536,12 @@
           <li>初期費用0円・14日間無料・カード登録不要で、まず試せる</li>
         </ul>
         <p class="feature-note">実際に"今のやり方"から乗り換えた店舗の声を、次でご紹介します。</p>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
       </div>
     </section>
+
+    <div class="cta-seam">
+      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1">14日間無料で体験してみる</a>
+    </div>
 
     <!-- 08.5. お客様の声 -->
     <section class="section white reveal" id="voicePanel">      <div class="eyebrow">VOICE</div>
