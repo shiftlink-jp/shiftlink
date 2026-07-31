@@ -2283,6 +2283,26 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
+<!-- ===== 端末登録（店舗コード）=====
+     この端末が未登録のときだけ表示する。登録後は二度と出ない。
+     大手POS(Square/Shopify)と同じ「端末認証→個人PIN」の2段構え。 -->
+<div class="screen login-wrap" id="s-pairing">
+  <div class="login-box">
+    <div class="login-sub">端末の登録</div>
+    <div style="font-size:.82rem;color:var(--text3);line-height:1.7;margin-bottom:1rem">
+      この端末を初めて使うため、店舗コードの入力が必要です。<br>
+      コードはオーナーが発行します（管理画面 → 端末の管理）。<br>
+      <b>登録は最初の1回だけ</b>で、次回からはPINだけでログインできます。
+    </div>
+    <label class="lbl">店舗コード（8桁）</label>
+    <input class="linput" type="text" id="pair-code" maxlength="8" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="例: A3KP7M2X" style="text-transform:uppercase;letter-spacing:.12em;font-weight:700" onkeydown="if(event.key==='Enter')doPairDevice()">
+    <label class="lbl" style="margin-top:.75rem">この端末の名前（任意）</label>
+    <input class="linput" type="text" id="pair-label" maxlength="30" placeholder="例: かなさんのiPhone">
+    <button class="btn-login" style="background:var(--accent)" onclick="doPairDevice()" id="btn-pair">登録する</button>
+    <div class="lerr" id="pair-err"></div>
+  </div>
+</div>
+
 <!-- ===== APP ===== -->
 <div class="screen" id="s-app">
   <div class="app-hdr no-print">
@@ -2932,6 +2952,22 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <button class="f2-savebtn-sm" onclick="saveCardFeeSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
+    <!-- 端末の管理（ペアリング） -->
+    <div class="f2-card">
+      <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span><span class="f2-card-title">端末の管理</span></div>
+      <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
+        スタッフが新しい端末（スマホ）でログインするには、店舗コードの入力が必要です。<br>
+        コードは<b>48時間有効・1回きり</b>。紛失や退職の際は端末を「解除」してください。
+      </div>
+      <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem" onclick="issuePairingCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>店舗コードを発行する</button>
+      <div id="pair-code-out" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);border-radius:10px;padding:.8rem;text-align:center;margin-bottom:.6rem">
+        <div style="font-size:.7rem;color:var(--text3)">この端末に入力してください（48時間有効）</div>
+        <div id="pair-code-val" style="font-size:1.6rem;font-weight:800;letter-spacing:.18em;margin:.3rem 0"></div>
+        <button style="font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.25rem .8rem;cursor:pointer" onclick="copyPairCode()">コードをコピー</button>
+      </div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--text2);margin:.6rem 0 .3rem">登録済みの端末</div>
+      <div id="device-list"><div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込み中...</div></div>
+    </div>
     <!-- 予約確認URLの挨拶文 -->
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="f2-card-title">予約確認URLの挨拶文</span></div>
@@ -3380,17 +3416,72 @@ async function loadStoreDataForPin(){
   courses=cs||[]; opts=op||[]; roomList=rm||[]; storeSettings=ss||{}
   // owner_pin は auth_pins へ隔離済み。クライアントはPINを保持しない（照合は pin-login のみ）。
 }
+// ── 端末ペアリング（設計書 docs/security-device-pairing-design.md）──
+// この端末の登録トークン。サーバーはこれを見て「どの店舗か」を判定する。
+// ＝クライアントが店舗を申告できなくなり、第三者が他店の窓口を叩く経路が消える。
+const DEVICE_TOKEN_KEY='sl_device_token'
+function getDeviceToken(){ try{ return localStorage.getItem(DEVICE_TOKEN_KEY)||'' }catch(e){ return '' } }
+function setDeviceToken(t){ try{ t?localStorage.setItem(DEVICE_TOKEN_KEY,t):localStorage.removeItem(DEVICE_TOKEN_KEY) }catch(e){} }
+// サーバーから「この端末は未登録/失効」と返されたら、トークンを捨てて店舗コード画面へ誘導する
+function handleNeedPairing(j){
+  if(j&&j.need_pairing){ setDeviceToken(''); showPairingScreen(j.error||'この端末の登録が必要です'); return true }
+  return false
+}
+
 // PINをサーバ側(pin-login)で照合してセッションを取得し、setSessionする
 async function pinLoginViaServer(role, castId, pin){
   const res=await fetch(SUPABASE_URL+'/functions/v1/pin-login',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
-    body:JSON.stringify({store_id:PIN_STORE_ID, role, cast_id:castId||null, pin})
+    // store_id は猶予期間中のみサーバーが参照する。端末登録後はトークンから導出される。
+    body:JSON.stringify({store_id:PIN_STORE_ID, role, cast_id:castId||null, pin, device_token:getDeviceToken()})
   })
   const j=await res.json().catch(()=>({}))
-  if(!res.ok) throw new Error(j.error||'ログインに失敗しました')
+  if(!res.ok){ if(handleNeedPairing(j)) throw new Error(j.error||'端末の登録が必要です'); throw new Error(j.error||'ログインに失敗しました') }
+  // 猶予期間中の自動ペアリングでトークンが発行されたら保存（スタッフの操作は不要）
+  if(j.device_token) setDeviceToken(j.device_token)
   await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
   currentStoreId=j.store_id
+  return j
+}
+
+// 端末登録画面を表示する（未登録・失効時）
+function showPairingScreen(msg){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  const el=document.getElementById('s-pairing')
+  if(!el) return
+  el.classList.add('on')
+  const err=document.getElementById('pair-err')
+  if(err) err.textContent=msg||''
+  const inp=document.getElementById('pair-code'); if(inp){ inp.value=''; setTimeout(()=>inp.focus(),100) }
+}
+// 店舗コードを入力して登録 → 通常のログイン画面へ戻す
+async function doPairDevice(){
+  const code=(document.getElementById('pair-code')?.value||'').trim().toUpperCase()
+  const label=(document.getElementById('pair-label')?.value||'').trim()
+  const err=document.getElementById('pair-err')
+  const btn=document.getElementById('btn-pair')
+  if(err) err.textContent=''
+  if(code.length<4){ if(err) err.textContent='店舗コードを入力してください'; return }
+  if(btn){ btn.disabled=true; btn.textContent='登録中...' }
+  try{
+    await pairThisDevice(code,label)
+    toast('この端末を登録しました')
+    showLogin('top')
+  }catch(e){ if(err) err.textContent=e.message||'登録に失敗しました' }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='登録する' } }
+}
+
+// 店舗コードを送って、この端末を登録する
+async function pairThisDevice(code,label){
+  const res=await fetch(SUPABASE_URL+'/functions/v1/pair-device',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body:JSON.stringify({code, label:label||null})
+  })
+  const j=await res.json().catch(()=>({}))
+  if(!res.ok||!j.device_token) throw new Error(j.error||'端末の登録に失敗しました')
+  setDeviceToken(j.device_token)
   return j
 }
 // ── 生体認証(パスキー) v2: サーバ側で署名検証する安全版。PIN認証モードで使用 ──
@@ -3563,9 +3654,10 @@ async function renderPinCastPicker(){
     const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
-      body:JSON.stringify({store_id:PIN_STORE_ID})
+      body:JSON.stringify({store_id:PIN_STORE_ID, device_token:getDeviceToken()})
     })
     const j=await res.json().catch(()=>({}))
+    if(!res.ok && handleNeedPairing(j)) return
     if(!res.ok) errMsg='HTTP '+res.status+(j&&j.error?' '+j.error:'')
     casts=Array.isArray(j.casts)?j.casts:[]
   }catch(e){ errMsg=String(e&&e.message||e); console.error('[pinauth] cast list error', e) }
@@ -4178,14 +4270,19 @@ async function doCastLogin(){
   if(!cid){err.textContent='名前を選んでください';return}
   const btn=document.getElementById('btn-cast')
   btn.disabled=true; btn.textContent='確認中...'
-  const{data:c,error}=await withStoreFilter(sb.from('casts').select('*').eq('id',cid).eq('pin',pin)).maybeSingle()
-  btn.disabled=false; btn.textContent='ログイン'
-  if(error||!c){err.textContent='PINが正しくありません';return}
-  me={...c,is_owner:false}
-  sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
-  startApp()
-  // 生体認証未登録なら登録を促す
-  setTimeout(()=>offerPasskeyRegistration(c.id, c.name), 800)
+  // 旧経路もサーバ照合(pin-login)に統一する。
+  // 以前は casts.pin の平文と直接突き合わせていたが、平文は auth_pins へ隔離したため使えない。
+  // （平文を casts に置くと、RLSが行単位のためセラピストが同僚のPINを読めてしまう＝#①）
+  try{
+    const j=await pinLoginViaServer('cast', parseInt(cid), pin)
+    const rid=(j&&j.cast_id!=null)?Number(j.cast_id):parseInt(cid)
+    const{data:c}=await withStoreFilter(sb.from('casts').select('*').eq('id',rid)).maybeSingle()
+    me=c?{...c,is_owner:false}:{id:rid,name:'セラピスト',is_owner:false}
+    sessionStorage.setItem('shiftlink_me',JSON.stringify(me))
+    startApp()
+    setTimeout(()=>offerPasskeyRegistration(rid,(c&&c.name)||'セラピスト'), 800)
+  }catch(e){ err.textContent=e.message||'PINが正しくありません' }
+  finally{ btn.disabled=false; btn.textContent='ログイン' }
 }
 
 // ── PIN認証モードのセラピストログイン（名前選択なし）補助 ──
@@ -4233,7 +4330,7 @@ async function castBiometricLogin(ids){
   if(ids.length===1){ await tryOne(ids[0]); return }
   let casts=[]
   try{
-    const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({store_id:PIN_STORE_ID})})
+    const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({store_id:PIN_STORE_ID, device_token:getDeviceToken()})})
     const j=await res.json().catch(()=>({})); casts=Array.isArray(j.casts)?j.casts:[]
   }catch(e){}
   const old=document.getElementById('cast-bio-btn'); if(old) old.remove()
@@ -8974,6 +9071,63 @@ async function saveBusinessHours(){
   storeSettings.close_time=closeT
   toast('営業時間を保存しました')
 }
+// ── 端末の管理（オーナー専用）──────────────────────────
+// すべて manage-devices 経由。関数側でオーナー権限を検証している。
+async function callManageDevices(payload){
+  const{data:{session}}=await sb.auth.getSession()
+  if(!session) throw new Error('セッションが切れています。再ログインしてください')
+  const res=await fetch(SUPABASE_URL+'/functions/v1/manage-devices',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({store_id:currentStoreId||PIN_STORE_ID, ...payload})
+  })
+  const j=await res.json().catch(()=>({}))
+  if(!res.ok) throw new Error(j.error||'処理に失敗しました')
+  return j
+}
+let _lastPairCode=''
+async function issuePairingCode(){
+  try{
+    const j=await callManageDevices({action:'issue_code'})
+    _lastPairCode=j.code
+    const box=document.getElementById('pair-code-out')
+    const val=document.getElementById('pair-code-val')
+    if(val) val.textContent=j.code
+    if(box) box.style.display='block'
+    toast('店舗コードを発行しました（48時間有効）')
+  }catch(e){ toast('エラー: '+(e.message||e)) }
+}
+async function copyPairCode(){
+  if(!_lastPairCode) return
+  try{ await navigator.clipboard.writeText(_lastPairCode); toast('コードをコピーしました') }
+  catch(e){ toast('コピーできませんでした: '+_lastPairCode) }
+}
+async function renderDeviceList(){
+  const el=document.getElementById('device-list')
+  if(!el) return
+  try{
+    const j=await callManageDevices({action:'list'})
+    const devs=j.devices||[]
+    if(!devs.length){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">まだ登録された端末はありません</div>'; return }
+    el.innerHTML=devs.map(d=>{
+      const revoked=!!d.revoked_at
+      const last=d.last_seen_at?String(d.last_seen_at).slice(0,10):'—'
+      return `<div class="f2-itemrow2" style="align-items:center;${revoked?'opacity:.45':''}">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.85rem;font-weight:600">${escapeHtml(d.label||'名称未設定の端末')}${revoked?'（解除済み）':''}</div>
+          <div style="font-size:.68rem;color:var(--text3)">最終利用 ${escapeHtml(last)}</div>
+        </div>
+        ${revoked?'':`<button class="f2-trash" onclick="revokeDevice(${d.id})" aria-label="解除" title="この端末を解除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`}
+      </div>`
+    }).join('')
+  }catch(e){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込めませんでした</div>' }
+}
+async function revokeDevice(id){
+  if(!confirm('この端末を解除しますか？\n解除するとその端末は再度ログインできなくなります（店舗コードで再登録が必要）。'))return
+  try{ await callManageDevices({action:'revoke', device_id:id}); toast('端末を解除しました'); renderDeviceList() }
+  catch(e){ toast('エラー: '+(e.message||e)) }
+}
+
 async function saveRvGreeting(){
   const greeting=(document.getElementById('st-rv-greeting')?.value||'').trim()
   const{error}=await withStoreFilter(sb.from('store_settings').update({public_greeting:greeting}))
@@ -10122,7 +10276,28 @@ async function saveWork(){
 }
 
 // ── セラピスト管理 ──
+// セラピストのPIN一覧（管理画面バッジ用）。オーナーのみ取得できる。
+// 平文は casts ではなく auth_pins（service_role以外アクセス不可）にあり、
+// この窓口がオーナー権限を検証したうえで返す＝同僚同士では読めない（#①）。
+let castPinMap={}
+async function loadCastPins(){
+  castPinMap={}
+  try{
+    if(!me||!me.is_owner) return
+    const{data:{session}}=await sb.auth.getSession()
+    if(!session) return
+    const res=await fetch(SUPABASE_URL+'/functions/v1/manage-devices',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({store_id:currentStoreId||PIN_STORE_ID, action:'list_pins'})
+    })
+    const j=await res.json().catch(()=>({}))
+    if(res.ok&&j.pins) castPinMap=j.pins
+  }catch(e){ /* 取得できなければ「未設定」表示にフォールバック */ }
+}
+
 async function loadCastMgmt(){
+  await loadCastPins()
   const area=document.getElementById('cast-area')
   area.innerHTML='<div class="spin">読み込み中...</div>'
   const{data:casts}=await withStoreFilter(sb.from('casts').select('*')).eq('active',true).order('sort_order')
@@ -10152,7 +10327,7 @@ async function loadCastMgmt(){
     return `<div class="cc2-card">
       <div class="cc2-top">
         <div class="cc2-name">${escapeHtml(c.name)}</div>
-        <div class="cc2-badges">${badge}<span class="cc2-badge-pin">PIN ${escapeHtml(c.pin||'未設定')}</span></div>
+        <div class="cc2-badges">${badge}<span class="cc2-badge-pin">PIN ${escapeHtml(castPinMap[c.id]||c.pin||'未設定')}</span></div>
       </div>
       <div class="cc2-actions">
         <button class="cc2-act cc2-fee" onclick="openFeeSheet(${c.id},'${jsEsc(c.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>委託金設定</button>
@@ -10897,6 +11072,8 @@ async function openStoreSettings(){
     // 予約確認URLの挨拶文
     const grEl=document.getElementById('st-rv-greeting')
     if(grEl) grEl.value=ss.public_greeting||''
+    // 端末の管理（登録済み端末の一覧）
+    renderDeviceList()
   }
   document.getElementById('store-overlay').classList.add('on')
   // 現在の店舗PINを表示（端末にログイン中のオーナーのPIN）
