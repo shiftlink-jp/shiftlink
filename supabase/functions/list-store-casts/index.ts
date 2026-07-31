@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
 
 // 猶予期間（pin-login と同じ設計）。環境変数が未設定・書式不正なら「猶予ON」に倒す（fail-open）。
 // fail-closedにすると設定漏れやタイポで全店がログイン画面に進めなくなるため。
-const DEFAULT_GRACE_UNTIL = "2026-09-01T00:00:00+09:00";
+const DEFAULT_GRACE_UNTIL = "2026-08-11T00:00:00+09:00";
 function inGracePeriod(): boolean {
   const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
   const t = raw ? Date.parse(raw) : NaN;

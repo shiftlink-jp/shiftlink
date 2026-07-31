@@ -153,14 +153,21 @@ serve(async (req) => {
       // ①: セラピストのPINはオーナーだけがここから取得できる
       // store_id が NULL のレガシー行も拾う（011でnullable。set-pin側の更新条件と揃える）。
       // 揃えないと、NULL行のセラピストだけバッジが恒久的に「未設定」になる。
-      const { data } = await admin
-        .from("auth_pins").select("principal,pin_plain")
-        .or(`store_id.eq.${store_id},store_id.is.null`)
-        .like("principal", "cast.%");
+      //
+      // ★重要★ NULL行は「どの店舗のものか」が判別できないため、そのまま返すと
+      //   他店のPINが応答に混ざる（画面に出なくてもHTTP応答には載る＝他店データ漏洩）。
+      //   自店に在籍するキャストIDでフィルタして、確実に自店ぶんだけを返す。
+      const [{ data }, { data: castRows }] = await Promise.all([
+        admin.from("auth_pins").select("principal,pin_plain")
+          .or(`store_id.eq.${store_id},store_id.is.null`)
+          .like("principal", "cast.%"),
+        admin.from("casts").select("id").eq("store_id", store_id),
+      ]);
+      const allowed = new Set((castRows ?? []).map((c) => String(c.id)));
       const pins: Record<string, string> = {};
       for (const r of data ?? []) {
         const id = String(r.principal).split(".")[1];
-        if (id && r.pin_plain) pins[id] = String(r.pin_plain);
+        if (id && r.pin_plain && allowed.has(id)) pins[id] = String(r.pin_plain);
       }
       return json({ ok: true, pins }, 200, origin);
     }

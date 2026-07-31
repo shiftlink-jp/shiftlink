@@ -12,6 +12,12 @@ const LOCK_MINUTES = 15;        // ロック時間（分）
 // ※026以前の「店舗共有ロック(5回)」は、1人の打ち間違いで全員が締め出される原因だったため廃止。
 const STORE_MAX_FAILS = 50;
 const STORE_LOCK_MINUTES = 60;
+// 未登録端末（＝猶予期間中のみ到達しうる）専用のバックストップ。
+// 登録済み端末のカウンタと分けるのが要点:
+//   ・分けないと、移行中は誰でも到達できる50回/60分が総当たりの上限になり、
+//     4桁PIN×在籍12名では1日以内に突破されうる（在籍者の誰か1人でも当たれば成功のため）
+//   ・かつ、その50回を攻撃者に食われると登録済みの正規端末まで巻き添えでロックされる
+const ANON_MAX_FAILS = 10;
 
 // 自動ペアリング猶予期間。この日時までは端末トークンが無くてもPINログインを許可し、
 // 成功時に自動で端末トークンを発行する（既存端末が一斉に締め出される事故を防ぐため）。
@@ -21,7 +27,7 @@ const STORE_LOCK_MINUTES = 60;
 //   ここをfail-closed（未設定なら即トークン必須）にすると、Secret設定を1つ忘れた瞬間や
 //   タイポ（全角・スラッシュ区切り等でInvalid Date）で全店が即ログイン不能になるため。
 //   移行完了後は下の DEFAULT_GRACE_UNTIL を過去日に書き換えて締める（＝コードで明示的に締める）。
-const DEFAULT_GRACE_UNTIL = "2026-09-01T00:00:00+09:00";
+const DEFAULT_GRACE_UNTIL = "2026-08-11T00:00:00+09:00";
 function graceDeadline(): number {
   const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
   const t = raw ? Date.parse(raw) : NaN;
@@ -179,7 +185,10 @@ serve(async (req) => {
     const principalKey = deviceId != null
       ? `${basePrincipal}.dev${deviceId}`
       : `${basePrincipal}.${store_id}`;   // 猶予期間中（端末未登録）は従来キー
-    const storeKey = "store.backstop";     // 店舗全体の最終防衛線
+    // 店舗全体の最終防衛線。登録済み端末と未登録端末でバケットを分ける。
+    // （混ぜると、未登録からの攻撃で正規端末まで巻き添えロックされる）
+    const storeKey = deviceId != null ? "store.backstop" : "store.backstop.anon";
+    const storeLimit = deviceId != null ? STORE_MAX_FAILS : ANON_MAX_FAILS;
 
     // 0) ロック状態を確認（端末ごと＋店舗全体の二段構え）
     const [{ data: att }, { data: satt }] = await Promise.all([
@@ -211,9 +220,11 @@ serve(async (req) => {
       const next = freshCount(att, LOCK_MINUTES) + 1;
       const locked = next >= limit ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
       const sNext = freshCount(satt, STORE_LOCK_MINUTES) + 1;
-      const sLocked = sNext >= STORE_MAX_FAILS ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
+      const sLocked = sNext >= storeLimit ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
       const now = new Date().toISOString();
-      await Promise.all([
+      // 記録に失敗するとレート制限が無言で無効化されるため、必ずログに残す
+      // （将来スキーマがずれた場合に気づけるようにする）
+      const [r1, r2] = await Promise.all([
         admin.from("pin_login_attempts").upsert(
           // ロックを掛ける時はカウントを0に戻す。戻さないと、ロック解除後の最初の1回の失敗で
           // 即座に閾値を超えて再ロックされ、永久に解けなくなる（ノコギリ波）。
@@ -225,6 +236,8 @@ serve(async (req) => {
           { onConflict: "store_id,principal" },
         ),
       ]);
+      if (r1?.error) console.error("pin-login: 端末の試行記録に失敗", r1.error.message);
+      if (r2?.error) console.error("pin-login: 店舗の試行記録に失敗", r2.error.message);
     };
 
     // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
