@@ -183,11 +183,20 @@ serve(async (req) => {
 
     // 0) ロック状態を確認（端末ごと＋店舗全体の二段構え）
     const [{ data: att }, { data: satt }] = await Promise.all([
-      admin.from("pin_login_attempts").select("fail_count,locked_until")
+      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
         .eq("store_id", store_id).eq("principal", principalKey).maybeSingle(),
-      admin.from("pin_login_attempts").select("fail_count,locked_until")
+      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
         .eq("store_id", store_id).eq("principal", storeKey).maybeSingle(),
     ]);
+
+    // 失敗回数は「直近の時間窓内のもの」だけ数える（スライディングウィンドウ）。
+    // ※この処理が無いと失敗が生涯累積し、いずれ通常運用でも恒久ロックに入る。
+    //   特に店舗カウンタは成功時に消さないため、窓が無いと必ず詰む。
+    const freshCount = (row: { fail_count?: number; updated_at?: string } | null, windowMin: number) => {
+      if (!row?.updated_at) return 0;
+      const age = Date.now() - new Date(row.updated_at).getTime();
+      return age < windowMin * 60000 ? (row.fail_count ?? 0) : 0;
+    };
     if (att?.locked_until && new Date(att.locked_until) > new Date()) {
       return json({ error: "この端末は試行回数の上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
@@ -197,20 +206,22 @@ serve(async (req) => {
 
     // 失敗時: 端末カウントと店舗カウントの両方を加算し、必要ならロック
     const recordFail = async () => {
-      const next = (att?.fail_count ?? 0) + 1;
       // 端末が特定できている場合のみ厳しく（5回）。猶予期間中の未特定端末は緩める（20回）
       const limit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
+      const next = freshCount(att, LOCK_MINUTES) + 1;
       const locked = next >= limit ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
-      const sNext = (satt?.fail_count ?? 0) + 1;
+      const sNext = freshCount(satt, STORE_LOCK_MINUTES) + 1;
       const sLocked = sNext >= STORE_MAX_FAILS ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
       const now = new Date().toISOString();
       await Promise.all([
         admin.from("pin_login_attempts").upsert(
-          { store_id, principal: principalKey, fail_count: next, locked_until: locked, device_id: deviceId, updated_at: now },
+          // ロックを掛ける時はカウントを0に戻す。戻さないと、ロック解除後の最初の1回の失敗で
+          // 即座に閾値を超えて再ロックされ、永久に解けなくなる（ノコギリ波）。
+          { store_id, principal: principalKey, fail_count: locked ? 0 : next, locked_until: locked, device_id: deviceId, updated_at: now },
           { onConflict: "store_id,principal" },
         ),
         admin.from("pin_login_attempts").upsert(
-          { store_id, principal: storeKey, fail_count: sNext, locked_until: sLocked, updated_at: now },
+          { store_id, principal: storeKey, fail_count: sLocked ? 0 : sNext, locked_until: sLocked, updated_at: now },
           { onConflict: "store_id,principal" },
         ),
       ]);

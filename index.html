@@ -3466,7 +3466,10 @@ async function pinLoginViaServer(role, castId, pin){
   const j=await res.json().catch(()=>({}))
   if(!res.ok){ if(handleNeedPairing(j)) throw new Error(j.error||'端末の登録が必要です'); throw new Error(j.error||'ログインに失敗しました') }
   // 猶予期間中の自動ペアリングでトークンが発行されたら保存（スタッフの操作は不要）
-  if(j.device_token) setDeviceToken(j.device_token)
+  // 保存できない端末（プライベートブラウズ等）は、猶予終了後に締め出されるため必ず知らせる。
+  if(j.device_token && !setDeviceToken(j.device_token)){
+    toast('この端末では登録情報を保存できません。通常モードで開くか、ホーム画面に追加してください')
+  }
   await sb.auth.setSession({access_token:j.access_token, refresh_token:j.refresh_token})
   currentStoreId=j.store_id
   return j
@@ -3508,7 +3511,10 @@ async function pairThisDevice(code,label){
   })
   const j=await res.json().catch(()=>({}))
   if(!res.ok||!j.device_token) throw new Error(j.error||'端末の登録に失敗しました')
-  setDeviceToken(j.device_token)
+  // 保存できなければ「登録できた」と誤解させないため、ここでエラーにする
+  if(!setDeviceToken(j.device_token)){
+    throw new Error('この端末では登録情報を保存できません。プライベートブラウズを解除するか、ホーム画面に追加してから再度お試しください')
+  }
   return j
 }
 // ── 生体認証(パスキー) v2: サーバ側で署名検証する安全版。PIN認証モードで使用 ──
@@ -4358,7 +4364,10 @@ async function castBiometricLogin(ids){
   let casts=[]
   try{
     const res=await fetch(SUPABASE_URL+'/functions/v1/list-store-casts',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({store_id:PIN_STORE_ID, device_token:getDeviceToken()})})
-    const j=await res.json().catch(()=>({})); casts=Array.isArray(j.casts)?j.casts:[]
+    const j=await res.json().catch(()=>({}))
+    // 端末未登録なら空のピッカーで行き止まりにせず、登録画面へ誘導する
+    if(!res.ok && handleNeedPairing(j)) return
+    casts=Array.isArray(j.casts)?j.casts:[]
   }catch(e){}
   const old=document.getElementById('cast-bio-btn'); if(old) old.remove()
   const wrap=document.getElementById('cast-pin-area'); if(!wrap) return

@@ -19,7 +19,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const CODE_TTL_HOURS = 48;   // Square のデバイスコードと同じ48時間
+const CODE_TTL_HOURS = 48;          // Square のデバイスコードと同じ48時間
+const MAX_DEVICES_PER_STORE = 60;   // 1店舗あたりの有効な登録端末数の上限
 
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
@@ -87,17 +88,26 @@ serve(async (req) => {
     //   すでに有効なセッションを持っている＝本人確認済みなので、店舗コードは不要。
     //   オーナー/セラピストどちらでも可（この時点でstore_membersに所属が確認できている）。
     if (action === "self_pair") {
+      // 無制限に増えないよう上限を設ける（保存できない端末が毎回登録を試みるケースの歯止め）。
+      // 上限に達したらオーナーが管理画面で不要な端末を解除する運用。
+      const { count } = await admin
+        .from("store_devices").select("id", { count: "exact", head: true })
+        .eq("store_id", store_id).is("revoked_at", null);
+      if ((count ?? 0) >= MAX_DEVICES_PER_STORE) {
+        return json({ error: "登録できる端末数の上限に達しました。管理画面で不要な端末を解除してください" }, 409, origin);
+      }
       const raw = crypto.getRandomValues(new Uint8Array(32));
-      const token = Array.from(raw).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const deviceToken = Array.from(raw).map((x) => x.toString(16).padStart(2, "0")).join("");
       const { data: dev, error } = await admin.from("store_devices").insert({
         store_id,
-        token_hash: await sha256Hex(token),
+        token_hash: await sha256Hex(deviceToken),
+        // 監査のため「本人登録」であることを名前に残す（オーナーが後から識別できるように）
         label: label ? String(label).slice(0, 60)
-                     : (mem.role === "owner" ? "オーナー端末(自動登録)" : "セラピスト端末(自動登録)"),
+                     : (mem.role === "owner" ? "オーナー端末(本人登録)" : "セラピスト端末(本人登録)"),
         last_seen_at: new Date().toISOString(),
       }).select("id").maybeSingle();
       if (error || !dev) return json({ error: "端末の登録に失敗しました" }, 500, origin);
-      return json({ ok: true, device_token: token }, 200, origin);
+      return json({ ok: true, device_token: deviceToken }, 200, origin);
     }
 
     // 以降はオーナー専用

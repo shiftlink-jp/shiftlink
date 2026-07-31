@@ -84,20 +84,30 @@ serve(async (req) => {
 
     const codeHash = await sha256Hex(codeStr);
 
+    // 緊急復旧コードの判定はレート制限より「前」に行う。
+    // 後ろに置くと、第三者が誤コードを10回撒くだけで全店の復旧口が30分塞がれてしまい、
+    // 「本ログインもロック／復旧口もロック」で完全に詰む経路ができるため。
+    const isBootstrap = !!(BOOTSTRAP_CODE && BOOTSTRAP_STORE_ID && codeStr === BOOTSTRAP_CODE);
+
     // 総当たり対策（コードは店舗横断で一意なので、失敗は共通バケットで数える）
     const lockKey = "pairing.global";
     const { data: att } = await admin
-      .from("pin_login_attempts").select("fail_count,locked_until")
+      .from("pin_login_attempts").select("fail_count,locked_until,updated_at")
       .eq("store_id", SENTINEL_STORE).eq("principal", lockKey).maybeSingle();
-    if (att?.locked_until && new Date(att.locked_until) > new Date()) {
+    // 緊急復旧コードはレート制限の対象外（上記の理由）
+    if (!isBootstrap && att?.locked_until && new Date(att.locked_until) > new Date()) {
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
 
     const fail = async (msg: string, status: number) => {
-      const next = (att?.fail_count ?? 0) + 1;
+      // 直近の時間窓内の失敗だけ数える（生涯累積させると恒久ロックになるため）
+      const age = att?.updated_at ? Date.now() - new Date(att.updated_at).getTime() : Infinity;
+      const base = age < LOCK_MINUTES * 60000 ? (att?.fail_count ?? 0) : 0;
+      const next = base + 1;
       const locked = next >= MAX_FAILS ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
       const { error: upErr } = await admin.from("pin_login_attempts").upsert(
-        { store_id: SENTINEL_STORE, principal: lockKey, fail_count: next, locked_until: locked, updated_at: new Date().toISOString() },
+        // ロック時はカウントを0に戻す（解除後の1回で即再ロックされるのを防ぐ）
+        { store_id: SENTINEL_STORE, principal: lockKey, fail_count: locked ? 0 : next, locked_until: locked, updated_at: new Date().toISOString() },
         { onConflict: "store_id,principal" },
       );
       // 記録に失敗したらレート制限が効かないため、無言で通さずエラーとして扱う
@@ -108,7 +118,7 @@ serve(async (req) => {
     // 緊急復旧コード（オフライン保管）。オーナーが端末を失った場合の唯一の入口。
     let targetStore: string | null = null;
     let pairingRowId: number | null = null;
-    if (BOOTSTRAP_CODE && BOOTSTRAP_STORE_ID && codeStr === BOOTSTRAP_CODE) {
+    if (isBootstrap) {
       targetStore = BOOTSTRAP_STORE_ID;
     } else {
       const { data: pc } = await admin

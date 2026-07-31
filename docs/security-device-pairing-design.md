@@ -58,7 +58,7 @@ ALTER TABLE auth_pins ADD COLUMN IF NOT EXISTS pin_plain text;
 UPDATE auth_pins ap SET pin_plain = c.pin
   FROM casts c WHERE ap.principal = 'cast.'||c.id AND c.pin IS NOT NULL
    AND ap.store_id IS NOT DISTINCT FROM c.store_id;
-UPDATE casts SET pin = NULL WHERE pin IS NOT NULL;   -- 平文を casts から消す
+-- ※ casts.pin のNULL化は 026 では行わない。アプリ反映後に 027 で実施する（手順8）
 
 -- ②: ロック記録に端末を持たせる
 ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
@@ -123,6 +123,10 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 7. 数日運用して全端末が自動ペアリングされたことを確認
 8. `casts.pin` の平文NULL化を実行（①の完了）
 9. 猶予期間を終了（③の完了）＝ `DEFAULT_GRACE_UNTIL` を過去日にして再デプロイ
+   - ⚠️ この定数は **`pin-login` と `list-store-casts` の2ファイル**にある。`pin-login` だけ直すと
+     セラピスト名簿（問題③）が開いたまま残るため、必ず両方を更新する
+   - ⚠️ 環境変数 `PAIRING_GRACE_UNTIL` はタイポでも無言で猶予ONに戻る（fail-open設計のため）。
+     締めた後は必ず検証する: トークン無しで `pin-login` を叩き **403 `need_pairing`** が返ることを確認
 10. 027適用後、`index.html` のバッジのフォールバック `||c.pin` を削除（平文参照の完全除去）
 
 **作業タイミング: 営業終了後の深夜。** ロールバックは各手順で可能（保存したコードに戻す）。
@@ -138,4 +142,5 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 - 外部サービス（Supabase / Vercel）側の障害・侵害
 - PIN表示機能を残す限り、平文はどこかに存在する（金庫の中には入る）
 - 緊急復旧コード（`BOOTSTRAP_PAIRING_CODE`）を設定する場合、その1本が漏れると端末登録が可能になる。
-  オフラインで保管し、使用後は値を変更する運用にする。
+  オフラインで保管し、使用後は値を変更する運用にする。**十分に長い値**（20文字以上を推奨）にすること
+  ※サーバ側の下限は4文字しかないため、短い値を設定すると総当たりの余地が生まれる
