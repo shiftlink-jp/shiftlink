@@ -117,7 +117,16 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 1. **バックアップ**: 現在の `pin-login` / `list-store-casts` / `set-pin` のコードをダウンロード保存（戻せる状態を作る）
 2. マイグレーション026を適用（テーブル追加・平文移送）
    - ※この時点ではまだ平文NULL化は**しない**（アプリ側の準備が済むまで）
+   - ⚠️ **必須の事前チェック**（手順8の前提。0でないと後で無言の締め出しが起きる）:
+     ```sql
+     SELECT count(*) FROM casts WHERE active IS NOT FALSE AND store_id IS NULL;  -- → 0 であること
+     ```
+     0でない場合、そのセラピストは (1)PINバッジが「未設定」になり (2)手順8のあと**ログインできなくなる**
+     （PIN照合が「キャストの店舗＝ログイン中の店舗」を要求するため）。先に store_id を埋めてから進む。
 3. Edge Function を新規デプロイ（`pair-device` / `manage-devices`）
+   - **3.5 緊急復旧コードを設定する**（推奨・深夜作業の保険）:
+     Supabaseのシークレットに `BOOTSTRAP_PAIRING_CODE`（ちょうど8文字）と `BOOTSTRAP_STORE_ID` を設定する。
+     未設定だと、作業中に店舗コードを発行できない状態に陥った場合、復旧まで最大60分待つことになる。
 4. Edge Function を改修版に差し替え（`pin-login` / `list-store-casts` / `set-pin`）※猶予期間ONの状態で
 5. アプリ（main）をデプロイ
 6. 実機で確認（オーナー・セラピスト各1名）
@@ -127,7 +136,9 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
    - ⚠️ この定数は **`pin-login` と `list-store-casts` の2ファイル**にある。`pin-login` だけ直すと
      セラピスト名簿（問題③）が開いたまま残るため、必ず両方を更新する
    - ⚠️ 環境変数 `PAIRING_GRACE_UNTIL` はタイポでも無言で猶予ONに戻る（fail-open設計のため）。
-     締めた後は必ず検証する: トークン無しで `pin-login` を叩き **403 `need_pairing`** が返ることを確認
+     締めた後は必ず検証する: トークン無しで **`pin-login` と `list-store-casts` の両方**を叩き、
+     どちらも **403 `need_pairing`** が返ることを確認する（`list-store-casts` を確認し忘れると
+     セラピスト名簿の露出＝問題③が残ったままになる）
 10. 027適用後、`index.html` のバッジのフォールバック `||c.pin` を削除（平文参照の完全除去）
 
 **作業タイミング: 営業終了後の深夜。** ロールバックは各手順で可能（保存したコードに戻す）。
@@ -140,6 +151,9 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 - 端末の紛失・盗難（→管理画面から即失効）
 - PINの覗き見・使い回し（→定期変更の運用ルール）
 - 内部不正（権限保有者の悪用は技術では防げない）
+- **猶予期間中（〜2026-08-11）は「端末の解除」が確実には効かない**。解除された端末はトークンを捨てて
+  再ログインすると、PIN照合に成功した時点で自動ペアリングされ再登録されるため。
+  紛失・退職での解除は、**必ず本人のPIN変更（または退店処理）とセットで行う**。猶予終了後は解除だけで有効。
 - 外部サービス（Supabase / Vercel）側の障害・侵害
 - PIN表示機能を残す限り、平文はどこかに存在する（金庫の中には入る）
 - 緊急復旧コード（`BOOTSTRAP_PAIRING_CODE`）を設定する場合、その1本が漏れると端末登録が可能になる。
