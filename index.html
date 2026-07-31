@@ -3421,7 +3421,34 @@ async function loadStoreDataForPin(){
 // ＝クライアントが店舗を申告できなくなり、第三者が他店の窓口を叩く経路が消える。
 const DEVICE_TOKEN_KEY='sl_device_token'
 function getDeviceToken(){ try{ return localStorage.getItem(DEVICE_TOKEN_KEY)||'' }catch(e){ return '' } }
-function setDeviceToken(t){ try{ t?localStorage.setItem(DEVICE_TOKEN_KEY,t):localStorage.removeItem(DEVICE_TOKEN_KEY) }catch(e){} }
+// 保存できたかを読み戻して確認する。プライベートブラウズ等で保存できないと、
+// ログインのたびに端末が新規登録され、猶予終了後は締め出されてしまうため検知して知らせる。
+function setDeviceToken(t){
+  try{
+    if(t){ localStorage.setItem(DEVICE_TOKEN_KEY,t); return localStorage.getItem(DEVICE_TOKEN_KEY)===t }
+    localStorage.removeItem(DEVICE_TOKEN_KEY); return true
+  }catch(e){ return false }
+}
+// 生体認証(パスキー)でログインした人は pin-login を通らないため端末トークンを受け取れない。
+// セッションがある状態で自分の端末を登録する（猶予終了日に一斉に締め出されるのを防ぐ）。
+async function ensureDeviceTokenAfterLogin(){
+  try{
+    if(getDeviceToken()) return
+    const{data:{session}}=await sb.auth.getSession()
+    if(!session) return
+    const res=await fetch(SUPABASE_URL+'/functions/v1/manage-devices',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({store_id:currentStoreId||PIN_STORE_ID, action:'self_pair'})
+    })
+    const j=await res.json().catch(()=>({}))
+    if(res.ok&&j.device_token){
+      if(!setDeviceToken(j.device_token)){
+        toast('この端末では登録情報を保存できません。ブラウザの設定をご確認ください')
+      }
+    }
+  }catch(e){ /* 失敗しても猶予期間中は通常ログインできる */ }
+}
 // サーバーから「この端末は未登録/失効」と返されたら、トークンを捨てて店舗コード画面へ誘導する
 function handleNeedPairing(j){
   if(j&&j.need_pairing){ setDeviceToken(''); showPairingScreen(j.error||'この端末の登録が必要です'); return true }
@@ -4757,6 +4784,8 @@ async function startStripeCheckout(){
 
 function startApp(){
   appAuthed=true  // 認証済み。バックグラウンド復帰/再起動でfalseに戻り再ロックされる。
+  // 端末トークン未取得なら取得しておく（パスキー経由ログイン等、pin-loginを通らない経路の救済）
+  if(PIN_AUTH_MODE) setTimeout(ensureDeviceTokenAfterLogin, 1200)
   touchLastActive()  // 入室時刻を記録（バックグラウンド復帰維持の判定に使う）
   markSessionAlive()  // この起動で実際に入室できた印。プロセス生存中(復帰)はこれが残る。
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))

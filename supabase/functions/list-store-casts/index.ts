@@ -19,8 +19,14 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3300",
 ];
 
-// 猶予期間（pin-login と同じ値を設定する）。期間中は端末トークン無しでも許可する。
-const PAIRING_GRACE_UNTIL = Deno.env.get("PAIRING_GRACE_UNTIL") ?? "";
+// 猶予期間（pin-login と同じ設計）。環境変数が未設定・書式不正なら「猶予ON」に倒す（fail-open）。
+// fail-closedにすると設定漏れやタイポで全店がログイン画面に進めなくなるため。
+const DEFAULT_GRACE_UNTIL = "2026-09-01T00:00:00+09:00";
+function inGracePeriod(): boolean {
+  const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
+  const t = raw ? Date.parse(raw) : NaN;
+  return (Number.isNaN(t) ? Date.parse(DEFAULT_GRACE_UNTIL) : t) > Date.now();
+}
 
 async function sha256Hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -65,8 +71,7 @@ serve(async (req) => {
       }
       store_id = dev.store_id;
     } else {
-      const graceOk = PAIRING_GRACE_UNTIL && new Date(PAIRING_GRACE_UNTIL) > new Date();
-      if (!graceOk) {
+      if (!inGracePeriod()) {
         return new Response(JSON.stringify({ error: "この端末は登録されていません", need_pairing: true }), {
           status: 403, headers: { "Content-Type": "application/json", ...cors(origin) },
         });

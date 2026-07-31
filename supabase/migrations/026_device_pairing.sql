@@ -66,9 +66,11 @@ UPDATE auth_pins ap
    AND ap.pin_plain IS NULL;
 
 -- auth_pins に行が無い（PIN未設定 or 未移行）キャストの平文も保全しておく
+-- ※ c.pin は text 以外の可能性があるため ::text で明示キャストする
+--   （011 も c.pin::text の形。キャスト無しだと crypt() の関数解決に失敗し026全体がロールバックする）
 INSERT INTO auth_pins (store_id, principal, pin_hash, pin_plain)
 SELECT c.store_id, 'cast.' || c.id::text,
-       extensions.crypt(c.pin, extensions.gen_salt('bf', 12)), c.pin
+       extensions.crypt(c.pin::text, extensions.gen_salt('bf', 12)), c.pin::text
   FROM casts c
  WHERE c.pin IS NOT NULL
    AND NOT EXISTS (

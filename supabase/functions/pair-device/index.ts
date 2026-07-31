@@ -21,6 +21,17 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAX_FAILS = 10;      // 店舗コードの誤入力許容回数
 const LOCK_MINUTES = 30;
 
+// pin_login_attempts.store_id は NOT NULL（010）。店舗横断のカウンタ用に番兵UUIDを使う。
+// （NULLを入れるとNOT NULL違反で記録に失敗し、レート制限が無言で無効化される）
+const SENTINEL_STORE = "00000000-0000-0000-0000-000000000000";
+
+// 緊急復旧用コード（任意）。オーナーが端末トークンを失うと管理画面にも入れず
+// コードを発行できなくなる（詰み）ため、オフライン保管の固定コードを1本だけ許容する。
+// Supabaseのシークレットに BOOTSTRAP_PAIRING_CODE / BOOTSTRAP_STORE_ID を設定して使う。
+// 未設定なら無効（既定は無効＝余計な入口を作らない）。
+const BOOTSTRAP_CODE = (Deno.env.get("BOOTSTRAP_PAIRING_CODE") ?? "").trim().toUpperCase();
+const BOOTSTRAP_STORE_ID = (Deno.env.get("BOOTSTRAP_STORE_ID") ?? "").trim();
+
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
   "https://app.shiftlink.jp",
@@ -72,16 +83,12 @@ serve(async (req) => {
     }
 
     const codeHash = await sha256Hex(codeStr);
-    const { data: pc } = await admin
-      .from("store_pairing_codes")
-      .select("id,store_id,expires_at,used_at")
-      .eq("code_hash", codeHash).maybeSingle();
 
     // 総当たり対策（コードは店舗横断で一意なので、失敗は共通バケットで数える）
     const lockKey = "pairing.global";
     const { data: att } = await admin
       .from("pin_login_attempts").select("fail_count,locked_until")
-      .is("store_id", null).eq("principal", lockKey).maybeSingle();
+      .eq("store_id", SENTINEL_STORE).eq("principal", lockKey).maybeSingle();
     if (att?.locked_until && new Date(att.locked_until) > new Date()) {
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
@@ -89,34 +96,52 @@ serve(async (req) => {
     const fail = async (msg: string, status: number) => {
       const next = (att?.fail_count ?? 0) + 1;
       const locked = next >= MAX_FAILS ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
-      await admin.from("pin_login_attempts").upsert(
-        { store_id: null, principal: lockKey, fail_count: next, locked_until: locked, updated_at: new Date().toISOString() },
+      const { error: upErr } = await admin.from("pin_login_attempts").upsert(
+        { store_id: SENTINEL_STORE, principal: lockKey, fail_count: next, locked_until: locked, updated_at: new Date().toISOString() },
         { onConflict: "store_id,principal" },
       );
+      // 記録に失敗したらレート制限が効かないため、無言で通さずエラーとして扱う
+      if (upErr) console.error("pair-device: 試行記録に失敗", upErr.message);
       return json({ error: msg }, status, origin);
     };
 
-    if (!pc) return await fail("店舗コードが正しくありません", 401);
-    if (pc.used_at) return await fail("この店舗コードは使用済みです。オーナーに再発行を依頼してください", 401);
-    if (new Date(pc.expires_at) <= new Date()) {
-      return await fail("この店舗コードは有効期限が切れています。オーナーに再発行を依頼してください", 401);
+    // 緊急復旧コード（オフライン保管）。オーナーが端末を失った場合の唯一の入口。
+    let targetStore: string | null = null;
+    let pairingRowId: number | null = null;
+    if (BOOTSTRAP_CODE && BOOTSTRAP_STORE_ID && codeStr === BOOTSTRAP_CODE) {
+      targetStore = BOOTSTRAP_STORE_ID;
+    } else {
+      const { data: pc } = await admin
+        .from("store_pairing_codes")
+        .select("id,store_id,expires_at,used_at")
+        .eq("code_hash", codeHash).maybeSingle();
+      if (!pc) return await fail("店舗コードが正しくありません", 401);
+      if (pc.used_at) return await fail("この店舗コードは使用済みです。オーナーに再発行を依頼してください", 401);
+      if (new Date(pc.expires_at) <= new Date()) {
+        return await fail("この店舗コードは有効期限が切れています。オーナーに再発行を依頼してください", 401);
+      }
+      targetStore = pc.store_id;
+      pairingRowId = pc.id;
     }
 
     // 成功 → 失敗カウントをリセットし、トークンを発行
-    await admin.from("pin_login_attempts").delete().is("store_id", null).eq("principal", lockKey);
+    await admin.from("pin_login_attempts").delete()
+      .eq("store_id", SENTINEL_STORE).eq("principal", lockKey);
 
     const token = newToken();
     const tokenHash = await sha256Hex(token);
     const { error: insErr } = await admin.from("store_devices").insert({
-      store_id: pc.store_id,
+      store_id: targetStore,
       token_hash: tokenHash,
-      label: label ? String(label).slice(0, 60) : null,
+      label: label ? String(label).slice(0, 60) : (pairingRowId ? null : "緊急復旧で登録"),
       last_seen_at: new Date().toISOString(),
     });
     if (insErr) return json({ error: "端末の登録に失敗しました" }, 500, origin);
 
-    // コードを使用済みにする（1回使い切り）
-    await admin.from("store_pairing_codes").update({ used_at: new Date().toISOString() }).eq("id", pc.id);
+    // コードを使用済みにする（1回使い切り）。緊急復旧コードは繰り返し使えるため対象外。
+    if (pairingRowId) {
+      await admin.from("store_pairing_codes").update({ used_at: new Date().toISOString() }).eq("id", pairingRowId);
+    }
 
     // 生トークンはここでしか返さない
     return json({ ok: true, device_token: token }, 200, origin);

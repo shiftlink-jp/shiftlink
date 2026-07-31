@@ -69,8 +69,7 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 | 関数 | 変更内容 |
 |---|---|
 | **`pair-device`（新規）** | `{code}` を受け取り、有効・未使用・未期限切れを確認 → 端末トークン発行（32バイト乱数）→ `store_devices` にハッシュ保存 → 生トークンを1度だけ返す |
-| **`issue-pairing-code`（新規）** | オーナーのJWTを検証（`set-pin` と同じ方式）→ 6〜8桁のコードを発行し48時間有効で保存 → 平文コードを1度だけ返す |
-| **`list-cast-pins`（新規）** | オーナーのJWTを検証 → `auth_pins.pin_plain` から `{cast_id: pin}` を返す（①のバッジ表示用） |
+| **`manage-devices`（新規・オーナー限定）** | `issue_code`(コード発行48h) / `list`(端末一覧) / `revoke`(失効) / `rename` / `list_pins`(PINバッジ用) / `self_pair`(本人の端末登録) |
 | **`pin-login`（改修）** | ①`device_token` 必須 ②トークンから store_id を導出（クライアントの store_id は無視）③ロックキーを `<principal>.<device_id>` ＝**端末単位**に変更 ④店舗全体のバックストップは高い閾値で残す |
 | **`list-store-casts`（改修）** | `device_token` 必須。store_id はトークンから導出 |
 | **`set-pin`（改修）** | PIN設定時に `auth_pins.pin_plain` も更新（①のバッジ表示を維持するため） |
@@ -92,14 +91,17 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 3. `pin-login` / `list-store-casts` 呼び出し時にトークンを送る
 4. トークンが無効（失効・削除）と返ったら、トークンを消して店舗コード入力へ戻す
 5. 管理画面に **「端末の管理」**（コード発行・登録端末一覧・失効）を追加
-6. セラピスト管理のPINバッジを `list-cast-pins` の結果から描画（`casts.pin` 依存を除去）
+6. セラピスト管理のPINバッジを `manage-devices`(action=list_pins) の結果から描画（`casts.pin` 依存を除去）
 7. **`index.html:4180` の旧経路** `casts.select('*').eq('pin',pin)` を削除（平文NULL化で機能しなくなるため）
 
 ## 移行のしかけ（全員が締め出される事故を防ぐ）
 
 既存の15名の端末はトークンを持っていないため、そのまま強制すると**全員がログイン不能**になる。
 
-→ **自動ペアリング期間**を設ける（環境変数 `PAIRING_GRACE_UNTIL` に日時を設定）。
+→ **自動ペアリング期間**を設ける（既定 2026-09-01。環境変数 `PAIRING_GRACE_UNTIL` で上書き可）。
+
+**fail-open設計**: 環境変数が未設定・書式不正でも猶予ONに倒す。fail-closedだと設定漏れやタイポで
+全店が即ログイン不能になるため。締めるときはコード内の `DEFAULT_GRACE_UNTIL` を過去日にして明示的に行う。
 
 - 期間中: `device_token` が無くてもPINログインを許可し、**成功したら自動で端末トークンを発行**して返す
 - 期間中もPIN照合の成功が条件なので、無関係な第三者は登録できない
@@ -114,13 +116,14 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 1. **バックアップ**: 現在の `pin-login` / `list-store-casts` / `set-pin` のコードをダウンロード保存（戻せる状態を作る）
 2. マイグレーション026を適用（テーブル追加・平文移送）
    - ※この時点ではまだ平文NULL化は**しない**（アプリ側の準備が済むまで）
-3. Edge Function を新規デプロイ（`pair-device` / `issue-pairing-code` / `list-cast-pins`）
+3. Edge Function を新規デプロイ（`pair-device` / `manage-devices`）
 4. Edge Function を改修版に差し替え（`pin-login` / `list-store-casts` / `set-pin`）※猶予期間ONの状態で
 5. アプリ（main）をデプロイ
 6. 実機で確認（オーナー・セラピスト各1名）
 7. 数日運用して全端末が自動ペアリングされたことを確認
 8. `casts.pin` の平文NULL化を実行（①の完了）
-9. 猶予期間を終了（③の完了）
+9. 猶予期間を終了（③の完了）＝ `DEFAULT_GRACE_UNTIL` を過去日にして再デプロイ
+10. 027適用後、`index.html` のバッジのフォールバック `||c.pin` を削除（平文参照の完全除去）
 
 **作業タイミング: 営業終了後の深夜。** ロールバックは各手順で可能（保存したコードに戻す）。
 
@@ -134,3 +137,5 @@ ALTER TABLE pin_login_attempts ADD COLUMN IF NOT EXISTS device_id bigint;
 - 内部不正（権限保有者の悪用は技術では防げない）
 - 外部サービス（Supabase / Vercel）側の障害・侵害
 - PIN表示機能を残す限り、平文はどこかに存在する（金庫の中には入る）
+- 緊急復旧コード（`BOOTSTRAP_PAIRING_CODE`）を設定する場合、その1本が漏れると端末登録が可能になる。
+  オフラインで保管し、使用後は値を変更する運用にする。

@@ -75,11 +75,33 @@ serve(async (req) => {
     const { store_id, action, device_id, label } = await req.json();
     if (!store_id) return json({ error: "store_id は必須です" }, 400, origin);
 
-    // 2) 当該店舗のオーナーであることを確認
+    // 2) 当該店舗のメンバーであることを確認
     const { data: mem } = await admin
       .from("store_members").select("role")
       .eq("user_id", user.id).eq("store_id", store_id).maybeSingle();
-    if (!mem || mem.role !== "owner") return json({ error: "権限がありません" }, 403, origin);
+    if (!mem) return json({ error: "権限がありません" }, 403, origin);
+
+    // self_pair: ログイン中の本人が「自分が今使っている端末」を登録する。
+    //   生体認証(パスキー)でログインする人は pin-login を通らないため自動ペアリングされず、
+    //   猶予終了日に一斉に締め出されてしまう。それを防ぐための経路。
+    //   すでに有効なセッションを持っている＝本人確認済みなので、店舗コードは不要。
+    //   オーナー/セラピストどちらでも可（この時点でstore_membersに所属が確認できている）。
+    if (action === "self_pair") {
+      const raw = crypto.getRandomValues(new Uint8Array(32));
+      const token = Array.from(raw).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const { data: dev, error } = await admin.from("store_devices").insert({
+        store_id,
+        token_hash: await sha256Hex(token),
+        label: label ? String(label).slice(0, 60)
+                     : (mem.role === "owner" ? "オーナー端末(自動登録)" : "セラピスト端末(自動登録)"),
+        last_seen_at: new Date().toISOString(),
+      }).select("id").maybeSingle();
+      if (error || !dev) return json({ error: "端末の登録に失敗しました" }, 500, origin);
+      return json({ ok: true, device_token: token }, 200, origin);
+    }
+
+    // 以降はオーナー専用
+    if (mem.role !== "owner") return json({ error: "権限がありません" }, 403, origin);
 
     // 3) 処理
     if (action === "issue_code") {
@@ -119,9 +141,12 @@ serve(async (req) => {
 
     if (action === "list_pins") {
       // ①: セラピストのPINはオーナーだけがここから取得できる
+      // store_id が NULL のレガシー行も拾う（011でnullable。set-pin側の更新条件と揃える）。
+      // 揃えないと、NULL行のセラピストだけバッジが恒久的に「未設定」になる。
       const { data } = await admin
         .from("auth_pins").select("principal,pin_plain")
-        .eq("store_id", store_id).like("principal", "cast.%");
+        .or(`store_id.eq.${store_id},store_id.is.null`)
+        .like("principal", "cast.%");
       const pins: Record<string, string> = {};
       for (const r of data ?? []) {
         const id = String(r.principal).split(".")[1];

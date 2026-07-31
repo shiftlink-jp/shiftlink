@@ -13,11 +13,26 @@ const LOCK_MINUTES = 15;        // ロック時間（分）
 const STORE_MAX_FAILS = 50;
 const STORE_LOCK_MINUTES = 60;
 
-// 自動ペアリング猶予期間（ISO日時）。この日時までは端末トークンが無くてもPINログインを許可し、
+// 自動ペアリング猶予期間。この日時までは端末トークンが無くてもPINログインを許可し、
 // 成功時に自動で端末トークンを発行する（既存端末が一斉に締め出される事故を防ぐため）。
 // 期間中もPIN照合の成功が条件なので、無関係な第三者は登録できない。
-// 未設定なら「猶予なし＝トークン必須」。移行完了後は環境変数を削除して締める。
-const PAIRING_GRACE_UNTIL = Deno.env.get("PAIRING_GRACE_UNTIL") ?? "";
+//
+// ★fail-open設計★ 環境変数が未設定・書式不正でも「猶予ON」に倒す。
+//   ここをfail-closed（未設定なら即トークン必須）にすると、Secret設定を1つ忘れた瞬間や
+//   タイポ（全角・スラッシュ区切り等でInvalid Date）で全店が即ログイン不能になるため。
+//   移行完了後は下の DEFAULT_GRACE_UNTIL を過去日に書き換えて締める（＝コードで明示的に締める）。
+const DEFAULT_GRACE_UNTIL = "2026-09-01T00:00:00+09:00";
+function graceDeadline(): number {
+  const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
+  const t = raw ? Date.parse(raw) : NaN;
+  return Number.isNaN(t) ? Date.parse(DEFAULT_GRACE_UNTIL) : t;
+}
+function inGracePeriod(): boolean {
+  return graceDeadline() > Date.now();
+}
+// 猶予期間中（＝まだ端末が特定できない）のロック閾値。移行中に「1人の打ち間違いで全員ロック」を
+// 起こさないよう大きめにする。この期間はまだ②の恩恵が無いため、緩めて移行を優先する。
+const GRACE_MAX_FAILS = 20;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -148,8 +163,7 @@ serve(async (req) => {
       deviceId = dev.id;
     } else {
       // 猶予期間中のみ、トークン無しを許可（既存端末の一斉締め出しを防ぐ移行措置）
-      const graceOk = PAIRING_GRACE_UNTIL && new Date(PAIRING_GRACE_UNTIL) > new Date();
-      if (!graceOk) {
+      if (!inGracePeriod()) {
         return json({ error: "この端末は登録されていません。店舗コードで登録してください", need_pairing: true }, 403, origin);
       }
       if (!body.store_id) return json({ error: "store_id は必須です" }, 400, origin);
@@ -184,7 +198,9 @@ serve(async (req) => {
     // 失敗時: 端末カウントと店舗カウントの両方を加算し、必要ならロック
     const recordFail = async () => {
       const next = (att?.fail_count ?? 0) + 1;
-      const locked = next >= MAX_FAILS ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
+      // 端末が特定できている場合のみ厳しく（5回）。猶予期間中の未特定端末は緩める（20回）
+      const limit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
+      const locked = next >= limit ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
       const sNext = (satt?.fail_count ?? 0) + 1;
       const sLocked = sNext >= STORE_MAX_FAILS ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
       const now = new Date().toISOString();
@@ -255,24 +271,29 @@ serve(async (req) => {
       memberCastId = matchedId;
     }
 
-    // 認証成功 → 失敗カウントをリセット（端末ぶんと店舗ぶんの両方）
-    await Promise.all([
-      admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey),
-      admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", storeKey),
-    ]);
+    // 認証成功 → この端末の失敗カウントをリセット。
+    // ※店舗バックストップ(storeKey)は消さない。成功のたびに消すと、日常的にログインがある店舗では
+    //   カウントが積み上がらず「最終防衛線」として機能しなくなるため（時間経過でロックが解ける）。
+    await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
 
     // 自動ペアリング: 猶予期間中にトークン無しでPIN認証に成功した端末を、その場で登録する。
     // スタッフは何も操作しなくても普段どおりログインするだけで移行が完了する。
     let issuedToken: string | null = null;
     if (deviceId == null) {
-      issuedToken = newDeviceToken();
-      const { data: newDev } = await admin.from("store_devices").insert({
+      const candidate = newDeviceToken();
+      const { data: newDev, error: devErr } = await admin.from("store_devices").insert({
         store_id,
-        token_hash: await sha256Hex(issuedToken),
+        token_hash: await sha256Hex(candidate),
         label: memberRole === "owner" ? "オーナー端末(自動登録)" : `セラピスト端末(自動登録)`,
         last_seen_at: new Date().toISOString(),
       }).select("id").maybeSingle();
-      deviceId = newDev?.id ?? null;
+      // 登録に失敗したらトークンは返さない。返すと「DBに存在しないトークン」を端末が保存し、
+      // 次回から need_pairing になって猶予終了後は店舗コード無しで復帰できなくなるため。
+      // （猶予中なら次回ログイン時に再度自動登録が試みられる）
+      if (!devErr && newDev?.id) {
+        issuedToken = candidate;
+        deviceId = newDev.id;
+      }
     } else {
       // 既存端末 → 最終利用日時を更新（管理画面で「使われていない端末」を判別するため）
       await admin.from("store_devices").update({ last_seen_at: new Date().toISOString() }).eq("id", deviceId);
