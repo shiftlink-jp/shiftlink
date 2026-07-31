@@ -3276,13 +3276,12 @@ function makeOwnerTok(pin){
 // SaaSモード判定: URLパラメータ ?saas=1 または shiftlink-app.jp / app.shiftlink.jp からアクセス時
 const SAAS_MODE = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp')
 
-// Supabase接続（SaaSモード時は開発用プロジェクト）
-const SUPABASE_URL = SAAS_MODE
-  ? 'https://fewuonnrgqnxtopkjudt.supabase.co'
-  : 'https://qgcgkrcrfzonmmygcdju.supabase.co'
-const SUPABASE_KEY = SAAS_MODE
-  ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZld3Vvbm5yZ3FueHRvcGtqdWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjc0MDYsImV4cCI6MjA5NDYwMzQwNn0.u3kDWsXElpR1w_WMWm-fYG-M5iPaQ3LQdSt8WlGE41U'
-  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
+// Supabase接続（2026-08-01: SaaS・PINとも本番プロジェクトに統一）
+//   KYOUKANOのSaaS並行稼働のため、SaaSモードの接続先を開発用(fewuonnrgqnxtopkjudt・停止中)から
+//   本番(qgcgkrcrfzonmmygcdju)へ変更。非SaaS(kyoukano.vercel.app)は元から本番のため挙動不変。
+//   これによりshiftlink-app.jpからも同じ本番データにアクセスできる（並行稼働→検証後に切替）。
+const SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
 let OWNER_PIN = '' // DBまたはlocalStorageからロードされるまで認証不可
 // SaaS用グローバル変数
 let currentStoreId = null // ログイン後にセットされる
