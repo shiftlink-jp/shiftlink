@@ -98,13 +98,18 @@ serve(async (req) => {
     });
     if (rpcErr) throw rpcErr;
 
-    // オーナー要望により、キャスト管理画面のバッジに現在のPIN数字を表示するため、
-    // 旧 casts.pin 列にも同じ数字を反映する（auth_pins=bcrypt は不可逆で読めないため）。
-    // ※平文保存のため、DBを直接閲覧できる者にはPINが見える点に留意（利便性優先の運用判断）。
+    // オーナー要望により、キャスト管理画面のバッジに現在のPIN数字を表示する。
+    // （auth_pins.pin_hash=bcrypt は不可逆で読めないため、表示用に数字を別途保持する必要がある）
+    //
+    // 保存先は auth_pins.pin_plain（026）。以前は casts.pin に書いていたが、
+    // casts はRLSが行単位で同一店舗の全行を許すため「セラピストが同僚のPINを読める」
+    // 状態になっていた（#①）。auth_pins は service_role 以外アクセス不可のため安全。
+    // オーナーは Edge Function manage-devices(action=list_pins) 経由でのみ取得できる。
     if (target !== "owner") {
-      const cid = cast_id ?? (typeof target === "number" ? target : null);
       const { error: upErr } = await admin
-        .from("casts").update({ pin: pinStr }).eq("id", cid).eq("store_id", store_id);
+        .from("auth_pins").update({ pin_plain: pinStr })
+        .eq("principal", principal)
+        .or(`store_id.eq.${store_id},store_id.is.null`);
       if (upErr) throw upErr;
     }
 

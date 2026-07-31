@@ -12,10 +12,20 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
   "https://app.shiftlink.jp",
+  "https://shiftlink-app.jp",
+  "https://www.shiftlink-app.jp",
   "http://localhost:3100",
   "http://localhost:3200",
   "http://localhost:3300",
 ];
+
+// 猶予期間（pin-login と同じ値を設定する）。期間中は端末トークン無しでも許可する。
+const PAIRING_GRACE_UNTIL = Deno.env.get("PAIRING_GRACE_UNTIL") ?? "";
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const VERCEL_PREVIEW_RE = /^https:\/\/kyoukano-[a-z0-9-]+-sawaki-nagoyas-projects\.vercel\.app$/;
 function cors(origin: string | null) {
@@ -37,13 +47,37 @@ serve(async (req) => {
     });
   }
   try {
-    const { store_id } = await req.json();
+    const body = await req.json();
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // 端末トークンから店舗を特定する（クライアントの store_id は信用しない）。
+    // これにより「store_idを知る第三者が在籍セラピスト名を取得できる」露出を塞ぐ。
+    let store_id: string | null = null;
+    const rawToken = body.device_token ? String(body.device_token) : "";
+    if (rawToken) {
+      const { data: dev } = await admin
+        .from("store_devices").select("store_id,revoked_at")
+        .eq("token_hash", await sha256Hex(rawToken)).maybeSingle();
+      if (!dev || dev.revoked_at) {
+        return new Response(JSON.stringify({ error: "この端末は登録されていません", need_pairing: true }), {
+          status: 403, headers: { "Content-Type": "application/json", ...cors(origin) },
+        });
+      }
+      store_id = dev.store_id;
+    } else {
+      const graceOk = PAIRING_GRACE_UNTIL && new Date(PAIRING_GRACE_UNTIL) > new Date();
+      if (!graceOk) {
+        return new Response(JSON.stringify({ error: "この端末は登録されていません", need_pairing: true }), {
+          status: 403, headers: { "Content-Type": "application/json", ...cors(origin) },
+        });
+      }
+      store_id = body.store_id ? String(body.store_id) : null;
+    }
     if (!store_id) {
       return new Response(JSON.stringify({ error: "store_id は必須です" }), {
         status: 400, headers: { "Content-Type": "application/json", ...cors(origin) },
       });
     }
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data, error } = await admin
       .from("casts").select("id,name")
       .eq("store_id", store_id).eq("active", true)

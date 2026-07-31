@@ -6,8 +6,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const MAX_FAILS = 5;            // この回数連続で失敗するとロック
+const MAX_FAILS = 5;            // 端末ごとに、この回数連続で失敗するとロック
 const LOCK_MINUTES = 15;        // ロック時間（分）
+// 店舗全体の最終防衛線。端末が乗っ取られた場合のみ到達する高い閾値（通常運用では届かない）。
+// ※026以前の「店舗共有ロック(5回)」は、1人の打ち間違いで全員が締め出される原因だったため廃止。
+const STORE_MAX_FAILS = 50;
+const STORE_LOCK_MINUTES = 60;
+
+// 自動ペアリング猶予期間（ISO日時）。この日時までは端末トークンが無くてもPINログインを許可し、
+// 成功時に自動で端末トークンを発行する（既存端末が一斉に締め出される事故を防ぐため）。
+// 期間中もPIN照合の成功が条件なので、無関係な第三者は登録できない。
+// 未設定なら「猶予なし＝トークン必須」。移行完了後は環境変数を削除して締める。
+const PAIRING_GRACE_UNTIL = Deno.env.get("PAIRING_GRACE_UNTIL") ?? "";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -16,6 +26,8 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
   "https://app.shiftlink.jp",
+  "https://shiftlink-app.jp",
+  "https://www.shiftlink-app.jp",
   "http://localhost:3100",
   "http://localhost:3200",
   "http://localhost:3300",
@@ -37,6 +49,15 @@ function json(body: unknown, status: number, origin: string | null) {
     status,
     headers: { "Content-Type": "application/json", ...cors(origin) },
   });
+}
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function newDeviceToken(): string {
+  const b = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
 // タイミング攻撃を避けた定数時間比較
@@ -101,34 +122,82 @@ serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   try {
-    const { store_id, role, cast_id, pin } = await req.json();
-    if (!store_id || (role !== "owner" && role !== "cast") || !pin) {
-      return json({ error: "store_id, role(owner|cast), pin は必須です" }, 400, origin);
+    const body = await req.json();
+    const { role, cast_id, pin, device_token } = body;
+    if ((role !== "owner" && role !== "cast") || !pin) {
+      return json({ error: "role(owner|cast), pin は必須です" }, 400, origin);
     }
     const pinStr = String(pin);
     if (pinStr.length < 1 || pinStr.length > 12) return json({ error: "PIN形式が不正です" }, 400, origin);
 
-    // ロック用キー: owner / cast(id指定=旧経路) / cast(PINのみ=本人特定。名前未指定なので店舗単位)
-    const principalKey = role === "owner"
-      ? `owner.${store_id}`
-      : (cast_id ? `cast.${cast_id}.${store_id}` : `castpin.${store_id}`);
+    // ── ①端末の特定 ──────────────────────────────────────────
+    // 店舗は「端末トークン」から導出する。クライアントが送る store_id は信用しない。
+    // これにより第三者が任意の店舗のログイン窓口を叩く経路が消える（設計書③）。
+    let store_id: string | null = null;
+    let deviceId: number | null = null;
+    const rawToken = device_token ? String(device_token) : "";
+    if (rawToken) {
+      const { data: dev } = await admin
+        .from("store_devices").select("id,store_id,revoked_at")
+        .eq("token_hash", await sha256Hex(rawToken)).maybeSingle();
+      if (!dev || dev.revoked_at) {
+        // 失効済み・不明なトークン → クライアントに再ペアリングを促す
+        return json({ error: "この端末は登録が解除されています。店舗コードで再登録してください", need_pairing: true }, 403, origin);
+      }
+      store_id = dev.store_id;
+      deviceId = dev.id;
+    } else {
+      // 猶予期間中のみ、トークン無しを許可（既存端末の一斉締め出しを防ぐ移行措置）
+      const graceOk = PAIRING_GRACE_UNTIL && new Date(PAIRING_GRACE_UNTIL) > new Date();
+      if (!graceOk) {
+        return json({ error: "この端末は登録されていません。店舗コードで登録してください", need_pairing: true }, 403, origin);
+      }
+      if (!body.store_id) return json({ error: "store_id は必須です" }, 400, origin);
+      store_id = String(body.store_id);
+    }
 
-    // 0) ロック状態を確認（ブルートフォース対策）
-    const { data: att } = await admin
-      .from("pin_login_attempts").select("fail_count,locked_until")
-      .eq("store_id", store_id).eq("principal", principalKey).maybeSingle();
+    // ── ②ロックの単位 ───────────────────────────────────────
+    // 端末ごとにカウントするため、1人の打ち間違いが他のスタッフを巻き込まない。
+    // 端末トークンはサーバー発行なので攻撃者が偽造・使い捨てできない。
+    const basePrincipal = role === "owner"
+      ? "owner"
+      : (cast_id ? `cast.${cast_id}` : "castpin");
+    const principalKey = deviceId != null
+      ? `${basePrincipal}.dev${deviceId}`
+      : `${basePrincipal}.${store_id}`;   // 猶予期間中（端末未登録）は従来キー
+    const storeKey = "store.backstop";     // 店舗全体の最終防衛線
+
+    // 0) ロック状態を確認（端末ごと＋店舗全体の二段構え）
+    const [{ data: att }, { data: satt }] = await Promise.all([
+      admin.from("pin_login_attempts").select("fail_count,locked_until")
+        .eq("store_id", store_id).eq("principal", principalKey).maybeSingle(),
+      admin.from("pin_login_attempts").select("fail_count,locked_until")
+        .eq("store_id", store_id).eq("principal", storeKey).maybeSingle(),
+    ]);
     if (att?.locked_until && new Date(att.locked_until) > new Date()) {
+      return json({ error: "この端末は試行回数の上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
+    }
+    if (satt?.locked_until && new Date(satt.locked_until) > new Date()) {
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
 
-    // 失敗時: 回数を加算し、必要ならロック
+    // 失敗時: 端末カウントと店舗カウントの両方を加算し、必要ならロック
     const recordFail = async () => {
       const next = (att?.fail_count ?? 0) + 1;
       const locked = next >= MAX_FAILS ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
-      await admin.from("pin_login_attempts").upsert(
-        { store_id, principal: principalKey, fail_count: next, locked_until: locked, updated_at: new Date().toISOString() },
-        { onConflict: "store_id,principal" },
-      );
+      const sNext = (satt?.fail_count ?? 0) + 1;
+      const sLocked = sNext >= STORE_MAX_FAILS ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
+      const now = new Date().toISOString();
+      await Promise.all([
+        admin.from("pin_login_attempts").upsert(
+          { store_id, principal: principalKey, fail_count: next, locked_until: locked, device_id: deviceId, updated_at: now },
+          { onConflict: "store_id,principal" },
+        ),
+        admin.from("pin_login_attempts").upsert(
+          { store_id, principal: storeKey, fail_count: sNext, locked_until: sLocked, updated_at: now },
+          { onConflict: "store_id,principal" },
+        ),
+      ]);
     };
 
     // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
@@ -186,8 +255,28 @@ serve(async (req) => {
       memberCastId = matchedId;
     }
 
-    // 認証成功 → 失敗カウントをリセット
-    await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
+    // 認証成功 → 失敗カウントをリセット（端末ぶんと店舗ぶんの両方）
+    await Promise.all([
+      admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey),
+      admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", storeKey),
+    ]);
+
+    // 自動ペアリング: 猶予期間中にトークン無しでPIN認証に成功した端末を、その場で登録する。
+    // スタッフは何も操作しなくても普段どおりログインするだけで移行が完了する。
+    let issuedToken: string | null = null;
+    if (deviceId == null) {
+      issuedToken = newDeviceToken();
+      const { data: newDev } = await admin.from("store_devices").insert({
+        store_id,
+        token_hash: await sha256Hex(issuedToken),
+        label: memberRole === "owner" ? "オーナー端末(自動登録)" : `セラピスト端末(自動登録)`,
+        last_seen_at: new Date().toISOString(),
+      }).select("id").maybeSingle();
+      deviceId = newDev?.id ?? null;
+    } else {
+      // 既存端末 → 最終利用日時を更新（管理画面で「使われていない端末」を判別するため）
+      await admin.from("store_devices").update({ last_seen_at: new Date().toISOString() }).eq("id", deviceId);
+    }
 
     // 2) この主体に対応する内部Authユーザーを「決定的email」で用意する。
     //    emailは実体（owner / cast.<本人ID>）から導出する。ロック用 principalKey とは別物。
@@ -253,6 +342,8 @@ serve(async (req) => {
       refresh_token: session.refresh_token,
       expires_at: session.expires_at,
       store_id, role: memberRole, cast_id: memberCastId, user_id: userId,
+      // 自動ペアリングで発行した場合のみ返る。クライアントは受け取ったら保存する。
+      ...(issuedToken ? { device_token: issuedToken } : {}),
     }, 200, origin);
   } catch (e) {
     return json({ error: String((e as Error).message ?? e) }, 500, origin);
