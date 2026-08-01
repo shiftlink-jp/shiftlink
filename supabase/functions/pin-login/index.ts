@@ -27,7 +27,7 @@ const ANON_MAX_FAILS = 10;
 //   ここをfail-closed（未設定なら即トークン必須）にすると、Secret設定を1つ忘れた瞬間や
 //   タイポ（全角・スラッシュ区切り等でInvalid Date）で全店が即ログイン不能になるため。
 //   移行完了後は下の DEFAULT_GRACE_UNTIL を過去日に書き換えて締める（＝コードで明示的に締める）。
-const DEFAULT_GRACE_UNTIL = "2026-08-11T00:00:00+09:00";
+const DEFAULT_GRACE_UNTIL = "2026-09-30T00:00:00+09:00";
 function graceDeadline(): number {
   const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
   const t = raw ? Date.parse(raw) : NaN;
