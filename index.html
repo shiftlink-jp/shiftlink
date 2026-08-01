@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v33';
+const SW_VER = 'v34';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -1988,7 +1988,9 @@ function _dismissPwaBanner() {
   if (b) b.remove();
 }
 
-const _isSaaS = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp');
+// ※SAAS_MODE（3280付近）と同一の判定式。定義順の都合でここでは再掲している。
+//   本番KYOUKANOホストでは ?saas を無視する点も揃えること（食い違うとSW登録だけスキップされる）。
+const _isSaaS = location.hostname !== 'kyoukano.vercel.app' && (new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp'));
 if("serviceWorker" in navigator && !_isSaaS){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
@@ -3274,7 +3276,12 @@ function makeOwnerTok(pin){
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SaaSモード判定: URLパラメータ ?saas=1 または shiftlink-app.jp / app.shiftlink.jp からアクセス時
-const SAAS_MODE = new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp')
+// #4対策(2026-08-02): 本番KYOUKANOホストでは ?saas を受け付けない。
+//   ?saas を付けるだけでSaaS経路に倒れると、続く PIN_STORE_ID が ?pinauth 任せになり、
+//   公式アプリのURLを他店PINの総当たり台にできてしまうため、ホスト名を優先して固定する。
+const KYOUKANO_HOST = 'kyoukano.vercel.app'
+const IS_KYOUKANO_HOST = location.hostname === KYOUKANO_HOST
+const SAAS_MODE = !IS_KYOUKANO_HOST && (new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp'))
 
 // Supabase接続（2026-08-01: SaaS・PINとも本番プロジェクトに統一）
 //   KYOUKANOのSaaS並行稼働のため、SaaSモードの接続先を開発用(fewuonnrgqnxtopkjudt・停止中)から
