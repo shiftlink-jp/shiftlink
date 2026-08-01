@@ -3449,7 +3449,7 @@ function setDeviceStore(sid){
   // KYOUKANO本番(非SaaS)は店舗を固定したままにする＝現行の挙動を一切変えない
   try{
     if(sid){ localStorage.setItem(DEVICE_STORE_KEY,String(sid)); if(SAAS_MODE) PIN_STORE_ID=String(sid) }
-    else localStorage.removeItem(DEVICE_STORE_KEY)
+    else { localStorage.removeItem(DEVICE_STORE_KEY); if(SAAS_MODE) PIN_STORE_ID=_pinAuthParam||null }
   }catch(e){ if(sid&&SAAS_MODE) PIN_STORE_ID=String(sid) }
 }
 function getDeviceToken(){ try{ return localStorage.getItem(DEVICE_TOKEN_KEY)||'' }catch(e){ return '' } }
