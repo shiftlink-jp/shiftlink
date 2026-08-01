@@ -15,8 +15,6 @@ const ALLOWED_ORIGINS = [
   "https://shiftlink-app.jp",
   "https://www.shiftlink-app.jp",
   "https://app.shiftlink.jp",
-  "https://shiftlink-app.jp",
-  "https://www.shiftlink-app.jp",
   "http://localhost:3100",
   "http://localhost:3200",
   "http://localhost:3300",

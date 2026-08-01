@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v34';
+const SW_VER = 'v35';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -1991,7 +1991,11 @@ function _dismissPwaBanner() {
 // ※SAAS_MODE（3280付近）と同一の判定式。定義順の都合でここでは再掲している。
 //   本番KYOUKANOホストでは ?saas を無視する点も揃えること（食い違うとSW登録だけスキップされる）。
 const _isSaaS = location.hostname !== 'kyoukano.vercel.app' && (new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp'));
-if("serviceWorker" in navigator && !_isSaaS){
+// SaaS移行(2026-08-02): SaaSホストでもSW（プッシュ通知の土台）を登録する。
+//   もともとSaaSを除外していたのは、SWが本番DBを直に触る前提だったのに対しSaaSは別DB(開発用)を
+//   見ていたため。#8でSWからのDB直書きを廃止し、2026-08-01に接続先も本番へ統一したので理由が消えた。
+//   kyoukano.vercel.app では _isSaaS が常にfalse（上のガード）なので、この条件変更で本番の挙動は変わらない。
+if("serviceWorker" in navigator){
   // 古いSWをすべて解除してから新しいSWを登録
   navigator.serviceWorker.getRegistrations().then(function(registrations){
     var needReload = false;
@@ -2302,6 +2306,9 @@ document.addEventListener('DOMContentLoaded',function(){
     <input class="linput" type="text" id="pair-label" maxlength="30" placeholder="例: かなさんのiPhone">
     <button class="btn-login" style="background:var(--accent)" onclick="doPairDevice()" id="btn-pair">登録する</button>
     <div class="lerr" id="pair-err"></div>
+    <div style="margin-top:1rem;text-align:center">
+      <a href="#" onclick="showSaasEmailLogin();return false" style="font-size:.78rem;color:var(--text3);text-decoration:underline">オーナーの方（メール／パスワードでログイン）</a>
+    </div>
   </div>
 </div>
 
@@ -3320,7 +3327,7 @@ const IS_KYOUKANO_HOST = location.hostname === KYOUKANO_HOST
 const SAAS_MODE = !IS_KYOUKANO_HOST && (new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp'))
 
 // Supabase接続（2026-08-01: SaaS・PINとも本番プロジェクトに統一）
-//   KYOUKANOのSaaS並行稼働のため、SaaSモードの接続先を開発用(fewuonnrgqnxtopkjudt・停止中)から
+//   KYOUKANOのSaaS並行稼働のため、SaaSモードの接続先を旧・開発用プロジェクト(停止中)から
 //   本番(qgcgkrcrfzonmmygcdju)へ変更。非SaaS(kyoukano.vercel.app)は元から本番のため挙動不変。
 //   これによりshiftlink-app.jpからも同じ本番データにアクセスできる（並行稼働→検証後に切替）。
 const SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co'
@@ -3337,11 +3344,20 @@ let currentStoreId = null // ログイン後にセットされる
 // SaaS（app.shiftlink.jp系）は従来通りSupabase Auth（この設計の対象外）。
 const _pinAuthParam = new URLSearchParams(location.search).get('pinauth')
 const KYOUKANO_STORE_ID = '4cb3383a-31e5-408a-9f75-60a25943ac4d' // 本番KYOUKANO（Phase1で全データにstore_id付与済 2026-06-11）
-const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE
+// SaaS移行(2026-08-02): SaaS URL(www.shiftlink-app.jp)でもPINログインを使えるようにする。
+//   「この端末が登録済みか」= 端末トークンの有無で判定する。URLに ?pinauth=<店舗ID> を
+//   埋める案は店舗IDが露出し他店IDへの差し替え余地を残すため採らない。
+//   ※ここは DEVICE_TOKEN_KEY 等の定義より前に評価されるため、キー名は直書きで読む
+//     （関数経由にすると const の未初期化参照でアプリ全体が起動しなくなる）。
+let _devTok0='', _devStore0=''
+try{ _devTok0=localStorage.getItem('sl_device_token')||''; _devStore0=localStorage.getItem('sl_device_store')||'' }catch(e){}
+const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE || !!_devTok0
 // #4対策: 非SaaS(本番KYOUKANO)では pinauth を無視し店舗をKYOUKANOに固定する。
 // （URLに ?pinauth=<他店ID> を付けて公式アプリを他店PINの総当たり台にされるのを防ぐ。
-//   pinauth は SaaS=開発/検証時のみ有効。SaaS本格稼働時は店舗をサブドメイン等から確定する想定）
-let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || null) : KYOUKANO_STORE_ID
+//   pinauth は SaaS=開発/検証時のみ有効）
+// SaaSでは端末登録時に控えた店舗ID(_devStore0)を使う。これは画面表示用の手がかりに過ぎず、
+// サーバー(pin-login / list-store-casts)は端末トークンから店舗を再判定するため詐称しても意味がない。
+let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || _devStore0 || null) : KYOUKANO_STORE_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -3426,6 +3442,16 @@ async function loadStoreDataForPin(){
 // この端末の登録トークン。サーバーはこれを見て「どの店舗か」を判定する。
 // ＝クライアントが店舗を申告できなくなり、第三者が他店の窓口を叩く経路が消える。
 const DEVICE_TOKEN_KEY='sl_device_token'
+// 端末登録時にサーバーが返した店舗ID。次回起動時にどの店舗のログイン画面を出すかの手がかり。
+// 権限の根拠ではない（サーバーは常に端末トークンから店舗を判定する）。
+const DEVICE_STORE_KEY='sl_device_store'
+function setDeviceStore(sid){
+  // KYOUKANO本番(非SaaS)は店舗を固定したままにする＝現行の挙動を一切変えない
+  try{
+    if(sid){ localStorage.setItem(DEVICE_STORE_KEY,String(sid)); if(SAAS_MODE) PIN_STORE_ID=String(sid) }
+    else localStorage.removeItem(DEVICE_STORE_KEY)
+  }catch(e){ if(sid&&SAAS_MODE) PIN_STORE_ID=String(sid) }
+}
 function getDeviceToken(){ try{ return localStorage.getItem(DEVICE_TOKEN_KEY)||'' }catch(e){ return '' } }
 // 保存できたかを読み戻して確認する。プライベートブラウズ等で保存できないと、
 // ログインのたびに端末が新規登録され、猶予終了後は締め出されてしまうため検知して知らせる。
@@ -3449,6 +3475,7 @@ async function ensureDeviceTokenAfterLogin(){
     })
     const j=await res.json().catch(()=>({}))
     if(res.ok&&j.device_token){
+      setDeviceStore(j.store_id||currentStoreId||PIN_STORE_ID)
       if(!setDeviceToken(j.device_token)){
         toast('この端末では登録情報を保存できません。ブラウザの設定をご確認ください')
       }
@@ -3457,7 +3484,7 @@ async function ensureDeviceTokenAfterLogin(){
 }
 // サーバーから「この端末は未登録/失効」と返されたら、トークンを捨てて店舗コード画面へ誘導する
 function handleNeedPairing(j){
-  if(j&&j.need_pairing){ setDeviceToken(''); showPairingScreen(j.error||'この端末の登録が必要です'); return true }
+  if(j&&j.need_pairing){ setDeviceToken(''); setDeviceStore(''); showPairingScreen(j.error||'この端末の登録が必要です'); return true }
   return false
 }
 
@@ -3473,6 +3500,7 @@ async function pinLoginViaServer(role, castId, pin){
   if(!res.ok){ if(handleNeedPairing(j)) throw new Error(j.error||'端末の登録が必要です'); throw new Error(j.error||'ログインに失敗しました') }
   // 猶予期間中の自動ペアリングでトークンが発行されたら保存（スタッフの操作は不要）
   // 保存できない端末（プライベートブラウズ等）は、猶予終了後に締め出されるため必ず知らせる。
+  if(j.device_token) setDeviceStore(j.store_id)
   if(j.device_token && !setDeviceToken(j.device_token)){
     toast('この端末では登録情報を保存できません。通常モードで開くか、ホーム画面に追加してください')
   }
@@ -3491,6 +3519,12 @@ function showPairingScreen(msg){
   if(err) err.textContent=msg||''
   const inp=document.getElementById('pair-code'); if(inp){ inp.value=''; setTimeout(()=>inp.focus(),100) }
 }
+// 端末登録画面から、メール/パスワードのログイン画面へ切り替える（SaaS契約者・オーナー用）
+function showSaasEmailLogin(){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'))
+  const el=document.getElementById('s-saas-login')
+  if(el) el.classList.add('on')
+}
 // 店舗コードを入力して登録 → 通常のログイン画面へ戻す
 async function doPairDevice(){
   const code=(document.getElementById('pair-code')?.value||'').trim().toUpperCase()
@@ -3503,6 +3537,9 @@ async function doPairDevice(){
   try{
     await pairThisDevice(code,label)
     toast('この端末を登録しました')
+    // SaaS URLでは PIN_AUTH_MODE が「起動時にトークンがあったか」で決まるため、
+    // 登録直後は読み込み直してPINログイン経路に切り替える（KYOUKANOは元からtrueなので通らない）
+    if(!PIN_AUTH_MODE){ location.reload(); return }
     showLogin('top')
   }catch(e){ if(err) err.textContent=e.message||'登録に失敗しました' }
   finally{ if(btn){ btn.disabled=false; btn.textContent='登録する' } }
@@ -3517,6 +3554,7 @@ async function pairThisDevice(code,label){
   })
   const j=await res.json().catch(()=>({}))
   if(!res.ok||!j.device_token) throw new Error(j.error||'端末の登録に失敗しました')
+  setDeviceStore(j.store_id)
   // 保存できなければ「登録できた」と誤解させないため、ここでエラーにする
   if(!setDeviceToken(j.device_token)){
     throw new Error('この端末では登録情報を保存できません。プライベートブラウズを解除するか、ホーム画面に追加してから再度お試しください')
@@ -3940,11 +3978,18 @@ async function init(){
         return
       }
     }catch(e){console.error('[SaaS] getSession error:',e)}
-    // 未ログイン → SaaSログイン画面表示
+    // 未ログイン
+    // SaaS移行(2026-08-02): 端末未登録なら店舗コード入力画面を既定にする。
+    //   店舗スタッフはメール/パスワードを持たずPINで入るため、ここでメール画面を出すと行き止まりになる。
+    //   新規契約導線(?signup)とパスワード再設定は従来どおりメール画面を出す。
+    if(!new URLSearchParams(location.search).has('signup')){
+      showPairingScreen('')
+      return
+    }
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
     document.getElementById('s-saas-login').classList.add('on')
     // deep-link: ?signup=1 が付いていれば登録フォームを自動で開く（LPからの直リンク用）
-    if(new URLSearchParams(location.search).has('signup')) showSaasSignup()
+    showSaasSignup()
     return
   }
   // ── 従来モード：PINログイン ──
