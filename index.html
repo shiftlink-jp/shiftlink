@@ -9212,7 +9212,7 @@ async function renderDeviceList(){
   }catch(e){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込めませんでした</div>' }
 }
 async function revokeDevice(id){
-  if(!confirm('この端末を解除しますか？\n解除するとその端末は再度ログインできなくなります（店舗コードで再登録が必要）。\n\n※移行期間中（2026/8/11まで）は、PINを知っている人がログインすると端末が再登録されます。紛失・退職の場合は、解除と一緒に必ずPINも変更してください。\n\n※今お使いの端末は解除しないでください。ご自身がログインできなくなります。'))return
+  if(!confirm('この端末を解除しますか？\n解除するとその端末は再度ログインできなくなります（店舗コードで再登録が必要）。\n\n※移行期間中（2026/9/30まで）は、PINを知っている人がログインすると端末が再登録されます。紛失・退職の場合は、解除と一緒に必ずPINも変更してください。\n\n※今お使いの端末は解除しないでください。ご自身がログインできなくなります。'))return
   try{ await callManageDevices({action:'revoke', device_id:id}); toast('端末を解除しました'); renderDeviceList() }
   catch(e){ toast('エラー: '+(e.message||e)) }
 }
