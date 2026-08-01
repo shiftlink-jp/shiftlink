@@ -46,6 +46,9 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const ALLOWED_ORIGINS = [
   "https://kyoukano.vercel.app",
+  // SaaS移行(2026-08-02): apexは307でwwwへ転送されるため両方必要。
+  "https://shiftlink-app.jp",
+  "https://www.shiftlink-app.jp",
   "https://app.shiftlink.jp",
   "https://shiftlink-app.jp",
   "https://www.shiftlink-app.jp",
