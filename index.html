@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v42';
+const SW_VER = 'v43';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -10593,12 +10593,17 @@ async function inviteCast(castId, name){
     if(t) t.textContent=name+'さん専用の登録URL（LINEで本人に送ってください）'
     if(u) u.textContent=_lastCastInviteUrl
     if(e) e.textContent='有効期限: '+(j.expires_at?new Date(j.expires_at).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):(days+'日間'))
-    if(btnBox){ btnBox.style.display='block'; try{ btnBox.scrollIntoView({behavior:'smooth',block:'center'}) }catch(_){} }
-    // 自動コピーまで済ませる。失敗しても上のURL欄から手でコピーできる。
+    // コピーできたらURL欄は出さない（押す→コピーされた、で完結させる）。
+    // コピーに失敗した環境でだけ、手でコピーできるようURL欄を出す。
     let copied=false
     try{ await navigator.clipboard.writeText(_lastCastInviteUrl); copied=true }catch(_){}
-    toast(copied ? (name+'さんの招待URLをコピーしました（'+days+'日間有効）')
-                 : ('招待URLを発行しました（'+days+'日間有効）。下の欄からコピーしてください'), 3000)
+    if(copied){
+      if(btnBox) btnBox.style.display='none'
+      toast(name+'さんの招待URLをコピーしました（'+days+'日間有効）。LINEで本人に送ってください', 3000)
+    }else{
+      if(btnBox){ btnBox.style.display='block'; try{ btnBox.scrollIntoView({behavior:'smooth',block:'center'}) }catch(_){} }
+      toast('招待URLを発行しました（'+days+'日間有効）。下の欄からコピーしてください', 3000)
+    }
   }catch(err){ toast('エラー: '+(err.message||err), 3000) }
 }
 async function copyCastInvite(){
