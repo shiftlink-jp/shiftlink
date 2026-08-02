@@ -56,7 +56,13 @@ BEGIN
             THEN 1
           ELSE pin_login_attempts.fail_count + 1
         END,
-        locked_until = NULL,
+        -- 直列化された同一バーストの後続リクエストが、直前にかかったロックを
+        -- 消してしまわないよう、有効なロックは維持する。
+        -- 通常運用（単発）ではロック中はここに到達しない（先に429で返る）ため挙動は不変。
+        locked_until = CASE
+          WHEN pin_login_attempts.locked_until > now() THEN pin_login_attempts.locked_until
+          ELSE NULL
+        END,
         -- 診断用。呼び出し側が渡さなかった場合は既存値を消さない。
         device_id = COALESCE(EXCLUDED.device_id, pin_login_attempts.device_id),
         updated_at = now()
