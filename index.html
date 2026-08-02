@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v40';
+const SW_VER = 'v41';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3374,7 +3374,11 @@ const KYOUKANO_STORE_ID = '4cb3383a-31e5-408a-9f75-60a25943ac4d' // 本番KYOUKA
 //     （関数経由にすると const の未初期化参照でアプリ全体が起動しなくなる）。
 let _devTok0='', _devStore0=''
 try{ _devTok0=localStorage.getItem('sl_device_token')||''; _devStore0=localStorage.getItem('sl_device_store')||'' }catch(e){}
-const PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE || !!_devTok0
+// let にしている理由: 招待リンクで端末を登録した「直後」にPIN経路へ切り替えるため。
+// 以前はここを const にしていたので location.reload() で切り替えるしかなく、
+// 保存が反映される前に読み込み直すと店舗コード画面に戻ってしまう事故があった。
+// ※非SaaS(KYOUKANO)では常に true。この再代入はSaaSの招待リンク経路でしか起きない。
+let PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE || !!_devTok0
 // #4対策: 非SaaS(本番KYOUKANO)では pinauth を無視し店舗をKYOUKANOに固定する。
 // （URLに ?pinauth=<他店ID> を付けて公式アプリを他店PINの総当たり台にされるのを防ぐ。
 //   pinauth は SaaS=開発/検証時のみ有効）
@@ -3526,7 +3530,8 @@ async function rejoinWithInvite(code){
   showPairingScreen('', true)
   try{
     await pairThisDevice(code,'招待リンクで登録')
-    location.reload()   // トークンを持った状態で起動し直す
+    PIN_AUTH_MODE = true
+    await initPinAuth()   // 読み込み直さずにそのまま入り直す
   }catch(e){
     showPairingScreen((e&&e.message)||'招待リンクが使えませんでした。オーナーにご確認ください')
   }
@@ -3649,8 +3654,10 @@ async function tryJoinPairing(){
   showPairingScreen('', true)   // 入力欄を隠した「登録中」表示
   try{
     await pairThisDevice(code,'招待リンクで登録')
-    if(!PIN_AUTH_MODE){ location.reload(); return true }   // 起動時評価のため読み込み直す
-    showLogin('top')
+    // 読み込み直さずにPIN経路へ切り替える。
+    // （reloadに頼ると、保存の反映が間に合わない環境で店舗コード画面に逆戻りしてしまう）
+    PIN_AUTH_MODE = true
+    await initPinAuth()
     return true
   }catch(e){
     // 期限切れ・失効・不正 → 通常の店舗コード入力画面へフォールバック（URLは既に掃除済み）
