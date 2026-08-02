@@ -101,7 +101,27 @@ serve(async (req) => {
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
 
-    const fail = async (msg: string, status: number) => {
+    // 失敗の記録はDB内で原子的に加算する（030: record_login_fail）。
+    // 「読んで+1して書き戻す」だと、誤コードを同時に大量送信されたとき全リクエストが
+    // 同じ値を読んで全部「1回目」になり、10回の上限に到達せずロックが無効化される。
+    // 030未適用のDBでも落とさないよう、RPCが使えなければ従来方式へフォールバックする。
+    const bumpFail = async () => {
+      try {
+        const { error } = await admin.rpc("record_login_fail", {
+          p_store_id: SENTINEL_STORE, p_principal: lockKey, p_max: MAX_FAILS,
+          p_lock_minutes: LOCK_MINUTES, p_window_minutes: LOCK_MINUTES,
+        });
+        if (!error) return;
+        console.error(
+          "pair-device: record_login_fail が使えないため旧方式にフォールバック",
+          error.code, error.message,
+        );
+      } catch (e) {
+        console.error(
+          "pair-device: record_login_fail 呼び出しで例外のため旧方式にフォールバック",
+          String((e as Error).message ?? e),
+        );
+      }
       // 直近の時間窓内の失敗だけ数える（生涯累積させると恒久ロックになるため）
       const age = att?.updated_at ? Date.now() - new Date(att.updated_at).getTime() : Infinity;
       const base = age < LOCK_MINUTES * 60000 ? (att?.fail_count ?? 0) : 0;
@@ -112,8 +132,11 @@ serve(async (req) => {
         { store_id: SENTINEL_STORE, principal: lockKey, fail_count: locked ? 0 : next, locked_until: locked, updated_at: new Date().toISOString() },
         { onConflict: "store_id,principal" },
       );
-      // 記録に失敗したらレート制限が効かないため、無言で通さずエラーとして扱う
+      // 記録に失敗したらレート制限が効かないため、無言で通さずログに残す
       if (upErr) console.error("pair-device: 試行記録に失敗", upErr.message);
+    };
+    const fail = async (msg: string, status: number) => {
+      await bumpFail();
       return json({ error: msg }, status, origin);
     };
 

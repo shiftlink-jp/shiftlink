@@ -220,31 +220,60 @@ serve(async (req) => {
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
 
+    // 失敗の記録は必ずDB内で加算する（030: record_login_fail）。
+    // アプリ側で「読んで+1して書き戻す」と、誤PINを同時に大量送信されたとき全リクエストが
+    // 同じ値を読んで全部「1回目」になり、上限に到達せずロックが無効化されるため。
+    //
+    // 030未適用のDBでも絶対に落とさない: RPCが無い/引数名不一致などで失敗したら
+    // 従来の read-modify-write に自動で戻す（ログイン自体は必ず通す）。
+    const legacyFail = async (
+      key: string, fresh: number, limit: number, mins: number, devId: number | null,
+    ) => {
+      const next = fresh + 1;
+      const locked = next >= limit ? new Date(Date.now() + mins * 60000).toISOString() : null;
+      // ロックを掛ける時はカウントを0に戻す。戻さないと、ロック解除後の最初の1回の失敗で
+      // 即座に閾値を超えて再ロックされ、永久に解けなくなる（ノコギリ波）。
+      const row: Record<string, unknown> = {
+        store_id, principal: key, fail_count: locked ? 0 : next,
+        locked_until: locked, updated_at: new Date().toISOString(),
+      };
+      if (devId != null) row.device_id = devId;
+      const { error } = await admin.from("pin_login_attempts")
+        .upsert(row, { onConflict: "store_id,principal" });
+      if (error) console.error(`pin-login: 試行記録に失敗(${key})`, error.message);
+    };
+    // 1バケット分の記録。RPCを試し、駄目なら従来方式へ。
+    const bumpFail = async (
+      key: string, limit: number, mins: number, fresh: number, devId: number | null,
+    ) => {
+      try {
+        const args: Record<string, unknown> = {
+          p_store_id: store_id, p_principal: key, p_max: limit,
+          p_lock_minutes: mins, p_window_minutes: mins,
+        };
+        if (devId != null) args.p_device_id = devId;
+        const { error } = await admin.rpc("record_login_fail", args);
+        if (!error) return;
+        console.error(
+          `pin-login: record_login_fail が使えないため旧方式にフォールバック(${key})`,
+          error.code, error.message,
+        );
+      } catch (e) {
+        console.error(
+          `pin-login: record_login_fail 呼び出しで例外のため旧方式にフォールバック(${key})`,
+          String((e as Error).message ?? e),
+        );
+      }
+      await legacyFail(key, fresh, limit, mins, devId);
+    };
     // 失敗時: 端末カウントと店舗カウントの両方を加算し、必要ならロック
     const recordFail = async () => {
       // 端末が特定できている場合のみ厳しく（5回）。猶予期間中の未特定端末は緩める（20回）
       const limit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
-      const next = freshCount(att, LOCK_MINUTES) + 1;
-      const locked = next >= limit ? new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() : null;
-      const sNext = freshCount(satt, STORE_LOCK_MINUTES) + 1;
-      const sLocked = sNext >= storeLimit ? new Date(Date.now() + STORE_LOCK_MINUTES * 60000).toISOString() : null;
-      const now = new Date().toISOString();
-      // 記録に失敗するとレート制限が無言で無効化されるため、必ずログに残す
-      // （将来スキーマがずれた場合に気づけるようにする）
-      const [r1, r2] = await Promise.all([
-        admin.from("pin_login_attempts").upsert(
-          // ロックを掛ける時はカウントを0に戻す。戻さないと、ロック解除後の最初の1回の失敗で
-          // 即座に閾値を超えて再ロックされ、永久に解けなくなる（ノコギリ波）。
-          { store_id, principal: principalKey, fail_count: locked ? 0 : next, locked_until: locked, device_id: deviceId, updated_at: now },
-          { onConflict: "store_id,principal" },
-        ),
-        admin.from("pin_login_attempts").upsert(
-          { store_id, principal: storeKey, fail_count: sLocked ? 0 : sNext, locked_until: sLocked, updated_at: now },
-          { onConflict: "store_id,principal" },
-        ),
+      await Promise.all([
+        bumpFail(principalKey, limit, LOCK_MINUTES, freshCount(att, LOCK_MINUTES), deviceId),
+        bumpFail(storeKey, storeLimit, STORE_LOCK_MINUTES, freshCount(satt, STORE_LOCK_MINUTES), null),
       ]);
-      if (r1?.error) console.error("pin-login: 端末の試行記録に失敗", r1.error.message);
-      if (r2?.error) console.error("pin-login: 店舗の試行記録に失敗", r2.error.message);
     };
 
     // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
