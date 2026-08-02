@@ -249,7 +249,18 @@ serve(async (req) => {
         if (!error) {
           // deno-lint-ignore no-explicit-any
           const r = (data ?? {}) as any;
-          return { rpc: true, locked: !!r.locked, already_locked: !!r.already_locked };
+          // ★already_locked を返さない＝030の「旧版」が入っている、という判定。
+          //   旧版は locked_until を無条件でNULLに書き戻すため、これを rpc:true として扱うと
+          //   下の読み取り式ロック判定がスキップされ、しかも毎回ロックが消える＝防御が全損する。
+          //   その場合は rpc:false を返して従来の「読む→判定→照合→失敗時に記録」に戻す。
+          //   （適用順序の間違いに対する保険。順序だけを防波堤にしない）
+          if (typeof r.already_locked !== "boolean") {
+            console.error(
+              `pin-login: record_login_fail が旧版(already_lockedを返さない)のため旧方式にフォールバック(${key})`,
+            );
+          } else {
+            return { rpc: true, locked: !!r.locked, already_locked: !!r.already_locked };
+          }
         }
         console.error(
           `pin-login: record_login_fail が使えないため旧方式にフォールバック(${key})`,
@@ -305,6 +316,13 @@ serve(async (req) => {
     //   正しいPINなら成功でき、成功時に行ごと削除するのでロックも消える＝従来の
     //   「5回目までは試せる」体感を維持するため。
     if (satt?.locked_until && new Date(satt.locked_until) > new Date()) {
+      // 店舗ロック中に前倒し加算だけが進むと、攻撃を受けている60分の間、
+      // 正規スタッフの試行が毎回端末カウントを消費し（成功しないので削除に到達しない）
+      // 端末まで巻き添えロックされる。ここで進めた分を戻しておく。
+      if (pre.rpc) {
+        await admin.from("pin_login_attempts").delete()
+          .eq("store_id", store_id).eq("principal", principalKey);
+      }
       return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
     }
 
@@ -393,6 +411,10 @@ serve(async (req) => {
     //
     // 他人の名前は返さない（誰の端末かを外部に漏らさないため）。
     if (boundCastId != null && memberRole !== "owner" && memberCastId !== boundCastId) {
+      // 前倒し加算で1つ進めた分をここで戻す。戻さないと、他人の端末で5回試された時に
+      // その端末が15分ロックされ、持ち主本人が締め出される（PINは合っているのに入れない）。
+      await admin.from("pin_login_attempts").delete()
+        .eq("store_id", store_id).eq("principal", principalKey);
       return json({
         error: "この端末は別のスタッフ専用として登録されています。ご自身の端末でログインするか、オーナーに招待をご依頼ください",
       }, 403, origin);
