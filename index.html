@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v36';
+const SW_VER = 'v37';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2974,6 +2974,22 @@ document.addEventListener('DOMContentLoaded',function(){
         <div id="pair-code-val" style="font-size:1.6rem;font-weight:800;letter-spacing:.18em;margin:.3rem 0"></div>
         <button style="font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.25rem .8rem;cursor:pointer" onclick="copyPairCode()">コードをコピー</button>
       </div>
+      <!-- 招待リンク: SaaS URL(shiftlink-app.jp等)でのみ表示する。
+           KYOUKANO(kyoukano.vercel.app)では ?join を無視する設計のため、出しても使えない＝出さない。 -->
+      <div id="invite-ui" style="display:none">
+      <div style="border-top:1px dashed var(--border);margin:.8rem 0 .6rem"></div>
+      <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
+        <b>招待リンク</b>を使えば、1本のリンクをLINEで全員に送るだけで登録が済みます（<b>14日間有効・何人でも利用可</b>）。<br>
+        ※再発行すると<b>前のリンクは使えなくなります</b>。
+      </div>
+      <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem" onclick="issueInviteLink()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>招待リンクを発行する</button>
+      <div id="invite-link-out" style="display:none;background:#f2f7ff;border:1.5px solid #4b7bec;border-radius:10px;padding:.8rem;text-align:center;margin-bottom:.6rem">
+        <div style="font-size:.7rem;color:var(--text3)">このリンクをスタッフに送ってください</div>
+        <div id="invite-link-val" style="font-size:.78rem;font-weight:700;word-break:break-all;margin:.35rem 0"></div>
+        <div id="invite-link-exp" style="font-size:.68rem;color:var(--text3);margin-bottom:.35rem"></div>
+        <button style="font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.25rem .8rem;cursor:pointer" onclick="copyInviteLink()">リンクをコピー</button>
+      </div>
+      </div><!-- /invite-ui -->
       <div style="font-size:.72rem;font-weight:700;color:var(--text2);margin:.6rem 0 .3rem">登録済みの端末</div>
       <div id="device-list"><div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込み中...</div></div>
     </div>
@@ -3564,6 +3580,47 @@ async function pairThisDevice(code,label){
   }
   return j
 }
+// ── 招待リンク（?join=コード）による自動ペアリング ────────────────
+// オーナーが1本のリンクをLINEで配るだけで、スタッフはタップするだけで端末登録が済む。
+// ★KYOUKANO(kyoukano.vercel.app)では SAAS_MODE=false なので、この経路には絶対に入らない。
+function getJoinCode(){
+  if(!SAAS_MODE) return ''      // 非SaaS(KYOUKANO本番)では ?join を完全に無視する
+  try{ return (new URLSearchParams(location.search).get('join')||'').trim().toUpperCase() }catch(e){ return '' }
+}
+// URLから join を消す（リロード・共有で再実行/再流出しないように）。他のパラメータは残す。
+function stripJoinParam(){
+  try{
+    const u=new URL(location.href)
+    if(!u.searchParams.has('join')) return
+    u.searchParams.delete('join')
+    history.replaceState(null,'',u.pathname+(u.search||'')+u.hash)
+  }catch(e){}
+}
+// 戻り値 true = このあとの通常の起動処理を行わない（画面遷移済み or リロード予約済み）
+let _joinDone=false   // init()が二重に走っても端末を二重登録しないための掛け金
+async function tryJoinPairing(){
+  const code=getJoinCode()
+  if(!code||_joinDone) return false
+  // すでに登録済みの端末なら何もしない。
+  // （リンクを再タップするたびに端末が新規登録され、上限に達するのを防ぐ）
+  if(getDeviceToken()){ stripJoinParam(); return false }
+  // 通信より先に掛け金とURL掃除を済ませる（iOS PWAで起動処理が再実行されても二重登録しない）
+  _joinDone=true
+  stripJoinParam()
+  // 待っている間が真っ白にならないよう、登録中であることを見せる
+  showPairingScreen('端末を登録しています…')
+  try{
+    await pairThisDevice(code,'招待リンクで登録')
+    if(!PIN_AUTH_MODE){ location.reload(); return true }   // 起動時評価のため読み込み直す
+    showLogin('top')
+    return true
+  }catch(e){
+    // 期限切れ・失効・不正 → 通常の店舗コード入力画面へフォールバック（URLは既に掃除済み）
+    showPairingScreen((e&&e.message)||'招待リンクが使えませんでした。オーナーにご確認ください')
+    return true
+  }
+}
+
 // ── 生体認証(パスキー) v2: サーバ側で署名検証する安全版。PIN認証モードで使用 ──
 // 旧版(サーバ検証なし)は使えないため、本人が各端末で1回だけ再登録する。
 let _pkLib=null
@@ -3952,6 +4009,8 @@ function showLogin(type){
 
 async function init(){
   console.log('[init] SAAS_MODE=', SAAS_MODE, 'PIN_AUTH_MODE=', PIN_AUTH_MODE)
+  // ── 招待リンク(?join=コード)での自動ペアリング。SaaS経路のみ（KYOUKANOは素通り） ──
+  if(SAAS_MODE && await tryJoinPairing()) return
   // ── Phase2: PIN認証モード（pin-login経由） ──
   if(PIN_AUTH_MODE){
     await initPinAuth()
@@ -9189,6 +9248,27 @@ async function issuePairingCode(){
     toast('店舗コードを発行しました（48時間有効）')
   }catch(e){ toast('エラー: '+(e.message||e)) }
 }
+// 招待リンク（14日間有効・複数人が使える）を発行して、完全なURLを表示する
+let _lastInviteUrl=''
+async function issueInviteLink(){
+  try{
+    const j=await callManageDevices({action:'issue_invite'})
+    // ホスト名は直書きせず、いま開いているURLのドメインをそのまま使う
+    _lastInviteUrl=location.origin+'/?join='+encodeURIComponent(j.code)
+    const val=document.getElementById('invite-link-val')
+    const exp=document.getElementById('invite-link-exp')
+    const box=document.getElementById('invite-link-out')
+    if(val) val.textContent=_lastInviteUrl
+    if(exp) exp.textContent='有効期限: '+(j.expires_at?new Date(j.expires_at).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—')
+    if(box) box.style.display='block'
+    toast('招待リンクを発行しました（14日間有効）')
+  }catch(e){ toast('エラー: '+(e.message||e)) }
+}
+async function copyInviteLink(){
+  if(!_lastInviteUrl) return
+  try{ await navigator.clipboard.writeText(_lastInviteUrl); toast('リンクをコピーしました') }
+  catch(e){ toast('コピーできませんでした: '+_lastInviteUrl) }
+}
 async function copyPairCode(){
   if(!_lastPairCode) return
   try{ await navigator.clipboard.writeText(_lastPairCode); toast('コードをコピーしました') }
@@ -9197,6 +9277,8 @@ async function copyPairCode(){
 async function renderDeviceList(){
   const el=document.getElementById('device-list')
   if(!el) return
+  // 招待リンクUIはSaaS URLのときだけ見せる（KYOUKANOでは ?join が効かないため）
+  const iv=document.getElementById('invite-ui'); if(iv) iv.style.display=SAAS_MODE?'block':'none'
   try{
     const j=await callManageDevices({action:'list'})
     const devs=j.devices||[]

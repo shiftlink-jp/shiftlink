@@ -19,6 +19,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const MAX_FAILS = 10;      // 店舗コードの誤入力許容回数
+const MAX_DEVICES_PER_STORE = 60;  // 招待リンク経由の登録に効かせる上限（manage-devices と同値）
 const LOCK_MINUTES = 30;
 
 // pin_login_attempts.store_id は NOT NULL（010）。店舗横断のカウンタ用に番兵UUIDを使う。
@@ -118,20 +119,44 @@ serve(async (req) => {
     // 緊急復旧コード（オフライン保管）。オーナーが端末を失った場合の唯一の入口。
     let targetStore: string | null = null;
     let pairingRowId: number | null = null;
+    let isInvite = false;   // 招待リンク（複数人が使える）で来たか
     if (isBootstrap) {
       targetStore = BOOTSTRAP_STORE_ID;
     } else {
       const { data: pc } = await admin
         .from("store_pairing_codes")
-        .select("id,store_id,expires_at,used_at")
+        .select("id,store_id,expires_at,used_at,multi_use,revoked_at")
         .eq("code_hash", codeHash).maybeSingle();
       if (!pc) return await fail("店舗コードが正しくありません", 401);
-      if (pc.used_at) return await fail("この店舗コードは使用済みです。オーナーに再発行を依頼してください", 401);
+      isInvite = !!pc.multi_use;
+      // ★招待リンクの「失効・期限切れ」は fail() を通さない（レート制限カウンタを増やさない）。
+      //   1本のリンクを全員に配る運用では、古いLINEメッセージを踏む人が必ず出る。
+      //   それを総当たり扱いすると10回で全店のペアリング窓口が30分止まってしまう。
+      //   コード自体は実在＝当店が発行したものなので、推測攻撃ではない。
+      if (pc.revoked_at) {
+        return json({ error: "この招待リンクは無効です（新しいリンクが発行されています）。オーナーに最新のリンクを確認してください" }, 401, origin);
+      }
+      // 招待リンクは複数人が使うため used_at は付かない（＝この判定に引っかからない）
+      if (!isInvite && pc.used_at) return await fail("この店舗コードは使用済みです。オーナーに再発行を依頼してください", 401);
       if (new Date(pc.expires_at) <= new Date()) {
+        if (isInvite) {
+          return json({ error: "この招待リンクは有効期限が切れています。オーナーに再発行を依頼してください" }, 401, origin);
+        }
         return await fail("この店舗コードは有効期限が切れています。オーナーに再発行を依頼してください", 401);
       }
       targetStore = pc.store_id;
       pairingRowId = pc.id;
+
+      // 招待リンクは何度でも使えるため、端末数の上限を必ず確認する（無制限に増えるのを防ぐ）。
+      // ここは総当たり攻撃ではないので fail() は通さない（レート制限カウンタを汚さない）。
+      if (isInvite) {
+        const { count } = await admin
+          .from("store_devices").select("id", { count: "exact", head: true })
+          .eq("store_id", targetStore).is("revoked_at", null);
+        if ((count ?? 0) >= MAX_DEVICES_PER_STORE) {
+          return json({ error: "登録できる端末数の上限に達しました。オーナーに連絡してください" }, 409, origin);
+        }
+      }
     }
 
     // 成功 → 失敗カウントをリセットし、トークンを発行
@@ -148,8 +173,9 @@ serve(async (req) => {
     });
     if (insErr) return json({ error: "端末の登録に失敗しました" }, 500, origin);
 
-    // コードを使用済みにする（1回使い切り）。緊急復旧コードは繰り返し使えるため対象外。
-    if (pairingRowId) {
+    // コードを使用済みにする（1回使い切り）。
+    // 緊急復旧コードと招待リンクは繰り返し使えるため対象外。
+    if (pairingRowId && !isInvite) {
       await admin.from("store_pairing_codes").update({ used_at: new Date().toISOString() }).eq("id", pairingRowId);
     }
 

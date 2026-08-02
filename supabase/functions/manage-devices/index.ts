@@ -20,6 +20,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CODE_TTL_HOURS = 48;          // Square のデバイスコードと同じ48時間
+const INVITE_TTL_DAYS = 14;         // 招待リンク（複数人が使える）の有効期限
 const MAX_DEVICES_PER_STORE = 60;   // 1店舗あたりの有効な登録端末数の上限
 
 const ALLOWED_ORIGINS = [
@@ -123,6 +124,28 @@ serve(async (req) => {
       if (error) return json({ error: "コードの発行に失敗しました" }, 500, origin);
       // 平文コードはこの応答でしか返らない（DBにはハッシュのみ）
       return json({ ok: true, code, expires_at: expiresAt, ttl_hours: CODE_TTL_HOURS }, 200, origin);
+    }
+
+    // issue_invite: 招待リンク用のコードを1本発行する（14日間有効・複数人が使える）。
+    //   セラピスト全員に1枚ずつコードを配る手間をなくすための経路。
+    //   同時に有効なのは1店舗1本だけ（古い行はここで失効させ、DB側の部分ユニーク索引でも担保）。
+    if (action === "issue_invite") {
+      const now = new Date().toISOString();
+      // 先に古い招待リンクを失効させる（再発行＝前のリンクは使えなくなる）
+      const { error: revErr } = await admin.from("store_pairing_codes")
+        .update({ revoked_at: now })
+        .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
+      if (revErr) return json({ error: "招待リンクの発行に失敗しました" }, 500, origin);
+
+      const code = newPairingCode();
+      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 3600_000).toISOString();
+      const { error } = await admin.from("store_pairing_codes").insert({
+        store_id, code_hash: await sha256Hex(code), expires_at: expiresAt,
+        multi_use: true, label: "招待リンク",
+      });
+      if (error) return json({ error: "招待リンクの発行に失敗しました" }, 500, origin);
+      // 平文コードはこの応答でしか返らない（DBにはハッシュのみ＝後から再表示はできない）
+      return json({ ok: true, code, expires_at: expiresAt, ttl_days: INVITE_TTL_DAYS }, 200, origin);
     }
 
     if (action === "list") {
