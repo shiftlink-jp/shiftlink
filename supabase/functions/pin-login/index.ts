@@ -186,24 +186,17 @@ serve(async (req) => {
     // ── ②ロックの単位 ───────────────────────────────────────
     // 端末ごとにカウントするため、1人の打ち間違いが他のスタッフを巻き込まない。
     // 端末トークンはサーバー発行なので攻撃者が偽造・使い捨てできない。
-    const basePrincipal = role === "owner"
-      ? "owner"
-      : (cast_id ? `cast.${cast_id}` : "castpin");
-    const principalKey = deviceId != null
-      ? `${basePrincipal}.dev${deviceId}`
-      : `${basePrincipal}.${store_id}`;   // 猶予期間中（端末未登録）は従来キー
+    //
+    // ★キーに役割(owner/cast)やセラピストIDを含めない。含めると、攻撃者が cast_id を
+    //   在籍者ぶん（例:17通り）変えるだけでバケットを分散でき、実質の試行上限が
+    //   「上限×人数」に膨らんでしまうため（バケット分散による回避を封じる）。
+    //   ・登録済み端末 → 端末1台＝1バケット
+    //   ・未登録端末（猶予期間中）→ 店舗ごとに1つの共通バケット
+    const principalKey = deviceId != null ? `dev${deviceId}` : `grace.${store_id}`;
     // 店舗全体の最終防衛線。登録済み端末と未登録端末でバケットを分ける。
     // （混ぜると、未登録からの攻撃で正規端末まで巻き添えロックされる）
     const storeKey = deviceId != null ? "store.backstop" : "store.backstop.anon";
     const storeLimit = deviceId != null ? STORE_MAX_FAILS : ANON_MAX_FAILS;
-
-    // 0) ロック状態を確認（端末ごと＋店舗全体の二段構え）
-    const [{ data: att }, { data: satt }] = await Promise.all([
-      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
-        .eq("store_id", store_id).eq("principal", principalKey).maybeSingle(),
-      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
-        .eq("store_id", store_id).eq("principal", storeKey).maybeSingle(),
-    ]);
 
     // 失敗回数は「直近の時間窓内のもの」だけ数える（スライディングウィンドウ）。
     // ※この処理が無いと失敗が生涯累積し、いずれ通常運用でも恒久ロックに入る。
@@ -213,12 +206,6 @@ serve(async (req) => {
       const age = Date.now() - new Date(row.updated_at).getTime();
       return age < windowMin * 60000 ? (row.fail_count ?? 0) : 0;
     };
-    if (att?.locked_until && new Date(att.locked_until) > new Date()) {
-      return json({ error: "この端末は試行回数の上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
-    }
-    if (satt?.locked_until && new Date(satt.locked_until) > new Date()) {
-      return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
-    }
 
     // 失敗の記録は必ずDB内で加算する（030: record_login_fail）。
     // アプリ側で「読んで+1して書き戻す」と、誤PINを同時に大量送信されたとき全リクエストが
@@ -243,17 +230,27 @@ serve(async (req) => {
       if (error) console.error(`pin-login: 試行記録に失敗(${key})`, error.message);
     };
     // 1バケット分の記録。RPCを試し、駄目なら従来方式へ。
+    // 返り値: RPCが使えた場合のみ { rpc:true, locked, already_locked }。
+    //         使えなかった場合は { rpc:false }（＝呼び出し側は従来の挙動に戻す）。
+    // deno-lint-ignore no-explicit-any
     const bumpFail = async (
       key: string, limit: number, mins: number, fresh: number, devId: number | null,
-    ) => {
+      // 前倒し加算（照合前）で呼ぶときは true。RPCが使えなかった場合に
+      // 旧方式で書き戻すと、読んでいない既存カウントを 1 で上書きしてしまうため書かない。
+      probeOnly = false,
+    ): Promise<{ rpc: boolean; locked?: boolean; already_locked?: boolean }> => {
       try {
         const args: Record<string, unknown> = {
           p_store_id: store_id, p_principal: key, p_max: limit,
           p_lock_minutes: mins, p_window_minutes: mins,
         };
         if (devId != null) args.p_device_id = devId;
-        const { error } = await admin.rpc("record_login_fail", args);
-        if (!error) return;
+        const { data, error } = await admin.rpc("record_login_fail", args);
+        if (!error) {
+          // deno-lint-ignore no-explicit-any
+          const r = (data ?? {}) as any;
+          return { rpc: true, locked: !!r.locked, already_locked: !!r.already_locked };
+        }
         console.error(
           `pin-login: record_login_fail が使えないため旧方式にフォールバック(${key})`,
           error.code, error.message,
@@ -264,16 +261,64 @@ serve(async (req) => {
           String((e as Error).message ?? e),
         );
       }
-      await legacyFail(key, fresh, limit, mins, devId);
+      if (!probeOnly) await legacyFail(key, fresh, limit, mins, devId);
+      return { rpc: false };
     };
-    // 失敗時: 端末カウントと店舗カウントの両方を加算し、必要ならロック
+
+    // ── ②-2 「照合の前に」端末カウントを進める（バースト対策の要） ──────────
+    // 従来は「ロック確認 → PIN照合 → 失敗記録」の順だった。この順序だと、誤PINを同時に
+    // 数百本投げられたとき全部が“まだロックされていない”状態でロック確認を通過し、
+    // 全部がPIN照合（bcrypt）まで到達してしまう。1波の試行回数が上限ではなく
+    // 攻撃者の同時接続数で決まる＝ロックが実質無意味になり、かつbcryptの山でDBが落ちる。
+    //
+    // そこで端末バケットだけは「先に1つ進めて、既にロック中なら照合せず即429」に変える。
+    // Postgresが同じ行への同時更新を直列化するため、上限を超えた分は1本もbcryptに届かない。
+    //
+    // ★店舗バックストップ(storeKey)は絶対に前倒ししない。あちらは成功時に消さない仕様
+    //   （最終防衛線として積み上げる設計）なので、全アクセスで前倒し加算すると
+    //   通常営業の“成功”ログインだけで上限（登録済50回/60分・未登録10回/60分）に達し、
+    //   店舗全体がロックされてしまう。storeKeyは従来どおり「失敗した時だけ」加算する。
+    //   端末バケットは成功時に削除する(下部)ため、前倒ししても成功が積み上がらない。
+    const preLimit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
+    const [pre, { data: satt }] = await Promise.all([
+      bumpFail(principalKey, preLimit, LOCK_MINUTES, 0, deviceId, true),
+      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
+        .eq("store_id", store_id).eq("principal", storeKey).maybeSingle(),
+    ]);
+
+    // 030未適用（RPCが無い）なら、従来どおり「読む→判定→照合→失敗時に記録」に戻す。
+    // ここで正常なPINが弾かれないことが最優先。
+    let att: { fail_count?: number; locked_until?: string; updated_at?: string } | null = null;
+    if (!pre.rpc) {
+      const { data } = await admin.from("pin_login_attempts")
+        .select("fail_count,locked_until,updated_at")
+        .eq("store_id", store_id).eq("principal", principalKey).maybeSingle();
+      att = data ?? null;
+      if (att?.locked_until && new Date(att.locked_until) > new Date()) {
+        return json({ error: "この端末は試行回数の上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
+      }
+    } else if (pre.already_locked) {
+      // 既にロック中 → PIN照合（bcrypt）を一切実行せずに打ち切る
+      return json({ error: "この端末は試行回数の上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
+    }
+    // ※pre.locked && !pre.already_locked（＝この回でちょうど上限に達した）は照合まで進める。
+    //   正しいPINなら成功でき、成功時に行ごと削除するのでロックも消える＝従来の
+    //   「5回目までは試せる」体感を維持するため。
+    if (satt?.locked_until && new Date(satt.locked_until) > new Date()) {
+      return json({ error: "試行回数が上限に達しました。しばらくしてから再度お試しください" }, 429, origin);
+    }
+
+    // 失敗時の記録。端末バケットは上で既に加算済みなので、RPCが使えた場合は
+    // 店舗バックストップだけを加算する（二重計上を避ける）。
     const recordFail = async () => {
-      // 端末が特定できている場合のみ厳しく（5回）。猶予期間中の未特定端末は緩める（20回）
-      const limit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
-      await Promise.all([
-        bumpFail(principalKey, limit, LOCK_MINUTES, freshCount(att, LOCK_MINUTES), deviceId),
+      const tasks = [
         bumpFail(storeKey, storeLimit, STORE_LOCK_MINUTES, freshCount(satt, STORE_LOCK_MINUTES), null),
-      ]);
+      ];
+      if (!pre.rpc) {
+        // 030未適用時のみ、従来どおり照合後に端末カウントを加算する
+        tasks.push(bumpFail(principalKey, preLimit, LOCK_MINUTES, freshCount(att, LOCK_MINUTES), deviceId));
+      }
+      await Promise.all(tasks);
     };
 
     // 1) サーバ側でPIN照合（auth_pins のハッシュを最優先、未移行なら平文フォールバック）
@@ -395,7 +440,7 @@ serve(async (req) => {
 
     // 2) この主体に対応する内部Authユーザーを「決定的email」で用意する。
     //    emailは実体（owner / cast.<本人ID>）から導出する。ロック用 principalKey とは別物。
-    //    （PIN-only経路では principalKey=castpin.<store> だが、認証ユーザーは本人ごとに分ける必要があるため）
+    //    （principalKey は端末単位のロック用キーなので、認証ユーザーの識別には使えない）
     const authPrincipal = memberRole === "owner" ? `owner.${store_id}` : `cast.${memberCastId}.${store_id}`;
     const email = `pin.${authPrincipal}@shiftlink.internal`;
     let userId: string | null = null;
