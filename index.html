@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v43';
+const SW_VER = 'v44';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2985,10 +2985,11 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span><span class="f2-card-title">端末の管理</span></div>
       <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
-        スタッフが新しい端末（スマホ）でログインするには、店舗コードの入力が必要です。<br>
+        <b>スタッフの端末登録は「セラピスト管理」の各カードの「招待」ボタン</b>から行います。<br>
+        下のボタンは<b>オーナーご自身の端末</b>を追加するとき用です（機種変更など）。<br>
         コードは<b>48時間有効・1回きり</b>。紛失や退職の際は端末を「解除」してください。
       </div>
-      <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem" onclick="issuePairingCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>店舗コードを発行する</button>
+      <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem" onclick="issuePairingCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>オーナー用の端末コードを発行する</button>
       <div id="pair-code-out" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);border-radius:10px;padding:.8rem;text-align:center;margin-bottom:.6rem">
         <div style="font-size:.7rem;color:var(--text3)">この端末に入力してください（48時間有効）</div>
         <div id="pair-code-val" style="font-size:1.6rem;font-weight:800;letter-spacing:.18em;margin:.3rem 0"></div>
@@ -2997,14 +2998,11 @@ document.addEventListener('DOMContentLoaded',function(){
       <!-- 招待の一本化(2026-08): 「全員共通の招待リンク」は廃止し、セラピスト管理の各カードの
            「招待」ボタン（その人専用のURL）に統一した。ここに残すのは、以前に配った
            共通リンクを止めるためのボタンだけ。SaaS URLでのみ表示する。 -->
-      <div id="invite-ui" style="display:none">
-      <div style="border-top:1px dashed var(--border);margin:.8rem 0 .6rem"></div>
-      <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
-        スタッフの端末登録は<b>「セラピスト管理」の各カードの「招待」ボタン</b>に一本化しました。<br>
-        以前に配った<b>全員共通の招待リンク</b>がまだ有効な場合は、下のボタンで止められます（全員の登録が終わってから押してください）。
-      </div>
-      <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem;background:#f3f4f6;color:#4b5563;box-shadow:none" onclick="revokeCommonInvite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>共通の招待リンクを失効させる</button>
-      </div><!-- /invite-ui -->
+      <!-- 招待の一本化(2026-08): 全員共通の招待リンクは廃止し、セラピスト管理の各カードの
+           「招待」ボタン（その人専用のURL）に統一。移行時に配った共通リンクの失効も
+           2026-08-02に実施済みのため、失効ボタンはUIから撤去した。
+           （関数 revokeCommonInvite / Edge Function の revoke_invite は、
+             将来また必要になったときのために残してある） -->
       <div style="font-size:.72rem;font-weight:700;color:var(--text2);margin:.6rem 0 .3rem">登録済みの端末</div>
       <div id="device-list"><div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込み中...</div></div>
     </div>
@@ -9318,7 +9316,7 @@ async function renderDeviceList(){
   const el=document.getElementById('device-list')
   if(!el) return
   // 招待リンクUIはSaaS URLのときだけ見せる（KYOUKANOでは ?join が効かないため）
-  const iv=document.getElementById('invite-ui'); if(iv) iv.style.display=SAAS_MODE?'block':'none'
+  // （共通の招待リンクUIは2026-08にセラピスト個別の招待へ一本化して撤去した）
   try{
     const j=await callManageDevices({action:'list'})
     // 解除した端末は一覧から消す。「今使われている端末だけ」が並ぶ状態にしておくと、
