@@ -301,6 +301,15 @@ serve(async (req) => {
     //   カウントが積み上がらず「最終防衛線」として機能しなくなるため（時間経過でロックが解ける）。
     await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
 
+    // 端末名に使う表示名。PIN照合を通った本人なので詐称できない（名簿から選ぶだけでは通らない）。
+    // オーナーの一覧で「どの端末が誰のものか」を判別するために使う。
+    let displayName = "オーナー";
+    if (memberRole !== "owner" && memberCastId != null) {
+      const { data: c } = await admin
+        .from("casts").select("name").eq("id", memberCastId).eq("store_id", store_id).maybeSingle();
+      displayName = (c?.name && String(c.name).trim()) || "セラピスト";
+    }
+
     // 自動ペアリング: 猶予期間中にトークン無しでPIN認証に成功した端末を、その場で登録する。
     // スタッフは何も操作しなくても普段どおりログインするだけで移行が完了する。
     let issuedToken: string | null = null;
@@ -309,7 +318,7 @@ serve(async (req) => {
       const { data: newDev, error: devErr } = await admin.from("store_devices").insert({
         store_id,
         token_hash: await sha256Hex(candidate),
-        label: memberRole === "owner" ? "オーナー端末(自動登録)" : `セラピスト端末(自動登録)`,
+        label: `${displayName}(自動登録)`,
         last_seen_at: new Date().toISOString(),
       }).select("id").maybeSingle();
       // 登録に失敗したらトークンは返さない。返すと「DBに存在しないトークン」を端末が保存し、
@@ -321,7 +330,15 @@ serve(async (req) => {
       }
     } else {
       // 既存端末 → 最終利用日時を更新（管理画面で「使われていない端末」を判別するため）
-      await admin.from("store_devices").update({ last_seen_at: new Date().toISOString() }).eq("id", deviceId);
+      const patch: Record<string, unknown> = { last_seen_at: new Date().toISOString() };
+      // 招待リンクで登録した端末はまだ名前が無い（誰の端末か分からない）ので、
+      // 最初にログインした本人の名前を入れる。以降は上書きしない＝「誰のスマホか」を表す。
+      // 由来が分かるラベル（緊急復旧で登録 等）は異常検知の手がかりなので触らない。
+      const { data: devRow } = await admin
+        .from("store_devices").select("label").eq("id", deviceId).maybeSingle();
+      const cur = (devRow?.label ?? "").trim();
+      if (!cur || cur === "招待リンクで登録") patch.label = displayName;
+      await admin.from("store_devices").update(patch).eq("id", deviceId);
     }
 
     // 2) この主体に対応する内部Authユーザーを「決定的email」で用意する。
