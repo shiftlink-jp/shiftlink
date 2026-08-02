@@ -83,7 +83,8 @@ serve(async (req) => {
 
     // 2) 当該店舗のメンバーであることを確認
     const { data: mem } = await admin
-      .from("store_members").select("role")
+      // cast_id も取る: self_pair でセラピストの端末を本人に紐づけるため
+      .from("store_members").select("role,cast_id")
       .eq("user_id", user.id).eq("store_id", store_id).maybeSingle();
     if (!mem) return json({ error: "権限がありません" }, 403, origin);
 
@@ -103,6 +104,11 @@ serve(async (req) => {
       }
       const raw = crypto.getRandomValues(new Uint8Array(32));
       const deviceToken = Array.from(raw).map((x) => x.toString(16).padStart(2, "0")).join("");
+      // セラピストが自分で登録した端末も本人に紐づける。
+      // 紐づけないと「ログイン中のセラピストが“誰でも使える端末”を自分で量産できる」＝
+      // 個別招待で作った本人限定の保証がここから崩れるため（@テスト指摘の抜け道①）。
+      // オーナーは店舗の全端末を扱う必要があるので紐づけない。
+      const selfBind = (mem.role !== "owner" && mem.cast_id != null) ? Number(mem.cast_id) : null;
       const { data: dev, error } = await admin.from("store_devices").insert({
         store_id,
         token_hash: await sha256Hex(deviceToken),
@@ -110,6 +116,8 @@ serve(async (req) => {
         label: label ? String(label).slice(0, 60)
                      : (mem.role === "owner" ? "オーナー端末(本人登録)" : "セラピスト端末(本人登録)"),
         last_seen_at: new Date().toISOString(),
+        // 029未適用でも壊れないよう、値があるときだけ列を送る
+        ...(selfBind != null ? { bound_cast_id: selfBind } : {}),
       }).select("id").maybeSingle();
       if (error || !dev) return json({ error: "端末の登録に失敗しました" }, 500, origin);
       return json({ ok: true, device_token: deviceToken }, 200, origin);

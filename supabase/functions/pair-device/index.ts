@@ -20,6 +20,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const MAX_FAILS = 10;      // 店舗コードの誤入力許容回数
 const MAX_DEVICES_PER_STORE = 60;  // 招待リンク経由の登録に効かせる上限（manage-devices と同値）
+const MAX_DEVICES_PER_CAST = 3;    // 本人専用の招待で1人が登録できる端末数（URL漏洩時の枠食い潰し対策）
 const LOCK_MINUTES = 30;
 
 // pin_login_attempts.store_id は NOT NULL（010）。店舗横断のカウンタ用に番兵UUIDを使う。
@@ -161,6 +162,18 @@ serve(async (req) => {
           .eq("store_id", targetStore).is("revoked_at", null);
         if ((count ?? 0) >= MAX_DEVICES_PER_STORE) {
           return json({ error: "登録できる端末数の上限に達しました。オーナーに連絡してください" }, 409, origin);
+        }
+        // 本人専用の招待は「1人あたり」の上限も見る。
+        // これが無いと、URLが漏れた第三者がループで登録を繰り返して店舗の上限(60台)を
+        // 埋め尽くし、正規スタッフが誰も新規登録できなくなる（@テスト指摘のDoS）。
+        // 1人がLINE内ブラウザとSafariで2台になるケースがあるため、余裕を見て3台。
+        if (boundCastId != null) {
+          const { count: mine } = await admin
+            .from("store_devices").select("id", { count: "exact", head: true })
+            .eq("store_id", targetStore).is("revoked_at", null).eq("bound_cast_id", boundCastId);
+          if ((mine ?? 0) >= MAX_DEVICES_PER_CAST) {
+            return json({ error: "この招待で登録できる端末数の上限に達しました。オーナーに連絡してください" }, 409, origin);
+          }
         }
       }
     }
