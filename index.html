@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v35';
+const SW_VER = 'v36';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3500,7 +3500,10 @@ async function pinLoginViaServer(role, castId, pin){
   if(!res.ok){ if(handleNeedPairing(j)) throw new Error(j.error||'端末の登録が必要です'); throw new Error(j.error||'ログインに失敗しました') }
   // 猶予期間中の自動ペアリングでトークンが発行されたら保存（スタッフの操作は不要）
   // 保存できない端末（プライベートブラウズ等）は、猶予終了後に締め出されるため必ず知らせる。
-  if(j.device_token) setDeviceStore(j.store_id)
+  // 店舗IDは毎回控え直す。登録済み端末では device_token が返らないため、
+  // device_token がある時だけ控えていると PIN_STORE_ID が空のままになり、
+  // 生体認証の登録が「store_id は必須です」で失敗する。
+  if(j.store_id) setDeviceStore(j.store_id)
   if(j.device_token && !setDeviceToken(j.device_token)){
     toast('この端末では登録情報を保存できません。通常モードで開くか、ホーム画面に追加してください')
   }

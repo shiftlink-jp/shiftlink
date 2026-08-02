@@ -154,7 +154,9 @@ serve(async (req) => {
     }
 
     // 生トークンはここでしか返さない
-    return json({ ok: true, device_token: token }, 200, origin);
+    // store_id も返す: クライアントは以降の呼び出し(passkey等)で店舗を指定する必要があり、
+    // これが無いと「store_id は必須です」で生体認証の登録に失敗する。
+    return json({ ok: true, device_token: token, store_id: targetStore }, 200, origin);
   } catch (e) {
     return json({ error: String((e as Error).message ?? e) }, 500, origin);
   }
