@@ -180,18 +180,17 @@ serve(async (req) => {
     //   セラピストごとの招待へ一本化したあとの後始末用。押すまでは既存リンクは有効なままなので、
     //   移行の途中でリンクを踏む人がいても困らない。
     if (action === "revoke_invite") {
-      const q = admin.from("store_pairing_codes")
+      // ★必ず cast_id IS NULL（＝共通リンク）だけに絞る。
+      //   絞りを外して再試行するような作りにすると、一時的な通信エラーのときに
+      //   セラピスト全員の個別招待まで巻き添えで失効させてしまう（本人には「リンクが無効」と出る）。
+      //   029未適用なら cast_id 列が無くてエラーになるが、その場合は素直に失敗を返す
+      //   （このボタンは029適用後の後始末用なので、それで困らない）。
+      const { error } = await admin.from("store_pairing_codes")
         .update({ revoked_at: new Date().toISOString() })
-        .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
-      // 029適用後は cast_id が付いた個別招待まで巻き添えで消さないよう、共通リンクだけに絞る。
-      // 029未適用（列が無い）ときは絞り込みでエラーになるため、その場合は絞らず全件を失効させる
-      // （＝そもそも共通リンクしか存在しない状態なので結果は同じ）。
-      const { error } = await q.is("cast_id", null);
+        .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null)
+        .is("cast_id", null);
       if (error) {
-        const { error: e2 } = await admin.from("store_pairing_codes")
-          .update({ revoked_at: new Date().toISOString() })
-          .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
-        if (e2) return json({ error: "招待リンクの失効に失敗しました" }, 500, origin);
+        return json({ error: "招待リンクの失効に失敗しました（データベースの更新029が未適用の可能性があります）" }, 500, origin);
       }
       return json({ ok: true }, 200, origin);
     }
