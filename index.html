@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v39';
+const SW_VER = 'v40';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3506,9 +3506,30 @@ async function ensureDeviceTokenAfterLogin(){
   }catch(e){ /* 失敗しても猶予期間中は通常ログインできる */ }
 }
 // サーバーから「この端末は未登録/失効」と返されたら、トークンを捨てて店舗コード画面へ誘導する
+// 招待リンクで来たときの控え。この端末の登録が解除済みだった場合の登録し直しに使う。
+// （宣言前参照を避けるため handleNeedPairing の直前に置く）
+let _pendingJoin=''
 function handleNeedPairing(j){
-  if(j&&j.need_pairing){ setDeviceToken(''); setDeviceStore(''); showPairingScreen(j.error||'この端末の登録が必要です'); return true }
+  if(j&&j.need_pairing){
+    setDeviceToken(''); setDeviceStore('')
+    // 招待リンク経由で来ていた場合、この端末の登録が解除済み/不明だったなら
+    // 店舗コードを聞き直さずリンクで登録し直す。
+    // （解除された人に再度リンクを送っても「リンクが効かない」状態になるのを防ぐ）
+    if(_pendingJoin){ const c=_pendingJoin; _pendingJoin=''; rejoinWithInvite(c); return true }
+    showPairingScreen(j.error||'この端末の登録が必要です')
+    return true
+  }
   return false
+}
+// 招待リンクで登録し直して、そのまま入り直す
+async function rejoinWithInvite(code){
+  showPairingScreen('', true)
+  try{
+    await pairThisDevice(code,'招待リンクで登録')
+    location.reload()   // トークンを持った状態で起動し直す
+  }catch(e){
+    showPairingScreen((e&&e.message)||'招待リンクが使えませんでした。オーナーにご確認ください')
+  }
 }
 
 // PINをサーバ側(pin-login)で照合してセッションを取得し、setSessionする
@@ -3617,7 +3638,10 @@ async function tryJoinPairing(){
   if(!code||_joinDone) return false
   // すでに登録済みの端末なら何もしない。
   // （リンクを再タップするたびに端末が新規登録され、上限に達するのを防ぐ）
-  if(getDeviceToken()){ stripJoinParam(); return false }
+  // 登録済みなら今は何もしない（再タップのたびに端末が増えるのを防ぐ）。
+  // ただしコードは控えておき、その登録が解除済みだった場合は
+  // handleNeedPairing から自動で登録し直す。
+  if(getDeviceToken()){ _pendingJoin=code; stripJoinParam(); return false }
   // 通信より先に掛け金とURL掃除を済ませる（iOS PWAで起動処理が再実行されても二重登録しない）
   _joinDone=true
   stripJoinParam()
