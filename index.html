@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v37';
+const SW_VER = 'v38';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2295,6 +2295,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="screen login-wrap" id="s-pairing">
   <div class="login-box">
     <div class="login-sub">端末の登録</div>
+    <!-- 招待リンク経由の登録中に見せる表示（入力欄は隠す） -->
+    <div id="pair-busy" style="display:none;text-align:center;padding:2.5rem 0">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:.5rem">この端末を登録しています…</div>
+      <div style="font-size:.82rem;color:var(--text3);line-height:1.7">そのままお待ちください。<br>終わると自動でログイン画面になります。</div>
+    </div>
+    <div id="pair-form">
     <div style="font-size:.82rem;color:var(--text3);line-height:1.7;margin-bottom:1rem">
       この端末を初めて使うため、店舗コードの入力が必要です。<br>
       コードはオーナーが発行します（管理画面 → 端末の管理）。<br>
@@ -2306,6 +2312,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <input class="linput" type="text" id="pair-label" maxlength="30" placeholder="例: かなさんのiPhone">
     <button class="btn-login" style="background:var(--accent)" onclick="doPairDevice()" id="btn-pair">登録する</button>
     <div class="lerr" id="pair-err"></div>
+    </div><!-- /#pair-form -->
     <div style="margin-top:1rem;text-align:center">
       <a href="#" onclick="showSaasEmailLogin();return false" style="font-size:.78rem;color:var(--text3);text-decoration:underline">オーナーの方（メール／パスワードでログイン）</a>
     </div>
@@ -3529,13 +3536,20 @@ async function pinLoginViaServer(role, castId, pin){
 }
 
 // 端末登録画面を表示する（未登録・失効時）
-function showPairingScreen(msg){
+// busy=true のときは「登録中」表示にして入力欄・ボタンを隠す。
+// （招待リンク経由の登録中に入力欄が見えたままだと「またコードを入れる画面が出た」と誤解される）
+function showPairingScreen(msg, busy){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
   const el=document.getElementById('s-pairing')
   if(!el) return
   el.classList.add('on')
+  const form=document.getElementById('pair-form')
+  const busyEl=document.getElementById('pair-busy')
+  if(form) form.style.display = busy ? 'none' : ''
+  if(busyEl) busyEl.style.display = busy ? '' : 'none'
   const err=document.getElementById('pair-err')
-  if(err) err.textContent=msg||''
+  if(err) err.textContent = busy ? '' : (msg||'')
+  if(busy) return
   const inp=document.getElementById('pair-code'); if(inp){ inp.value=''; setTimeout(()=>inp.focus(),100) }
 }
 // 端末登録画面から、メール/パスワードのログイン画面へ切り替える（SaaS契約者・オーナー用）
@@ -3608,7 +3622,7 @@ async function tryJoinPairing(){
   _joinDone=true
   stripJoinParam()
   // 待っている間が真っ白にならないよう、登録中であることを見せる
-  showPairingScreen('端末を登録しています…')
+  showPairingScreen('', true)   // 入力欄を隠した「登録中」表示
   try{
     await pairThisDevice(code,'招待リンクで登録')
     if(!PIN_AUTH_MODE){ location.reload(); return true }   // 起動時評価のため読み込み直す
