@@ -157,10 +157,15 @@ serve(async (req) => {
     // これにより第三者が任意の店舗のログイン窓口を叩く経路が消える（設計書③）。
     let store_id: string | null = null;
     let deviceId: number | null = null;
+    // この端末が「特定のセラピスト専用」として登録されているか。
+    // null / undefined（029未適用）＝制限なし＝従来どおり誰でもログインできる。
+    let boundCastId: number | null = null;
     const rawToken = device_token ? String(device_token) : "";
     if (rawToken) {
+      // select("*") にしている理由: 029（bound_cast_id列の追加）が未適用でも動くようにするため。
+      //   列名を並べると未適用DBで400になり、全端末が need_pairing で締め出される（028で踏んだ罠）。
       const { data: dev } = await admin
-        .from("store_devices").select("id,store_id,revoked_at")
+        .from("store_devices").select("*")
         .eq("token_hash", await sha256Hex(rawToken)).maybeSingle();
       if (!dev || dev.revoked_at) {
         // 失効済み・不明なトークン → クライアントに再ペアリングを促す
@@ -168,6 +173,7 @@ serve(async (req) => {
       }
       store_id = dev.store_id;
       deviceId = dev.id;
+      boundCastId = dev.bound_cast_id != null ? Number(dev.bound_cast_id) : null;
     } else {
       // 猶予期間中のみ、トークン無しを許可（既存端末の一斉締め出しを防ぐ移行措置）
       if (!inGracePeriod()) {
@@ -300,6 +306,23 @@ serve(async (req) => {
     // ※店舗バックストップ(storeKey)は消さない。成功のたびに消すと、日常的にログインがある店舗では
     //   カウントが積み上がらず「最終防衛線」として機能しなくなるため（時間経過でロックが解ける）。
     await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
+
+    // ── ③この端末を使ってよい人か（セラピストごとの招待で登録された端末のみ） ──────────
+    // bound_cast_id が入っている端末＝「その人専用の招待URL」から登録された端末。
+    //   許可: 本人（cast_id一致） と オーナー（店の端末確認・代理操作のため）
+    //   拒否: それ以外
+    // bound_cast_id が NULL/未設定の端末は従来どおり誰でもログインできる
+    //   （既存端末・オーナー端末・店舗コードで登録した端末はすべてこちら＝挙動不変）。
+    //
+    // ここは「PINは合っていたが、この端末では使えない」という権限の話なので、
+    // recordFail()（総当たり対策のカウンタ）は回さない。打ち間違いではないため。
+    //
+    // 他人の名前は返さない（誰の端末かを外部に漏らさないため）。
+    if (boundCastId != null && memberRole !== "owner" && memberCastId !== boundCastId) {
+      return json({
+        error: "この端末は別のスタッフ専用として登録されています。ご自身の端末でログインするか、オーナーに招待をご依頼ください",
+      }, 403, origin);
+    }
 
     // 端末名に使う表示名。PIN照合を通った本人なので詐称できない（名簿から選ぶだけでは通らない）。
     // オーナーの一覧で「どの端末が誰のものか」を判別するために使う。

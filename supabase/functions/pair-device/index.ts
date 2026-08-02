@@ -120,12 +120,16 @@ serve(async (req) => {
     let targetStore: string | null = null;
     let pairingRowId: number | null = null;
     let isInvite = false;   // 招待リンク（複数人が使える）で来たか
+    let boundCastId: number | null = null;  // その人専用の招待なら、登録する端末を本人に紐づける
     if (isBootstrap) {
       targetStore = BOOTSTRAP_STORE_ID;
     } else {
+      // select("*") にしている理由: 029（cast_id列の追加）が未適用の環境でも動くようにするため。
+      //   列名を並べる書き方だと、未適用のDBに対して「そんな列は無い」で400になり、
+      //   端末登録が全滅する（過去に028で同じ罠を踏んだ）。
       const { data: pc } = await admin
         .from("store_pairing_codes")
-        .select("id,store_id,expires_at,used_at,multi_use,revoked_at")
+        .select("*")
         .eq("code_hash", codeHash).maybeSingle();
       if (!pc) return await fail("店舗コードが正しくありません", 401);
       isInvite = !!pc.multi_use;
@@ -146,6 +150,8 @@ serve(async (req) => {
       }
       targetStore = pc.store_id;
       pairingRowId = pc.id;
+      // 029未適用なら pc.cast_id は undefined ＝ null 扱い（従来どおり誰でも使えるコード）
+      boundCastId = pc.cast_id != null ? Number(pc.cast_id) : null;
 
       // 招待リンクは何度でも使えるため、端末数の上限を必ず確認する（無制限に増えるのを防ぐ）。
       // ここは総当たり攻撃ではないので fail() は通さない（レート制限カウンタを汚さない）。
@@ -163,13 +169,27 @@ serve(async (req) => {
     await admin.from("pin_login_attempts").delete()
       .eq("store_id", SENTINEL_STORE).eq("principal", lockKey);
 
+    // セラピスト専用の招待なら、端末のラベルはその人の名前にする（オーナーの一覧で誰の端末か分かる）
+    let boundName = "";
+    if (boundCastId != null) {
+      const { data: c } = await admin
+        .from("casts").select("name").eq("id", boundCastId).eq("store_id", targetStore).maybeSingle();
+      boundName = (c?.name && String(c.name).trim()) || "セラピスト";
+    }
+
     const token = newToken();
     const tokenHash = await sha256Hex(token);
+    // bound_cast_id は「値があるときだけ」入れる。
+    //   029未適用のDBに対して bound_cast_id:null を明示的に送ると「そんな列は無い」で400になり、
+    //   端末登録が全滅するため（列を送らなければ従来と完全に同じINSERTになる）。
     const { error: insErr } = await admin.from("store_devices").insert({
       store_id: targetStore,
       token_hash: tokenHash,
-      label: label ? String(label).slice(0, 60) : (pairingRowId ? null : "緊急復旧で登録"),
+      // 本人専用の招待では、クライアントが送ってくる汎用ラベルより本人の名前を優先する
+      label: boundName || (label ? String(label).slice(0, 60)
+                                 : (pairingRowId ? null : "緊急復旧で登録")),
       last_seen_at: new Date().toISOString(),
+      ...(boundCastId != null ? { bound_cast_id: boundCastId } : {}),
     });
     if (insErr) return json({ error: "端末の登録に失敗しました" }, 500, origin);
 
@@ -182,7 +202,11 @@ serve(async (req) => {
     // 生トークンはここでしか返さない
     // store_id も返す: クライアントは以降の呼び出し(passkey等)で店舗を指定する必要があり、
     // これが無いと「store_id は必須です」で生体認証の登録に失敗する。
-    return json({ ok: true, device_token: token, store_id: targetStore }, 200, origin);
+    // cast_id / cast_name: 本人専用の招待で登録したときだけ返る（画面に「〇〇さんの端末として登録しました」と出す用）
+    return json({
+      ok: true, device_token: token, store_id: targetStore,
+      ...(boundCastId != null ? { cast_id: boundCastId, cast_name: boundName } : {}),
+    }, 200, origin);
   } catch (e) {
     return json({ error: String((e as Error).message ?? e) }, 500, origin);
   }

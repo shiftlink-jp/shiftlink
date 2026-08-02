@@ -1,6 +1,9 @@
 // manage-devices: オーナー専用。端末ペアリングの運用一式を扱う。
 //
-//   action="issue_code"  … 店舗コードを発行（48時間有効・1回使い切り）
+//   action="issue_code"  … 店舗コードを発行
+//                          ・cast_id 省略 … 従来どおり誰でも使える店舗コード（48時間・1回使い切り）
+//                          ・cast_id 指定 … そのセラピスト専用の招待コード（7日間・同じ人なら何度でも）
+//   action="revoke_invite" … 旧「全員共通の招待リンク」を失効させる（一本化の後始末用）
 //   action="list"        … 登録済み端末の一覧
 //   action="revoke"      … 端末を失効（紛失・退職時）
 //   action="list_pins"   … セラピストのPIN一覧（管理画面のPINバッジ表示用 ＝ ①の代替経路）
@@ -20,7 +23,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CODE_TTL_HOURS = 48;          // Square のデバイスコードと同じ48時間
-const INVITE_TTL_DAYS = 14;         // 招待リンク（複数人が使える）の有効期限
+const CAST_INVITE_TTL_DAYS = 7;     // セラピスト個別の招待リンクの有効期限
+                                    // （48時間は「その場で手渡す」前提で短すぎ、14日は長すぎるため7日）
 const MAX_DEVICES_PER_STORE = 60;   // 1店舗あたりの有効な登録端末数の上限
 
 const ALLOWED_ORIGINS = [
@@ -74,7 +78,7 @@ serve(async (req) => {
     const { data: { user }, error: userErr } = await admin.auth.getUser(token);
     if (userErr || !user) return json({ error: "認証エラー" }, 401, origin);
 
-    const { store_id, action, device_id, label } = await req.json();
+    const { store_id, action, device_id, label, cast_id } = await req.json();
     if (!store_id) return json({ error: "store_id は必須です" }, 400, origin);
 
     // 2) 当該店舗のメンバーであることを確認
@@ -116,37 +120,86 @@ serve(async (req) => {
 
     // 3) 処理
     if (action === "issue_code") {
-      const code = newPairingCode();
-      const expiresAt = new Date(Date.now() + CODE_TTL_HOURS * 3600_000).toISOString();
-      const { error } = await admin.from("store_pairing_codes").insert({
-        store_id, code_hash: await sha256Hex(code), expires_at: expiresAt,
-      });
-      if (error) return json({ error: "コードの発行に失敗しました" }, 500, origin);
-      // 平文コードはこの応答でしか返らない（DBにはハッシュのみ）
-      return json({ ok: true, code, expires_at: expiresAt, ttl_hours: CODE_TTL_HOURS }, 200, origin);
-    }
+      // cast_id 指定 = そのセラピスト専用の招待。省略 = 従来どおりの店舗コード。
+      const castId = cast_id != null && cast_id !== "" ? Number(cast_id) : null;
+      if (castId != null && !Number.isFinite(castId)) {
+        return json({ error: "セラピストの指定が不正です" }, 400, origin);
+      }
 
-    // issue_invite: 招待リンク用のコードを1本発行する（14日間有効・複数人が使える）。
-    //   セラピスト全員に1枚ずつコードを配る手間をなくすための経路。
-    //   同時に有効なのは1店舗1本だけ（古い行はここで失効させ、DB側の部分ユニーク索引でも担保）。
-    if (action === "issue_invite") {
+      if (castId == null) {
+        // ── 従来の店舗コード（48時間・1回使い切り）。オーナー自身の端末登録・例外用 ──
+        const code = newPairingCode();
+        const expiresAt = new Date(Date.now() + CODE_TTL_HOURS * 3600_000).toISOString();
+        const { error } = await admin.from("store_pairing_codes").insert({
+          store_id, code_hash: await sha256Hex(code), expires_at: expiresAt,
+        });
+        if (error) return json({ error: "コードの発行に失敗しました" }, 500, origin);
+        // 平文コードはこの応答でしか返らない（DBにはハッシュのみ）
+        return json({ ok: true, code, expires_at: expiresAt, ttl_hours: CODE_TTL_HOURS }, 200, origin);
+      }
+
+      // ── セラピスト専用の招待（7日間） ──
+      // 他店のセラピストIDを指定して招待を作られないよう、自店に在籍していることを必ず確認する。
+      const { data: castRow } = await admin
+        .from("casts").select("id,name").eq("id", castId).eq("store_id", store_id).maybeSingle();
+      if (!castRow) return json({ error: "このセラピストは見つかりません" }, 404, origin);
+
+      // multi_use=true にする理由（1回使い切りにしない）:
+      //   LINEでリンクを送ると、まずLINE内ブラウザで開かれることが多い。そこで「使用済み」に
+      //   なってしまうと、本人がSafari/Chromeで開き直したときに二度と使えず詰む。
+      //   コードはその人専用（cast_id付き）で、登録した端末も本人＋オーナーしかログインできないため、
+      //   何度使えても被害は広がらない。
       const now = new Date().toISOString();
-      // 先に古い招待リンクを失効させる（再発行＝前のリンクは使えなくなる）
+      // 同じ人の古い招待は失効させる（＝再発行すると前のリンクは使えなくなる）
       const { error: revErr } = await admin.from("store_pairing_codes")
         .update({ revoked_at: now })
-        .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
-      if (revErr) return json({ error: "招待リンクの発行に失敗しました" }, 500, origin);
+        .eq("store_id", store_id).eq("cast_id", castId)
+        .eq("multi_use", true).is("revoked_at", null);
+      if (revErr) {
+        // 029未適用（cast_id 列が無い）ならここで落ちる。安全側＝発行しない。
+        return json({ error: "招待の発行に失敗しました（データベースの更新029が未適用の可能性があります）" }, 500, origin);
+      }
 
       const code = newPairingCode();
-      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 3600_000).toISOString();
+      const expiresAt = new Date(Date.now() + CAST_INVITE_TTL_DAYS * 24 * 3600_000).toISOString();
       const { error } = await admin.from("store_pairing_codes").insert({
         store_id, code_hash: await sha256Hex(code), expires_at: expiresAt,
-        multi_use: true, label: "招待リンク",
+        multi_use: true, cast_id: castId, label: `招待:${String(castRow.name ?? "").slice(0, 30)}`,
       });
-      if (error) return json({ error: "招待リンクの発行に失敗しました" }, 500, origin);
+      if (error) {
+        return json({ error: "招待の発行に失敗しました（データベースの更新029が未適用の可能性があります）" }, 500, origin);
+      }
       // 平文コードはこの応答でしか返らない（DBにはハッシュのみ＝後から再表示はできない）
-      return json({ ok: true, code, expires_at: expiresAt, ttl_days: INVITE_TTL_DAYS }, 200, origin);
+      return json({
+        ok: true, code, expires_at: expiresAt, ttl_days: CAST_INVITE_TTL_DAYS,
+        cast_id: castId, cast_name: castRow.name ?? null,
+      }, 200, origin);
     }
+
+    // revoke_invite: 旧「全員共通の招待リンク」（cast_id が無い multi_use 行）をまとめて失効させる。
+    //   セラピストごとの招待へ一本化したあとの後始末用。押すまでは既存リンクは有効なままなので、
+    //   移行の途中でリンクを踏む人がいても困らない。
+    if (action === "revoke_invite") {
+      const q = admin.from("store_pairing_codes")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
+      // 029適用後は cast_id が付いた個別招待まで巻き添えで消さないよう、共通リンクだけに絞る。
+      // 029未適用（列が無い）ときは絞り込みでエラーになるため、その場合は絞らず全件を失効させる
+      // （＝そもそも共通リンクしか存在しない状態なので結果は同じ）。
+      const { error } = await q.is("cast_id", null);
+      if (error) {
+        const { error: e2 } = await admin.from("store_pairing_codes")
+          .update({ revoked_at: new Date().toISOString() })
+          .eq("store_id", store_id).eq("multi_use", true).is("revoked_at", null);
+        if (e2) return json({ error: "招待リンクの失効に失敗しました" }, 500, origin);
+      }
+      return json({ ok: true }, 200, origin);
+    }
+
+    // ※ 旧 action="issue_invite"（全員共通の14日リンク）は廃止した。
+    //   セラピストごとの招待（issue_code + cast_id）に一本化したため。
+    //   既に配ってある共通リンクは有効なまま残る（pair-device 側は従来どおり受け付ける）。
+    //   止めたいときは action="revoke_invite" を使う。
 
     if (action === "list") {
       const { data } = await admin
