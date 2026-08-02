@@ -1951,7 +1951,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v38';
+const SW_VER = 'v39';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -9295,7 +9295,9 @@ async function renderDeviceList(){
   const iv=document.getElementById('invite-ui'); if(iv) iv.style.display=SAAS_MODE?'block':'none'
   try{
     const j=await callManageDevices({action:'list'})
-    const devs=j.devices||[]
+    // 解除した端末は一覧から消す。「今使われている端末だけ」が並ぶ状態にしておくと、
+    // 見覚えのない端末に気づきやすい（記録自体はDBに残るので監査はできる）。
+    const devs=(j.devices||[]).filter(d=>!d.revoked_at)
     if(!devs.length){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">まだ登録された端末はありません</div>'; return }
     el.innerHTML=devs.map(d=>{
       const revoked=!!d.revoked_at
@@ -9311,7 +9313,7 @@ async function renderDeviceList(){
   }catch(e){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込めませんでした</div>' }
 }
 async function revokeDevice(id){
-  if(!confirm('この端末を解除しますか？\n解除するとその端末は再度ログインできなくなります（店舗コードで再登録が必要）。\n\n※移行期間中（2026/9/30まで）は、PINを知っている人がログインすると端末が再登録されます。紛失・退職の場合は、解除と一緒に必ずPINも変更してください。\n\n※今お使いの端末は解除しないでください。ご自身がログインできなくなります。'))return
+  if(!confirm('この端末を解除しますか？\n解除するとその端末はログインできなくなり、店舗コード（または招待リンク）で登録し直しが必要になります。\n\n※紛失・退職の場合は、解除と一緒に必ずPINも変更してください。移行期間中（2026/9/30まで）は、店舗コードさえあればPINを知っている人が登録し直せるためです。\n\n※今お使いの端末は解除しないでください。ご自身がログインできなくなります。'))return
   try{ await callManageDevices({action:'revoke', device_id:id}); toast('端末を解除しました'); renderDeviceList() }
   catch(e){ toast('エラー: '+(e.message||e)) }
 }
