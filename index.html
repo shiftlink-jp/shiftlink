@@ -884,7 +884,9 @@ tr:last-child td{border-bottom:none}
 .room-card-v2-cast{display:flex;align-items:center;gap:.3rem;font-size:.875rem;font-weight:700;color:var(--text)}
 .room-card-v2-status{font-size:.75rem;font-weight:700}
 .room-card-v2-status.using{color:var(--accent)}
-.room-card-v2-status.free{color:var(--green)}
+/* 空きはブランドのオレンジ。使用中(--accent)と同色だと見分けが付かないため、
+   使用中より濃いトーンにして区別できるようにする。 */
+.room-card-v2-status.free{color:#e07a10}
 .room-card-v2-status.scheduled{color:#a8997a}
 .room-card-v2-sub{font-size:.6875rem;color:var(--text3)}
 .rv-visit-badge{display:inline-block;font-size:.625rem;font-weight:700;line-height:1;border-radius:5px;padding:2px 6px;margin-left:.4rem;vertical-align:middle}
@@ -1995,7 +1997,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v56';
+const SW_VER = 'v57';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -9130,7 +9132,7 @@ async function loadToday(){
       rh+=`<div class="room-card-v2" onclick="openGanttModal('${jsEsc(r)}')">
         <div class="room-card-v2-hdr">
           <div class="room-card-v2-name">${escapeHtml(r)}</div>
-          <div class="room-card-v2-dot" style="background:var(--green)"></div>
+          <div class="room-card-v2-dot" style="background:#e07a10"></div>
         </div>
         <div class="room-card-v2-status free">空き</div>
         <div class="room-card-v2-sub">—</div>
