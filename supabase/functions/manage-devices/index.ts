@@ -210,7 +210,9 @@ serve(async (req) => {
 
     if (action === "list") {
       const { data } = await admin
-        .from("store_devices").select("id,label,created_at,last_seen_at,revoked_at")
+        // bound_cast_id も返す。管理画面で「本人専用として登録済みか（＝招待経由か）」を
+        // 一覧上で判別するため。token_hash は絶対に返さない（列を明示している理由）。
+        .from("store_devices").select("id,label,created_at,last_seen_at,revoked_at,bound_cast_id")
         .eq("store_id", store_id).order("created_at", { ascending: false });
       return json({ ok: true, devices: data ?? [] }, 200, origin);
     }

@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v51';
+const SW_VER = 'v52';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -9324,35 +9324,65 @@ async function renderDeviceList(){
     // 見覚えのない端末に気づきやすい（記録自体はDBに残るので監査はできる）。
     const devs=(j.devices||[]).filter(d=>!d.revoked_at)
     if(!devs.length){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">まだ登録された端末はありません</div>'; return }
-    // 台数が増えると一覧が縦に伸びて見づらいので、既定では最近使われた数台だけ見せる。
-    // （iPhoneはSafariとホーム画面アプリで保存領域が別＝1人2台になりやすく、すぐ長くなる）
+    // 同じ人の端末が何台も並ぶと台数が水増しされたように見えて実態が掴めないので、
+    // 「人ごと」にまとめて1行にする。展開すると個別の端末が出て、そこから解除できる。
+    // （iPhoneはSafariとホーム画面アプリで保存領域が別＝1人2台になりやすい。さらに
+    //   媒体自動化のように毎回まっさらなブラウザで動くものは実行のたびに1台増える）
     devs.sort((a,b)=>String(b.last_seen_at||'').localeCompare(String(a.last_seen_at||'')))
-    const SHOW=5
-    const rest=devs.length-SHOW
+    // 表示名から「(自動登録)」「(本人登録)」等の括弧書きを外したものを、まとめる単位にする。
+    const baseName=s=>{
+      let t=String(s||'名称未設定').replace(/[（(][^）)]*[）)]\s*$/,'').trim()
+      t=t.replace(/端末$/,'').trim()          // 「オーナー端末」→「オーナー」
+      return t||'名称未設定'
+    }
+    const groups=new Map()
+    for(const d of devs){
+      const k=baseName(d.label)
+      if(!groups.has(k)) groups.set(k,[])
+      groups.get(k).push(d)
+    }
     const row=d=>{
       const last=d.last_seen_at?String(d.last_seen_at).slice(0,10):'—'
-      return `<div class="f2-itemrow2" style="align-items:center">
+      const bound=d.bound_cast_id!=null
+      return `<div class="f2-itemrow2" style="align-items:center;padding-left:.6rem">
         <div style="flex:1;min-width:0">
-          <div style="font-size:.85rem;font-weight:600">${escapeHtml(d.label||'名称未設定の端末')}</div>
-          <div style="font-size:.68rem;color:var(--text3)">最終利用 ${escapeHtml(last)}</div>
+          <div style="font-size:.8rem">${escapeHtml(d.label||'名称未設定の端末')}</div>
+          <div style="font-size:.66rem;color:var(--text3)">最終利用 ${escapeHtml(last)}${bound?' ・本人専用':' ・誰でもログイン可'}</div>
         </div>
         <button class="f2-trash" onclick="revokeDevice(${d.id})" aria-label="解除" title="この端末を解除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>`
     }
-    const head=`<div style="font-size:.72rem;color:var(--text3);margin:0 0 .3rem">現在 <b style="color:var(--text)">${devs.length}台</b> が登録されています</div>`
-    if(rest<=0){ el.innerHTML=head+devs.map(row).join(''); return }
-    el.innerHTML=head+devs.slice(0,SHOW).map(row).join('')
-      +`<div id="device-rest" style="display:none">${devs.slice(SHOW).map(row).join('')}</div>`
-      +`<button id="device-more" onclick="toggleDeviceRest()" style="width:100%;margin-top:.4rem;font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:8px;padding:.45rem;cursor:pointer">残り${rest}台を表示</button>`
+    let gi=0, unbound=0
+    const blocks=[...groups.entries()].map(([nm,list])=>{
+      const id='devg'+(gi++)
+      const nb=list.filter(d=>d.bound_cast_id==null).length
+      unbound+=nb
+      const last=list[0].last_seen_at?String(list[0].last_seen_at).slice(0,10):'—'
+      // 未紐づけ（誰のPINでも入れる端末）が残っているグループは目立たせる
+      const badge=nb?`<span style="font-size:.64rem;color:#b45309">要対応 ${nb}台</span>`:'<span style="font-size:.64rem;color:#15803d">本人専用</span>'
+      return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:.35rem;overflow:hidden">
+        <div onclick="toggleDeviceGroup('${id}')" style="display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;cursor:pointer">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.85rem;font-weight:600">${escapeHtml(nm)} <span style="font-weight:400;color:var(--text3)">${list.length}台</span></div>
+            <div style="font-size:.66rem;color:var(--text3)">最終利用 ${escapeHtml(last)} ・ ${badge}</div>
+          </div>
+          <span id="${id}-ar" style="font-size:.7rem;color:var(--text3)">▼</span>
+        </div>
+        <div id="${id}" style="display:none;border-top:1px solid var(--border)">${list.map(row).join('')}</div>
+      </div>`
+    })
+    const warn=unbound?`<div style="font-size:.68rem;color:#b45309;margin:0 0 .4rem">うち <b>${unbound}台</b> は本人紐づけがありません（誰のPINでもログインできます）</div>`:''
+    const head=`<div style="font-size:.72rem;color:var(--text3);margin:0 0 .3rem">現在 <b style="color:var(--text)">${devs.length}台</b>／${groups.size}名分が登録されています</div>`+warn
+    el.innerHTML=head+blocks.join('')
   }catch(e){ el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込めませんでした</div>' }
 }
-// 端末一覧の「残りN台」を開閉する
-function toggleDeviceRest(){
-  const box=document.getElementById('device-rest'), btn=document.getElementById('device-more')
-  if(!box||!btn) return
+// 端末一覧の「人ごとのまとまり」を開閉する
+function toggleDeviceGroup(id){
+  const box=document.getElementById(id), ar=document.getElementById(id+'-ar')
+  if(!box) return
   const open=box.style.display!=='none'
   box.style.display=open?'none':'block'
-  btn.textContent=open?('残り'+box.children.length+'台を表示'):'たたむ'
+  if(ar) ar.textContent=open?'▼':'▲'
 }
 async function revokeDevice(id){
   if(!confirm('この端末を解除しますか？\n解除するとその端末はログインできなくなり、店舗コード（または招待リンク）で登録し直しが必要になります。\n\n※紛失・退職の場合は、解除と一緒に必ずPINも変更してください。移行期間中（2026/9/30まで）は、店舗コードさえあればPINを知っている人が登録し直せるためです。\n\n※今お使いの端末は解除しないでください。ご自身がログインできなくなります。'))return
