@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v45';
+const SW_VER = 'v46';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2586,10 +2586,10 @@ document.addEventListener('DOMContentLoaded',function(){
            クリップボードが使えない環境でも、ここを長押しして手でコピーできるようにしてある。 -->
       <div id="cast-invite-out" style="display:none;background:#f2f7ff;border:1.5px solid #4b7bec;border-radius:12px;padding:.8rem;margin:0 0 .7rem">
         <div id="cast-invite-title" style="font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:.35rem"></div>
-        <div id="cast-invite-url" style="font-size:.75rem;font-weight:700;word-break:break-all;background:#fff;border:1px solid var(--border);border-radius:8px;padding:.5rem;user-select:all;-webkit-user-select:all"></div>
+        <div id="cast-invite-url" style="font-size:.72rem;font-weight:500;white-space:pre-wrap;text-align:left;word-break:break-all;background:#fff;border:1px solid var(--border);border-radius:8px;padding:.5rem;user-select:all;-webkit-user-select:all"></div>
         <div id="cast-invite-exp" style="font-size:.68rem;color:var(--text3);margin:.35rem 0 .5rem"></div>
         <div style="display:flex;gap:.4rem">
-          <button style="flex:1;font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.35rem .8rem;cursor:pointer;font-family:inherit" onclick="copyCastInvite()">URLをコピー</button>
+          <button style="flex:1;font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.35rem .8rem;cursor:pointer;font-family:inherit" onclick="copyCastInvite()">案内文をコピー</button>
           <button style="font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.35rem .8rem;cursor:pointer;font-family:inherit" onclick="closeCastInvite()">閉じる</button>
         </div>
       </div>
@@ -10594,41 +10594,61 @@ async function openInactiveSheet(){
 // 以降その端末では「本人とオーナー」しかログインできない。
 // SaaS URL(shiftlink-app.jp等)専用。KYOUKANO(kyoukano.vercel.app)では ?join を無視する設計のため、
 // ボタン自体を出していない（renderCastList の SAAS_MODE 判定）。
-let _lastCastInviteUrl=''
+let _lastCastInviteUrl='', _lastCastInviteMsg=''
 async function inviteCast(castId, name){
   const btnBox=document.getElementById('cast-invite-out')
   try{
     const j=await callManageDevices({action:'issue_code', cast_id:castId})
     // ホスト名は直書きせず、いま開いているURLのドメインをそのまま使う
-    _lastCastInviteUrl=location.origin+'/?join='+encodeURIComponent(j.code)
+    // LINEにそのまま貼れる案内文をコピーする。
+    // ★リンクだけを送ると2台登録されてしまう★
+    //   iPhoneはSafariとホーム画面アプリで保存領域が別。リンクを開いた時点でSafariが
+    //   登録され、ホーム画面に追加して開くと（start_urlに ?join= が引き継がれないため）
+    //   もう一度登録が必要になり、同じ人の端末が2つ並ぶ。
+    //   そこで「先にホーム画面へ追加 → アイコンから開いて店舗コードを入力」の手順にして、
+    //   登録を1回で終わらせる。コードは招待リンクと同じもの（7日間・本人専用）。
+    _lastCastInviteUrl=location.origin+'/'
+    _lastCastInviteMsg =
+      'おつかれさまです🌸\nシフトアプリが新しくなります。下の手順でお願いします🙏\n\n'
+      + '①このリンクを開く（LINEで開いたら右下「…」から【Safariで開く】）\n'
+      + location.origin + '/\n\n'
+      + '②まだログインせず「ホーム画面に追加」してください\n'
+      + '（共有ボタン→ホーム画面に追加）\n\n'
+      + '③ホーム画面のアイコンから開く\n\n'
+      + '④「店舗コード」を聞かれたら入力\n'
+      + '　コード：' + j.code + '\n\n'
+      + '⑤自分の名前を選んでPINを入力（PINは今までと同じ）\n\n'
+      + '⑥指紋・顔認証と通知の許可をお願いします\n\n'
+      + '⚠️今までのアプリはまだ消さないでください\n'
+      + '※わからなければ出勤時に一緒にやります！'
     const days=j.ttl_days||7
     const t=document.getElementById('cast-invite-title')
     const u=document.getElementById('cast-invite-url')
     const e=document.getElementById('cast-invite-exp')
-    if(t) t.textContent=name+'さん専用の登録URL（LINEで本人に送ってください）'
-    if(u) u.textContent=_lastCastInviteUrl
+    if(t) t.textContent=name+'さん専用の案内文（LINEで本人に送ってください）'
+    if(u) u.textContent=_lastCastInviteMsg
     if(e) e.textContent='有効期限: '+(j.expires_at?new Date(j.expires_at).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):(days+'日間'))
     // コピーできたらURL欄は出さない（押す→コピーされた、で完結させる）。
     // コピーに失敗した環境でだけ、手でコピーできるようURL欄を出す。
     let copied=false
-    try{ await navigator.clipboard.writeText(_lastCastInviteUrl); copied=true }catch(_){}
+    try{ await navigator.clipboard.writeText(_lastCastInviteMsg); copied=true }catch(_){}
     if(copied){
       if(btnBox) btnBox.style.display='none'
-      toast(name+'さんの招待URLをコピーしました（'+days+'日間有効）。LINEで本人に送ってください', 3000)
+      toast(name+'さんの案内文をコピーしました（'+days+'日間有効）。LINEに貼って送ってください', 3000)
     }else{
       if(btnBox){ btnBox.style.display='block'; try{ btnBox.scrollIntoView({behavior:'smooth',block:'center'}) }catch(_){} }
-      toast('招待URLを発行しました（'+days+'日間有効）。下の欄からコピーしてください', 3000)
+      toast('案内文を発行しました（'+days+'日間有効）。下の欄からコピーしてください', 3000)
     }
   }catch(err){ toast('エラー: '+(err.message||err), 3000) }
 }
 async function copyCastInvite(){
-  if(!_lastCastInviteUrl) return
-  try{ await navigator.clipboard.writeText(_lastCastInviteUrl); toast('招待URLをコピーしました') }
-  catch(e){ toast('コピーできませんでした。URLを長押しして選択してください', 3000) }
+  if(!_lastCastInviteMsg) return
+  try{ await navigator.clipboard.writeText(_lastCastInviteMsg); toast('案内文をコピーしました') }
+  catch(e){ toast('コピーできませんでした。文面を長押しして選択してください', 3000) }
 }
 function closeCastInvite(){
   const b=document.getElementById('cast-invite-out'); if(b) b.style.display='none'
-  _lastCastInviteUrl=''
+  _lastCastInviteUrl=''; _lastCastInviteMsg=''
 }
 
 async function deleteCast(castId, name){
