@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v53';
+const SW_VER = 'v54';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3681,6 +3681,18 @@ let _pkLib=null
 async function pkBrowser(){ if(!_pkLib) _pkLib=await import('https://esm.sh/@simplewebauthn/browser@13'); return _pkLib }
 function pkFlag(castId){ return 'pkv2_'+castId }              // この端末でv2登録済みかの目印
 function pkHasLocal(castId){ try{ return localStorage.getItem(pkFlag(castId))==='1' }catch(e){ return false } }
+// 「この端末はすでに登録済み」でブラウザが弾いたケース（WebAuthn の InvalidStateError）を
+// 失敗として見せない。登録済みなのに端末側の目印だけが消えている状態なので、目印を付け直す。
+// （目印が無いままだとログインのたびに登録を勧められ、そのたびに同じエラーが出る）
+function pkNoteIfAlready(e,castId){
+  const msg=String((e&&(e.message||e.name))||'')
+  if(e&&e.name==='InvalidStateError' || /previously registered|already registered/i.test(msg)){
+    try{ localStorage.setItem(pkFlag(castId),'1') }catch(_){}
+    toast('この端末はすでに生体認証を登録済みです。そのままお使いいただけます')
+    return true
+  }
+  return false
+}
 // アプリの「認証済み」状態(メモリ保持)。コールドスタート/バックグラウンド復帰では未認証に戻し、
 // 再ロック解除(PIN/生体)を要求する。ログインセッション自体はlocalStorageに保持され続ける。
 let appAuthed=false        // この起動でアプリに入って良い状態か
@@ -4250,7 +4262,7 @@ async function offerPasskeyRegistration(castId, castName){
     if(pkHasLocal(castId)) return // この端末は登録済み
     if(!confirm('顔認証・指紋認証でログインできるように設定しますか？\n次回から素早くログインできます。')) return
     try{ await pkRegisterV2(castId); toast('生体認証を登録しました！次回からすぐログインできます') }
-    catch(e){ if(e.name!=='NotAllowedError') toast('登録失敗: '+(e.message||e)) }
+    catch(e){ if(!pkNoteIfAlready(e,castId) && e.name!=='NotAllowedError') toast('登録失敗: '+(e.message||e)) }
     return
   }
   if(!window.PublicKeyCredential) return
@@ -4296,7 +4308,7 @@ async function offerPasskeyRegistration(castId, castName){
     localStorage.setItem('passkey_registered_' + castId, '1')
     toast('生体認証を登録しました！次回からすぐログインできます')
   } catch(e){
-    if(e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
+    if(!pkNoteIfAlready(e,castId) && e.name!=='NotAllowedError') toast('登録失敗: '+e.message)
   }
 }
 
