@@ -66,6 +66,54 @@ function b64urlToBuf(b64url: string): Uint8Array {
   return out;
 }
 
+// ── 端末ゲート／在籍確認（pin-login と同じ考え方をパスキーにも適用する）──────────────
+// これが無いと、端末を解除しても・退店処理をしても「生体認証だけは通る」状態が残る。
+// PIN は 015_resolve_cast_pin.sql で在籍者しか通さない（fail-closed）のに、
+// パスキーだけ fail-open だったのを揃える。
+const DEFAULT_GRACE_UNTIL = "2026-09-30T00:00:00+09:00";
+function graceDeadline(): number {
+  const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
+  const t = raw ? Date.parse(raw) : NaN;
+  return Number.isNaN(t) ? Date.parse(DEFAULT_GRACE_UNTIL) : t;
+}
+function inGracePeriod(): boolean { return graceDeadline() > Date.now(); }
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// 端末が使用可能かを判定する。戻り値 null = OK、文字列 = 拒否理由。
+// deno-lint-ignore no-explicit-any
+async function deviceGate(admin: any, store_id: string, rawToken: string, castId: number) {
+  if (!rawToken) {
+    // 猶予期間中のみ、トークン無しを許可（既存端末の一斉締め出しを防ぐ移行措置）。
+    // pin-login:180-183 と同じ扱いにしないと、片方だけ通る抜け道になる。
+    return inGracePeriod() ? null : "この端末は登録されていません。店舗コードで登録してください";
+  }
+  // select("*") にしている理由は pin-login:165 と同じ（029未適用DBで400にしないため）
+  const { data: dev } = await admin.from("store_devices").select("*")
+    .eq("token_hash", await sha256Hex(rawToken)).maybeSingle();
+  if (!dev || dev.revoked_at) return "この端末は登録が解除されています。店舗コードで再登録してください";
+  if (String(dev.store_id) !== store_id) return "この端末は別の店舗に登録されています";
+  const bound = dev.bound_cast_id != null ? Number(dev.bound_cast_id) : null;
+  // 本人専用端末は 本人 と オーナー(castId=0) のみ。pin-login:411 と同じ規則。
+  if (bound != null && castId !== 0 && castId !== bound) {
+    return "この端末は別のスタッフ専用として登録されています";
+  }
+  return null;
+}
+
+// 在籍確認。オーナー(castId=0)は casts に行が無いので対象外。
+// mintSession は所属が無ければ作り直してしまうため、必ずその前に呼ぶこと。
+// deno-lint-ignore no-explicit-any
+async function stillEmployed(admin: any, store_id: string, castId: number): Promise<boolean> {
+  if (castId === 0) return true;
+  const { data } = await admin.from("casts").select("id")
+    .eq("id", castId).eq("store_id", store_id).maybeSingle();
+  return !!data;
+}
+
 // pin-login と同じ手順で、指定 principal の内部Authユーザーを用意しセッションを発行する。
 // role: 'owner' | 'staff' / castId: ownerはnull
 // deno-lint-ignore no-explicit-any
@@ -162,6 +210,10 @@ serve(async (req) => {
       const token = (req.headers.get("authorization") ?? "").replace("Bearer ", "").trim();
       const pr = await principalFromSession(admin, token, store_id);
       if (!pr) return json({ error: "ログインが必要です" }, 401, origin);
+      // 登録時も同じゲートを通す。使ってよい端末でしか生体認証を作れないようにする
+      // （ここを素通りにすると、締め出した端末が自分で鍵を作り直せてしまう）。
+      const regGate = await deviceGate(admin, store_id, String(body?.device_token ?? ""), pr.pkCastId);
+      if (regGate) return json({ error: regGate, need_pairing: true }, 403, origin);
 
       if (action === "reg-options") {
         // 既存のv2認証情報は除外（重複登録防止）
@@ -233,6 +285,14 @@ serve(async (req) => {
       // auth-verify
       const { response, challenge_id } = body;
       if (!response || !challenge_id) return json({ error: "response, challenge_id は必須です" }, 400, origin);
+
+      // ここが本丸。署名検証の前に「この端末を使ってよい人か」「まだ在籍しているか」を見る。
+      // 端末を解除した／退店処理をした相手を、生体認証でも確実に締め出すため。
+      const gate = await deviceGate(admin, store_id, String(body?.device_token ?? ""), cast_id);
+      if (gate) return json({ error: gate, need_pairing: true }, 403, origin);
+      if (!(await stillEmployed(admin, store_id, cast_id))) {
+        return json({ error: "このアカウントは利用できません" }, 403, origin);
+      }
       // チャレンジは「削除して同時に取得(DELETE ... RETURNING)」で原子的に単回消費する。
       //   ※SELECTとDELETEを別々に並行実行すると削除が先勝ちしてSELECTが空を返す競合(=認証失敗)が起きる。
       //   削除返却なら1往復・競合なし・単回使用保証。パスキー取得は別テーブルなので並行で良い。
