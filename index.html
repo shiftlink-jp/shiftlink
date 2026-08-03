@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v50';
+const SW_VER = 'v51';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -10610,7 +10610,10 @@ async function inviteCast(castId, name){
     //   登録を1回で終わらせる。コードは招待リンクと同じもの（7日間・本人専用）。
     _lastCastInviteUrl=location.origin+'/'
     _lastCastInviteMsg =
-      'お疲れ様です！\n'
+      // 誰宛てかを必ず先頭に入れる。名前が無いと、発行に失敗して前の人の文面が
+      // クリップボードに残っていても気づけず、別人のコードを送ってしまうため。
+      '【' + name + 'さん用】\n\n'
+      + 'お疲れ様です！\n'
       + '店舗アプリのURLが新しく変わりましたので、以下の手順で再ログインをお願いします。\n'
       + '手順を間違えるとスムーズに登録できないので、必ずよく読んでからおこなってください\n\n'
       + '①このリンクを開く（LINEで開いたら右下「…」から【Safariで開く】）\n'
