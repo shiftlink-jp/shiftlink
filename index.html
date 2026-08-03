@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v52';
+const SW_VER = 'v53';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -9341,8 +9341,13 @@ async function renderDeviceList(){
       if(!groups.has(k)) groups.set(k,[])
       groups.get(k).push(d)
     }
+    // 展開したときは分単位まで出す。同じ人の2台（Safari／ホーム画面アプリ）は日付が同じに
+    // なりがちで、日付だけでは「どちらを使っていないか」が判断できないため。
+    const stamp=s=>{ if(!s) return '—'
+      try{ return new Date(s).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) }
+      catch(_){ return String(s).slice(0,16).replace('T',' ') } }
     const row=d=>{
-      const last=d.last_seen_at?String(d.last_seen_at).slice(0,10):'—'
+      const last=stamp(d.last_seen_at)
       const bound=d.bound_cast_id!=null
       return `<div class="f2-itemrow2" style="align-items:center;padding-left:.6rem">
         <div style="flex:1;min-width:0">
