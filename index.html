@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v48';
+const SW_VER = 'v49';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -10613,7 +10613,9 @@ async function inviteCast(castId, name){
       // 宛名を必ず入れる。案内文に名前が無いと、コピーに失敗して前の人の文面が
       // クリップボードに残っていても気づけず、別人のコードを送ってしまうため。
       name + 'さんへ\n\n'
-      + 'おつかれさまです🌸\nシフトアプリが新しくなります。下の手順でお願いします🙏\n\n'
+      + 'お疲れ様です！\n'
+      + '店舗アプリのURLが新しく変わりましたので、以下の手順で再ログインをお願いします。\n'
+      + '手順を間違えるとスムーズに登録できないので、必ずよく読んでからおこなってください\n\n'
       + '①このリンクを開く（LINEで開いたら右下「…」から【Safariで開く】）\n'
       + location.origin + '/\n\n'
       + '②まだログインせず「ホーム画面に追加」してください\n'
