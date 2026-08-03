@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v47';
+const SW_VER = 'v48';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -10610,7 +10610,10 @@ async function inviteCast(castId, name){
     //   登録を1回で終わらせる。コードは招待リンクと同じもの（7日間・本人専用）。
     _lastCastInviteUrl=location.origin+'/'
     _lastCastInviteMsg =
-      'おつかれさまです🌸\nシフトアプリが新しくなります。下の手順でお願いします🙏\n\n'
+      // 宛名を必ず入れる。案内文に名前が無いと、コピーに失敗して前の人の文面が
+      // クリップボードに残っていても気づけず、別人のコードを送ってしまうため。
+      name + 'さんへ\n\n'
+      + 'おつかれさまです🌸\nシフトアプリが新しくなります。下の手順でお願いします🙏\n\n'
       + '①このリンクを開く（LINEで開いたら右下「…」から【Safariで開く】）\n'
       + location.origin + '/\n\n'
       + '②まだログインせず「ホーム画面に追加」してください\n'
@@ -10640,7 +10643,12 @@ async function inviteCast(castId, name){
       if(btnBox){ btnBox.style.display='block'; try{ btnBox.scrollIntoView({behavior:'smooth',block:'center'}) }catch(_){} }
       toast('案内文を発行しました（'+days+'日間有効）。下の欄からコピーしてください', 3000)
     }
-  }catch(err){ toast('エラー: '+(err.message||err), 3000) }
+  }catch(err){
+    // 失敗したことを明確に伝える。ここで黙ると、前の人の案内文がクリップボードに
+    // 残ったままなので、それを別人に送ってしまう事故が起きる。
+    _lastCastInviteUrl=''; _lastCastInviteMsg=''
+    toast('招待の発行に失敗しました（'+(err.message||err)+'）。コピーはされていません', 4000)
+  }
 }
 async function copyCastInvite(){
   if(!_lastCastInviteMsg) return
