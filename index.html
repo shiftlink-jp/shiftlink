@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v46';
+const SW_VER = 'v47';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3602,10 +3602,11 @@ async function doPairDevice(){
   try{
     await pairThisDevice(code,label)
     toast('この端末を登録しました')
-    // SaaS URLでは PIN_AUTH_MODE が「起動時にトークンがあったか」で決まるため、
-    // 登録直後は読み込み直してPINログイン経路に切り替える（KYOUKANOは元からtrueなので通らない）
-    if(!PIN_AUTH_MODE){ location.reload(); return }
-    showLogin('top')
+    // 読み込み直さずにその場でPIN経路へ切り替える。
+    // （reloadに頼ると、保存の反映が間に合わない環境で店舗コード画面に逆戻りする。
+    //   招待リンク経由では v41 で同じ対処済み。手入力の経路もスタッフ全員が通るため揃える）
+    PIN_AUTH_MODE = true
+    await initPinAuth()
   }catch(e){ if(err) err.textContent=e.message||'登録に失敗しました' }
   finally{ if(btn){ btn.disabled=false; btn.textContent='登録する' } }
 }
