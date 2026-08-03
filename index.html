@@ -1953,7 +1953,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v54';
+const SW_VER = 'v55';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3732,10 +3732,12 @@ document.addEventListener('visibilitychange', function(){
   else if(appAuthed) touchLastActive()
 })
 async function pkApi(action, payload, token){
+  // device_token を必ず送る。サーバ側が「この端末を使ってよい人か」を判定できるようにするため。
+  // （猶予期間中はサーバ側で未送信も許容されるので、先にクライアントを出しても影響は無い）
   const res=await fetch(SUPABASE_URL+'/functions/v1/passkey',{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+(token||SUPABASE_KEY)},
-    body:JSON.stringify({store_id:PIN_STORE_ID, ...payload, action})
+    body:JSON.stringify({store_id:PIN_STORE_ID, device_token:getDeviceToken(), ...payload, action})
   })
   const j=await res.json().catch(()=>({}))
   if(!res.ok) throw new Error(j.error||('HTTP '+res.status))
