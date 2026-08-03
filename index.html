@@ -12,6 +12,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ShiftLink">
 <link rel="manifest" href="/manifest.json">
+<!-- Webフォント。
+     以前は <style> の中で @import していたため、CSSを読み終わるまで取得が始まらず、
+     3書体10ウェイトが届いた順にバラバラと差し替わって「文字が数回パッと切り替わる」状態だった。
+     ①head の link に出して取得を早め、②preconnect で接続を先に張り、
+     ③display=optional にして「間に合わなければ差し替えない」ことで、ちらつきを無くす。
+     （2回目以降はブラウザのキャッシュから即座に効くので、通常はフォントが適用される） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700&display=optional">
 <meta name="theme-color" content="#ff8c00">
 <!-- SEO -->
 <meta name="description" content="メンズエステ店舗向けのスタッフシフト管理・売上管理・セラピスト管理システム。スマホ対応PWAで、いつでもどこでも店舗業務を一元管理できます。">
@@ -31,7 +40,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* Pencilデザイン反映: 白×オレンジ暖色トークン + Noto系フォント (2026-06) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@600;700&display=swap');
+/* Webフォントは head の <link> で読み込む（@import は取得が遅れ、ちらつきの原因になる） */
 :root{
   --bg:#ffffff;--marble:none;--surface:#ffffff;--surface2:#faf8f4;
   --accent:#ff9124;--accent-l:#ffb155;--accent-f:#fff1e2;
@@ -1997,7 +2006,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v57';
+const SW_VER = 'v58';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
