@@ -8,6 +8,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MAX_FAILS = 5;            // 端末ごとに、この回数連続で失敗するとロック
 const LOCK_MINUTES = 15;        // ロック時間（分）
+// 段階ロック: 同じ端末が繰り返し上限に達するほどロックを長くする。
+// 端末ごとに閉じているので、しつこく間違える人がいても他のスタッフは巻き込まれない。
+//   1回目=15分 / 2回目=1時間 / 3回目以降=24時間
+const DEVICE_LOCK_LADDER = [15, 60, 1440];
+// この回数ロックされたら、その端末の登録自体を解除する（5回×4=累計20回の誤入力）。
+// 解除後もオーナーはメール/パスワードで入れて自動で再登録されるため、締め出しにはならない。
+const DEVICE_REVOKE_AT_LOCKS = 4;
+// 段階を覚えておく期間。これを過ぎたら段数は1からやり直し（普段使いの打ち間違いを溜めない）。
+const ESC_WINDOW_MINUTES = 60 * 24 * 7;   // 7日
 // 店舗全体の最終防衛線。端末が乗っ取られた場合のみ到達する高い閾値（通常運用では届かない）。
 // ※026以前の「店舗共有ロック(5回)」は、1人の打ち間違いで全員が締め出される原因だったため廃止。
 const STORE_MAX_FAILS = 50;
@@ -291,11 +300,32 @@ serve(async (req) => {
     //   店舗全体がロックされてしまう。storeKeyは従来どおり「失敗した時だけ」加算する。
     //   端末バケットは成功時に削除する(下部)ため、前倒ししても成功が積み上がらない。
     const preLimit = deviceId != null ? MAX_FAILS : GRACE_MAX_FAILS;
-    const [pre, { data: satt }] = await Promise.all([
-      bumpFail(principalKey, preLimit, LOCK_MINUTES, 0, deviceId, true),
-      admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
-        .eq("store_id", store_id).eq("principal", storeKey).maybeSingle(),
+    // 段階ロック用のバケット。この端末が直近7日で何回ロックされたかを数える。
+    const escKey = deviceId != null ? `devesc${deviceId}` : null;
+    // ★登録済み端末は店舗バックストップを読まない＝他端末の失敗で巻き添えロックされない。
+    //   （荒らし対策は「その端末を段階的に長くロックし、最後は登録解除」で行う）
+    //   未登録端末からの試行は従来どおり店舗単位のバックストップで抑える。
+    let erow: { fail_count?: number; updated_at?: string } | null = null;
+    let satt: { fail_count?: number; locked_until?: string; updated_at?: string } | null = null;
+    await Promise.all([
+      (async () => {
+        if (!escKey) return;
+        const { data } = await admin.from("pin_login_attempts").select("fail_count,updated_at")
+          .eq("store_id", store_id).eq("principal", escKey).maybeSingle();
+        erow = data ?? null;
+      })(),
+      (async () => {
+        if (deviceId != null) return;   // 登録済み端末は店舗バックストップを見ない
+        const { data } = await admin.from("pin_login_attempts").select("fail_count,locked_until,updated_at")
+          .eq("store_id", store_id).eq("principal", storeKey).maybeSingle();
+        satt = data ?? null;
+      })(),
     ]);
+    const escLevel = escKey ? freshCount(erow, ESC_WINDOW_MINUTES) : 0;
+    const devLockMinutes = deviceId != null
+      ? DEVICE_LOCK_LADDER[Math.min(escLevel, DEVICE_LOCK_LADDER.length - 1)]
+      : LOCK_MINUTES;
+    const pre = await bumpFail(principalKey, preLimit, devLockMinutes, 0, deviceId, true);
 
     // 030未適用（RPCが無い）なら、従来どおり「読む→判定→照合→失敗時に記録」に戻す。
     // ここで正常なPINが弾かれないことが最優先。
@@ -327,14 +357,29 @@ serve(async (req) => {
     }
 
     // 失敗時の記録。端末バケットは上で既に加算済みなので、RPCが使えた場合は
-    // 店舗バックストップだけを加算する（二重計上を避ける）。
+    // 追加ぶんだけを書く（二重計上を避ける）。
     const recordFail = async () => {
-      const tasks = [
-        bumpFail(storeKey, storeLimit, STORE_LOCK_MINUTES, freshCount(satt, STORE_LOCK_MINUTES), null),
-      ];
+      // deno-lint-ignore no-explicit-any
+      const tasks: Promise<any>[] = [];
+      // 店舗バックストップは未登録端末からの試行だけに適用する。
+      // 登録済み端末ぶんまで数えると、1台の荒らしで店の全端末が止まるため。
+      if (deviceId == null) {
+        tasks.push(bumpFail(storeKey, storeLimit, STORE_LOCK_MINUTES, freshCount(satt, STORE_LOCK_MINUTES), null));
+      }
       if (!pre.rpc) {
         // 030未適用時のみ、従来どおり照合後に端末カウントを加算する
-        tasks.push(bumpFail(principalKey, preLimit, LOCK_MINUTES, freshCount(att, LOCK_MINUTES), deviceId));
+        tasks.push(bumpFail(principalKey, preLimit, devLockMinutes, freshCount(att, devLockMinutes), deviceId));
+      }
+      // この回でロックが掛かったなら段数を1つ進める。規定回数に達した端末は登録を解除する。
+      if (deviceId != null && escKey && pre.locked && !pre.already_locked) {
+        tasks.push(bumpFail(escKey, 2147483647, ESC_WINDOW_MINUTES, escLevel, null));
+        if (escLevel + 1 >= DEVICE_REVOKE_AT_LOCKS) {
+          tasks.push(
+            admin.from("store_devices")
+              .update({ revoked_at: new Date().toISOString() })
+              .eq("id", deviceId).is("revoked_at", null),
+          );
+        }
       }
       await Promise.all(tasks);
     };
@@ -397,7 +442,11 @@ serve(async (req) => {
     // 認証成功 → この端末の失敗カウントをリセット。
     // ※店舗バックストップ(storeKey)は消さない。成功のたびに消すと、日常的にログインがある店舗では
     //   カウントが積み上がらず「最終防衛線」として機能しなくなるため（時間経過でロックが解ける）。
-    await admin.from("pin_login_attempts").delete().eq("store_id", store_id).eq("principal", principalKey);
+    // 段階ロックの段数も一緒に消す。普段使いの打ち間違いが何日も残って
+    // 次のロックがいきなり24時間になる、といった事故を防ぐ。
+    await admin.from("pin_login_attempts").delete()
+      .eq("store_id", store_id)
+      .in("principal", escKey ? [principalKey, escKey] : [principalKey]);
 
     // ── ③この端末を使ってよい人か（セラピストごとの招待で登録された端末のみ） ──────────
     // bound_cast_id が入っている端末＝「その人専用の招待URL」から登録された端末。
