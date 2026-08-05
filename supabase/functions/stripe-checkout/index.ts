@@ -75,6 +75,80 @@ serve(async (req) => {
       }
     }
 
+    // ── 支払い方法：銀行振込（2026-08-05に切替） ─────────────────────────────
+    // カード(Checkout Session)から、Stripeの請求書＋銀行振込に変更した。
+    //   理由: 手数料 3.6% → 1.5%。
+    //   仕組み: 顧客ごとにStripeが仮想口座を発行し、入金を請求書へ自動で消し込む。
+    //           当方の実口座は開示しない。
+    //   注意: 銀行振込は「自動引き落とし」ではない。毎月、店舗が自分で振り込む必要がある。
+    //         期限を過ぎると Stripe が subscription を past_due にし、アプリ側の
+    //         subscription_status チェックで利用停止になる（index.html の判定は変更不要）。
+    //   ★カードへ戻す場合は、下の checkout.sessions.create ブロックを復活させるだけでよい。
+    //     （Stripeダッシュボード側で「銀行振込」を有効化していることが前提）
+    const DAYS_UNTIL_DUE = 7   // 請求書発行から振込期限までの日数
+
+    // 二重契約の防止。ボタン連打や「申し込んだか不安でもう一度」で
+    // サブスクが2本立つと二重請求になる。生きている契約があればそれを使い回す。
+    const live = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 })
+    const existing = live.data.find((s) =>
+      ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'].includes(s.status)
+    )
+    if (existing) {
+      let hosted: string | null = null
+      if (existing.latest_invoice) {
+        const invId = typeof existing.latest_invoice === 'string'
+          ? existing.latest_invoice
+          : (existing.latest_invoice as { id: string }).id
+        let latest = await stripe.invoices.retrieve(invId)
+        if (latest.status === 'draft') latest = await stripe.invoices.finalizeInvoice(latest.id)
+        if (latest.status === 'open') hosted = latest.hosted_invoice_url ?? null
+      }
+      return new Response(
+        JSON.stringify({ url: hosted || `${appUrl}/?saas=1&checkout=success`, method: 'bank_transfer', reused: true }),
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: priceId }],
+      collection_method: 'send_invoice',
+      days_until_due: DAYS_UNTIL_DUE,
+      payment_settings: {
+        payment_method_types: ['customer_balance'],
+        payment_method_options: {
+          customer_balance: {
+            funding_type: 'bank_transfer',
+            bank_transfer: { type: 'jp_bank_transfer' },
+          },
+        },
+      },
+      ...subscriptionData,
+      expand: ['latest_invoice'],
+    } as never)
+
+    await supabase.from('stores')
+      .update({ stripe_subscription_id: (subscription as { id: string }).id })
+      .eq('id', store_id)
+
+    // 請求書ページ（振込先の口座・金額・期限が載っている）へ誘導する。
+    // トライアル中に申し込んだ場合は請求書がまだ無い（トライアル終了時に発行される）ため、
+    // その場合はアプリに戻して「お申し込みを受け付けました」と見せる。
+    // 下書き(draft)のままだと振込先が発行されず、店舗に「どこへ振り込むか」が出ない。
+    // 自動確定を待たず、その場で確定して振込先入りの請求書ページを返す。
+    let inv = (subscription as { latest_invoice?: { id: string; status: string; hosted_invoice_url?: string | null } }).latest_invoice ?? null
+    if (inv && inv.status === 'draft') {
+      inv = await stripe.invoices.finalizeInvoice(inv.id) as unknown as typeof inv
+    }
+    const url = (inv && inv.status === 'open' && inv.hosted_invoice_url)
+      ? inv.hosted_invoice_url
+      : `${appUrl}/?saas=1&checkout=success`   // トライアル中＝請求書はまだ無い
+
+    return new Response(JSON.stringify({ url, method: 'bank_transfer' }), {
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
+    /* カード決済（2026-08-05まで使用。戻すときはここを復活させる）
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -84,10 +158,10 @@ serve(async (req) => {
       subscription_data: subscriptionData,
       payment_method_collection: 'always',
     })
-
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     })
+    */
   } catch (e) {
     console.error('stripe-checkout error:', e)
     // 日本語メッセージ（意図的にthrowしたユーザー向けエラー）はそのまま返す

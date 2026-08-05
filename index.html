@@ -2006,7 +2006,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v60';
+const SW_VER = 'v61';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2240,7 +2240,11 @@ document.addEventListener('DOMContentLoaded',function(){
         <li>優先サポート</li>
       </ul>
     </div>
-    <button class="btn-login" style="background:var(--accent);width:100%" onclick="startStripeCheckout()" id="btn-stripe-checkout">アップグレードする</button>
+    <div style="font-size:.75rem;color:#666;line-height:1.7;margin:0 0 .8rem;text-align:left">
+      お支払いは<b>銀行振込</b>です。お申し込み後、<b>お店専用の振込先</b>が表示されます。<br>
+      お支払い期限は<b>請求書の発行から7日以内</b>です。ご入金が確認できると自動でご利用いただけます。
+    </div>
+    <button class="btn-login" style="background:var(--accent);width:100%" onclick="startStripeCheckout()" id="btn-stripe-checkout">銀行振込で申し込む</button>
     <div style="margin-top:1rem">
       <button onclick="saasLogout()" style="background:none;border:none;color:#888;font-size:.8rem;cursor:pointer;text-decoration:underline;font-family:inherit">ログアウト</button>
     </div>
@@ -5025,11 +5029,11 @@ async function startStripeCheckout(){
     })
     const json=await res.json()
     if(json.url) window.location.href=json.url
-    else throw new Error(json.error||'チェックアウトURLの取得に失敗しました')
+    else throw new Error(json.error||'お申し込み手続きを開始できませんでした')
   }catch(e){
     toast(e.message)
   }finally{
-    btn.disabled=false; btn.textContent='アップグレードする'
+    btn.disabled=false; btn.textContent='銀行振込で申し込む'
   }
 }
 
