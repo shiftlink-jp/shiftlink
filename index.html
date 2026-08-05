@@ -4931,6 +4931,10 @@ async function initSaasApp(session){
   const{data:ss}=await sb.from('store_settings').select('*').eq('store_id',currentStoreId).maybeSingle()
   courses=cs||[]; opts=op||[]; roomList=rm||[]
   storeSettings=ss||store?.settings||{}
+  // この端末を店舗に登録しておく（メール/パスワードで入れた人＝正規の関係者なので自動で行う）。
+  // これが無いと、契約した本人が次回ログイン時に「店舗コードを入力」画面で行き止まりになる。
+  // 失敗してもアプリの起動は止めない（プライベートブラウズ等で保存できない場合がある）。
+  ensureDeviceTokenAfterLogin().catch(()=>{})
   // アプリ画面へ
   startApp()
   // Stripe Checkout完了後のハンドリング
