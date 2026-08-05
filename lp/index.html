@@ -114,6 +114,7 @@
     .cta-btn { animation: ctaBounce 1.8s ease-in-out infinite; }
     @media (prefers-reduced-motion: reduce) {
       .cta-btn { animation: none; }
+      .cta-btn::after { display: none; }
     }
 
     .cta-btn {
@@ -125,6 +126,30 @@
       position: absolute; left: 0; right: 0; top: 44.7%; transform: translateY(-50%);
       text-align: center; color: #fff; font-weight: 800; font-size: 16px;
       text-shadow: 0 1px 3px rgba(0,0,0,0.35); pointer-events: none;
+    }
+
+    /* CTAボタンの上を、光の帯が左から右へ流れる（キラーン） */
+    @keyframes ctaShine {
+      /* 光の帯の画像はボタンより横に大きいので、位置100%＝左の外、0%＝右の外になる */
+      0%, 12%   { background-position: 115% 0; }
+      42%, 100% { background-position: 0% 0; }
+    }
+    /* くり抜き（mask）非対応のブラウザでは光の帯が四角いまま出てしまうので出さない */
+    @supports (mask-image: url(images/cta-btn-3d.webp)) or (-webkit-mask-image: url(images/cta-btn-3d.webp)) {
+      .cta-btn::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background-image: linear-gradient(105deg,
+          rgba(255,255,255,0) 44%, rgba(255,255,255,0.16) 47.5%,
+          rgba(255,255,255,0.80) 50%,
+          rgba(255,255,255,0.16) 52.5%, rgba(255,255,255,0) 56%);
+        background-size: 220% 100%; background-repeat: no-repeat;
+        /* ボタン画像そのものの形でくり抜き、光がボタンの外へはみ出さないようにする */
+        -webkit-mask-image: url(images/cta-btn-3d.webp);
+        mask-image: url(images/cta-btn-3d.webp);
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        animation: ctaShine 3.6s linear infinite;
+      }
     }
 
     /* セクションとセクションの境目にボタンを浮かせて配置する */
