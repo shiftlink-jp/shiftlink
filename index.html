@@ -4863,7 +4863,8 @@ async function initSaasApp(session){
   //   いまの登録導線では2件目の所属は作られない（PINの内部ユーザーはメールにstore_idが入るので
   //   店舗ごとに別ユーザーになる）が、手動追加や将来の多店舗対応で1件でも増えた瞬間に事故る。
   //   最も古い所属を選んで必ず入れるようにしておく。店舗の切替UIは未実装＝別途設計が必要。
-  const{data:members,error:memErr}=await sb.from('store_members').select('store_id,role,cast_id,created_at').eq('user_id',session.user.id).order('created_at',{ascending:true})
+  //   取得する列は変更前と同じに保つ（並び替えのcreated_atはselectに含めなくても効く＝確認済み）。
+  const{data:members,error:memErr}=await sb.from('store_members').select('store_id,role,cast_id').eq('user_id',session.user.id).order('created_at',{ascending:true})
   const member=members&&members[0]
   if(members&&members.length>1) console.warn('[saas] 複数店舗に所属しています。最も古い店舗で開きます:', members.map(m=>m.store_id))
   if(memErr||!member){
