@@ -156,7 +156,8 @@
 
     /* セクションとセクションの境目にボタンを浮かせて配置する */
     .cta-seam { position: relative; height: 0; z-index: 5; }
-    .cta-seam-inner { position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); width: 100%; }
+    /* top を負にした分だけ、境目より少し上にボタンが乗る */
+    .cta-seam-inner { position: absolute; left: 50%; top: -12px; transform: translate(-50%, -50%); width: 100%; }
     .cta-seam .cta-btn { margin: 0; width: 100%; }
 
     /* ===== 01.5: 900時間の内訳（FVの数字の根拠） ===== */
@@ -557,13 +558,12 @@
     <!-- 08. 現状維持バイアスの払拭 -->
     <section class="section soft reveal" id="turnaroundPanel" style="padding-left:0; padding-right:0;">
       <img class="fee-visual" loading="lazy" src="images/08-turnaround.webp" alt="ここまで読んで、こう思っていませんか？便利そうだけど今更導入するのもな…その気持ちすごくよくわかります。ただ、人にとって一番大切なのはお金ではなく時間です。その時間を少しでも取り戻せるのであれば、SHIFT LINKはコストではなく投資です。">
-      <div style="padding: 24px 24px 0;">
+      <div style="padding: 24px 24px 32px;">
         <ul class="relay-check">
           <li>予約が入るだけで、シフト調整もバック計算も自動で終わる</li>
           <li>電話・LINEでの「入りました」確認連絡がまるごと不要に</li>
           <li>初期費用0円・14日間無料・カード登録不要で、まず試せる</li>
         </ul>
-        <p class="feature-note">実際に"今のやり方"から乗り換えた店舗の声を、次でご紹介します。</p>
       </div>
     </section>
 
