@@ -7,6 +7,8 @@
 //   action="list"        … 登録済み端末の一覧
 //   action="revoke"      … 端末を失効（紛失・退職時）
 //   action="list_pins"   … セラピストのPIN一覧（管理画面のPINバッジ表示用 ＝ ①の代替経路）
+//   action="offboard_cast" … 退店時の一括後始末（端末失効・パスキー削除・PIN削除・セッション失効）
+//                            ※売上/シフト/委託金には触らない
 //
 // なぜこの関数が必要か（設計書 docs/security-device-pairing-design.md ①）:
 //   従来 casts.pin に平文PINがあり、RLSは行単位のため「ログインしたセラピストが
@@ -255,6 +257,78 @@ serve(async (req) => {
         if (id && r.pin_plain && allowed.has(id)) pins[id] = String(r.pin_plain);
       }
       return json({ ok: true, pins }, 200, origin);
+    }
+
+    // offboard_cast: 退店処理の一括後始末。casts行の削除だけでは以下が残り、
+    //   「辞めた人がまだ入れる／一覧に幽霊端末が残る」状態になっていた（監査の失効漏れ）。
+    //   ここで一度に締める。**過去の売上・シフト・委託金には一切触らない**（税務・帳簿用に保持）。
+    //
+    //   ★アプリ側は casts を消す「前」に呼ぶこと★
+    //     端末のラベル照合に在籍名が要るのと、失敗しても casts が残っていれば再実行できるため。
+    if (action === "offboard_cast") {
+      const castId = Number(cast_id);
+      if (!Number.isFinite(castId)) return json({ error: "セラピストの指定が不正です" }, 400, origin);
+
+      const { data: target } = await admin
+        .from("casts").select("id,name").eq("id", castId).eq("store_id", store_id).maybeSingle();
+      if (!target) return json({ error: "対象のセラピストが見つかりません" }, 404, origin);
+
+      const now = new Date().toISOString();
+      const result = { devices: 0, passkeys: 0, pins: 0, sessions: 0 };
+
+      // 1) 端末: 本人専用として紐づいた端末は確実に失効させる。
+      const { data: bound } = await admin.from("store_devices")
+        .update({ revoked_at: now })
+        .eq("store_id", store_id).eq("bound_cast_id", castId).is("revoked_at", null)
+        .select("id");
+      result.devices += (bound ?? []).length;
+
+      // 1b) 紐づけが無い端末（自動登録された既存端末）は、ラベルの氏名でしか判別できない。
+      //     同名のセラピストが複数いると別人の端末を失効させてしまうため、
+      //     **その名前が店内で一意のときだけ**照合する。
+      //     ※誤って失効させても被害は「再登録が必要」だけで、誤った紐づけ（本人が締め出される）
+      //       より安全側。だが無用な手間なので一意チェックは必ず行う。
+      const nm = String(target.name ?? "").trim();
+      if (nm) {
+        const { data: sameName } = await admin
+          .from("casts").select("id").eq("store_id", store_id).eq("name", nm);
+        if ((sameName ?? []).length === 1) {
+          const { data: byLabel } = await admin.from("store_devices")
+            .update({ revoked_at: now })
+            .eq("store_id", store_id).is("bound_cast_id", null).is("revoked_at", null)
+            .in("label", [nm, `${nm}(自動登録)`, `${nm}端末`])
+            .select("id");
+          result.devices += (byLabel ?? []).length;
+        }
+      }
+
+      // 2) パスキー（生体認証）: 残すと端末さえ手元にあれば入れてしまう。
+      const { data: pks } = await admin.from("passkeys")
+        .delete().eq("store_id", store_id).eq("cast_id", castId).select("id");
+      result.passkeys = (pks ?? []).length;
+
+      // 3) 金庫のPIN。store_id が NULL のレガシー行も対象（list_pins と同じ理由）。
+      const { data: aps } = await admin.from("auth_pins")
+        .delete().eq("principal", `cast.${castId}`)
+        .or(`store_id.eq.${store_id},store_id.is.null`).select("principal");
+      result.pins = (aps ?? []).length;
+
+      // 4) セッション失効: store_members を消すだけでは、発行済みトークンが期限まで生き残る。
+      //    Authユーザーごと削除すると即座に無効化される。
+      //    他店にも所属している場合はユーザーを消さない（その店の利用を巻き込むため）。
+      const { data: mems } = await admin.from("store_members")
+        .select("id,user_id").eq("store_id", store_id).eq("cast_id", castId);
+      for (const m of mems ?? []) {
+        await admin.from("store_members").delete().eq("id", m.id);
+        const { data: others } = await admin.from("store_members")
+          .select("id").eq("user_id", m.user_id).limit(1);
+        if (!others || others.length === 0) {
+          const { error: delErr } = await admin.auth.admin.deleteUser(m.user_id);
+          if (!delErr) result.sessions++;
+        }
+      }
+
+      return json({ ok: true, ...result }, 200, origin);
     }
 
     return json({ error: "action が不正です" }, 400, origin);

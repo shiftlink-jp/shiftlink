@@ -2006,7 +2006,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v58';
+const SW_VER = 'v59';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -10630,6 +10630,23 @@ async function loadCastPins(){
   }catch(e){ /* 取得できなければ「未設定」表示にフォールバック */ }
 }
 
+// 退店時にログイン手段を一括失効させる（端末・パスキー・PIN・セッション）。
+// 失敗を握りつぶすと「消したつもりで入れたまま」になるので、必ず成否を返す。
+async function offboardCastAuth(castId){
+  try{
+    const{data:{session}}=await sb.auth.getSession()
+    if(!session) return {ok:false,error:'ログインセッションが取得できませんでした'}
+    const res=await fetch(SUPABASE_URL+'/functions/v1/manage-devices',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({store_id:currentStoreId||PIN_STORE_ID, action:'offboard_cast', cast_id:castId})
+    })
+    const j=await res.json().catch(()=>({}))
+    if(!res.ok) return {ok:false,error:j.error||('HTTP '+res.status)}
+    return {ok:true,detail:j}
+  }catch(e){ return {ok:false,error:e.message||'通信に失敗しました'} }
+}
+
 async function loadCastMgmt(){
   await loadCastPins()
   const area=document.getElementById('cast-area')
@@ -10764,10 +10781,16 @@ function closeCastInvite(){
 }
 
 async function deleteCast(castId, name){
-  if(!confirm(name+'を退店処理しますか？\nセラピスト情報は削除されますが、売上・シフト・委託金などの過去データは税務・帳簿用に保持されます。\nこの操作は取り消せません。')) return
+  if(!confirm(name+'を退店処理しますか？\n\n・ログインできなくなります（端末の登録・生体認証・PINを解除します）\n・セラピスト情報は削除されます\n・売上／シフト／委託金などの過去データは税務・帳簿用に保持されます\n\nこの操作は取り消せません。')) return
   try {
     // 設定データのみ削除（割引設定はセラピスト固有の設定のため削除）
     // works・shifts・cast_fees・reservations は税務記録として保持する
+    // ログイン手段の失効を最優先で行う。端末・パスキー・PIN・セッションが残ると
+    // 「退店したのにまだ入れる」状態になるため（casts削除だけでは消えない）。
+    // ★casts を消す前に呼ぶ★（サーバー側が在籍名で端末ラベルを照合するため）
+    const off=await offboardCastAuth(castId)
+    if(!off.ok) throw new Error('ログイン失効に失敗しました: '+off.error+'\n退店処理は中止しました。もう一度お試しください。')
+    // 設定データのみ削除（割引設定はセラピスト固有の設定のため削除）
     const r1=await withStoreFilter(sb.from('cast_discounts').delete()).eq('cast_id',castId)
     if(r1.error) throw new Error('discounts削除エラー: '+r1.error.message)
     // homepage_shifts（ホームページ表示用シフト）はFK制約があり、残っていると casts 削除をブロックする。
@@ -10776,7 +10799,8 @@ async function deleteCast(castId, name){
     if(rh.error && !/exist|find the table|schema cache|relation/i.test(rh.error.message||'')) throw new Error('homepage_shifts削除エラー: '+rh.error.message)
     const r2=await withStoreFilter(sb.from('casts').delete()).eq('id',castId)
     if(r2.error) throw new Error('cast削除エラー: '+r2.error.message)
-    toast(name+'を退店処理しました')
+    const d=off.detail||{}
+    toast(name+'を退店処理しました（端末'+(d.devices||0)+'台・生体認証'+(d.passkeys||0)+'件を解除）')
     openInactiveSheet()
     init()
   } catch(e) {
