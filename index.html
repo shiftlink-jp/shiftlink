@@ -2006,7 +2006,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v59';
+const SW_VER = 'v60';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3040,7 +3040,8 @@ document.addEventListener('DOMContentLoaded',function(){
       <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
         <b>スタッフの端末登録は「セラピスト管理」の各カードの「招待」ボタン</b>から行います。<br>
         下のボタンは<b>オーナーご自身の端末</b>を追加するとき用です（機種変更など）。<br>
-        コードは<b>48時間有効・1回きり</b>。紛失や退職の際は端末を「解除」してください。
+        コードは<b>48時間有効・1回きり</b>。<br>
+        <b>退店したスタッフの端末は、退店処理をすれば自動で解除されます</b>（この画面での操作は不要です）。
       </div>
       <button class="f2-savebtn-sm" style="width:100%;margin:0 0 .5rem" onclick="issuePairingCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>オーナー用の端末コードを発行する</button>
       <div id="pair-code-out" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);border-radius:10px;padding:.8rem;text-align:center;margin-bottom:.6rem">
@@ -3056,8 +3057,15 @@ document.addEventListener('DOMContentLoaded',function(){
            2026-08-02に実施済みのため、失効ボタンはUIから撤去した。
            （関数 revokeCommonInvite / Edge Function の revoke_invite は、
              将来また必要になったときのために残してある） -->
-      <div style="font-size:.72rem;font-weight:700;color:var(--text2);margin:.6rem 0 .3rem">登録済みの端末</div>
-      <div id="device-list"><div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込み中...</div></div>
+      <!-- 端末一覧は普段は畳んでおく（2026-08-05）。
+           退店処理でログイン手段を一括失効するようにしたため、日常的にここを見る必要はない。
+           紛失時に1台だけ解除する等のために残してあるが、初期表示では開かない。 -->
+      <div id="device-toggle" onclick="toggleDeviceList()" style="display:flex;align-items:center;gap:.4rem;margin:.6rem 0 0;padding:.45rem .1rem;cursor:pointer">
+        <span style="font-size:.72rem;font-weight:700;color:var(--text2)">登録済みの端末</span>
+        <span style="font-size:.66rem;color:var(--text3)">紛失したスマホを解除するとき用</span>
+        <span id="device-toggle-ar" style="margin-left:auto;font-size:.7rem;color:var(--text3)">▼</span>
+      </div>
+      <div id="device-list" style="display:none"></div>
     </div>
     <!-- 予約確認URLの挨拶文 -->
     <div class="f2-card">
@@ -9380,9 +9388,19 @@ async function copyPairCode(){
   try{ await navigator.clipboard.writeText(_lastPairCode); toast('コードをコピーしました') }
   catch(e){ toast('コピーできませんでした: '+_lastPairCode) }
 }
+// 端末一覧の開閉。開いたときに初めて読み込む（普段は通信もしない）。
+function toggleDeviceList(){
+  const el=document.getElementById('device-list'), ar=document.getElementById('device-toggle-ar')
+  if(!el) return
+  const open=el.style.display==='none'
+  el.style.display=open?'block':'none'
+  if(ar) ar.textContent=open?'▲':'▼'
+  if(open) renderDeviceList()
+}
 async function renderDeviceList(){
   const el=document.getElementById('device-list')
   if(!el) return
+  el.innerHTML='<div class="f2-row-sub" style="margin:0;padding:.3rem 0">読み込み中...</div>'
   // 招待リンクUIはSaaS URLのときだけ見せる（KYOUKANOでは ?join が効かないため）
   // （共通の招待リンクUIは2026-08にセラピスト個別の招待へ一本化して撤去した）
   try{
@@ -11502,8 +11520,10 @@ async function openStoreSettings(){
     // 予約確認URLの挨拶文
     const grEl=document.getElementById('st-rv-greeting')
     if(grEl) grEl.value=ss.public_greeting||''
-    // 端末の管理（登録済み端末の一覧）
-    renderDeviceList()
+    // 端末一覧は畳んだ状態で開始する（開いたときに読み込む）。
+    const dl=document.getElementById('device-list'), dar=document.getElementById('device-toggle-ar')
+    if(dl){ dl.style.display='none'; dl.innerHTML='' }
+    if(dar) dar.textContent='▼'
   }
   document.getElementById('store-overlay').classList.add('on')
   // 現在の店舗PINを表示（端末にログイン中のオーナーのPIN）
