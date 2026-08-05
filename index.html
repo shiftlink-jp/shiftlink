@@ -2272,6 +2272,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <div style="font-weight:700;font-size:.95rem;margin-bottom:.75rem"><svg class="ei" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 店舗名を確認してください</div>
       <input class="linput" type="text" id="ob-store-name" placeholder="例: リラクゼーション○○" style="margin-bottom:.5rem">
       <div style="font-size:.75rem;color:var(--text3);margin-bottom:1rem">アプリ内・通知・書類に表示されます</div>
+      <div class="lerr" id="ob-err-1" style="margin-bottom:.5rem"></div>
       <button class="btn-login" style="background:var(--accent)" onclick="obNext(1)">次へ →</button>
     </div>
     <!-- ステップ2: オーナーPIN設定 -->
@@ -4959,12 +4960,17 @@ function showOnboarding(session, storeName){
   document.getElementById('s-onboarding').classList.add('on')
 }
 async function obNext(step){
-  const errEl=document.getElementById('ob-err')
+  // ステップごとに表示中のパネル内のエラー欄を使う（隠れているパネルに出すと無言で失敗して見える）
+  const errEl=document.getElementById(step===1?'ob-err-1':'ob-err')
   if(errEl) errEl.textContent=''
+  try{
   if(step===1){
     const name=(document.getElementById('ob-store-name')?.value||'').trim()
     if(!name){if(errEl)errEl.textContent='店舗名を入力してください';return}
-    await withStoreFilter(sb.from('stores').update({name})).eq('id',currentStoreId).catch(()=>{})
+    // stores は id で絞る。withStoreFilter は store_id 列を足すが stores にその列は無い。
+    // また Supabase のクエリに .catch() は生えていないため、付けると例外でボタンが無反応になる。
+    const{error:nameErr}=await sb.from('stores').update({name}).eq('id',currentStoreId)
+    if(nameErr) console.warn('[onboarding] 店舗名の保存に失敗（続行）:', nameErr)
     storeSettings.store_name=name
     document.getElementById('ob-panel-1').style.display='none'
     document.getElementById('ob-panel-2').style.display='block'
@@ -4984,6 +4990,11 @@ async function obNext(step){
     document.getElementById('ob-step-2').style.background='#22c55e'
     document.getElementById('ob-step-3').style.background='var(--accent)'
     document.getElementById('ob-step-3').style.color='#fff'
+  }
+  }catch(e){
+    // 想定外の例外でボタンが「押しても無反応」になるのを防ぐ（原因を画面に出す）
+    console.error('[onboarding] step'+step+' error:', e)
+    if(errEl) errEl.textContent='エラーが発生しました：'+(e&&e.message||e)
   }
 }
 async function obFinish(){
