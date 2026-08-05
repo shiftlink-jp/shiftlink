@@ -4948,6 +4948,17 @@ async function saasLogout(){
   await sb.auth.signOut()
   currentStoreId=null
   sessionStorage.removeItem('shiftlink_me')
+  // LPから ?signup=1 付きで来た直後にログアウトすると、reload ではURLがそのまま残るため
+  // 「新規登録フォーム」に戻ってしまう。契約導線のパラメータを外してから読み込み直す。
+  try{
+    const u=new URL(location.href)
+    if(u.searchParams.has('signup')||u.searchParams.has('lp_sid')){
+      u.searchParams.delete('signup')
+      u.searchParams.delete('lp_sid')
+      location.replace(u.toString())
+      return
+    }
+  }catch(e){}
   location.reload()
 }
 
