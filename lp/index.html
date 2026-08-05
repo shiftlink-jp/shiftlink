@@ -124,7 +124,9 @@
     .cta-btn img { width: 100%; display: block; }
     .cta-btn .cta-btn-label {
       position: absolute; left: 0; right: 0; top: 38%; transform: translateY(-50%);
-      text-align: center; color: #fff; font-weight: 800; font-size: 16px;
+      text-align: center; color: #fff; font-weight: 800;
+      /* 画面幅に合わせて伸縮。小さい端末でもボタンからはみ出さない上限・下限つき */
+      font-size: clamp(16px, 5.2vw, 24px); white-space: nowrap;
       text-shadow: 0 1px 3px rgba(0,0,0,0.35); pointer-events: none;
     }
 
