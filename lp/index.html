@@ -70,7 +70,7 @@
     /* ===== セクション共通（背景装飾画像＋実HTML） ===== */
     .section {
       position: relative;
-      padding: 56px 24px;
+      padding: 42px 24px;
       background-repeat: no-repeat;
       background-size: cover;
       background-position: top center;
@@ -123,7 +123,7 @@
     }
     .cta-btn img { width: 100%; display: block; }
     .cta-btn .cta-btn-label {
-      position: absolute; left: 0; right: 0; top: 44.7%; transform: translateY(-50%);
+      position: absolute; left: 0; right: 0; top: 38%; transform: translateY(-50%);
       text-align: center; color: #fff; font-weight: 800; font-size: 16px;
       text-shadow: 0 1px 3px rgba(0,0,0,0.35); pointer-events: none;
     }
@@ -135,7 +135,7 @@
       42%, 100% { background-position: 0% 0; }
     }
     /* くり抜き（mask）非対応のブラウザでは光の帯が四角いまま出てしまうので出さない */
-    @supports (mask-image: url(images/cta-btn-3d.webp)) or (-webkit-mask-image: url(images/cta-btn-3d.webp)) {
+    @supports (mask-image: url(images/cta-btn-3d-slim.webp)) or (-webkit-mask-image: url(images/cta-btn-3d-slim.webp)) {
       .cta-btn::after {
         content: ""; position: absolute; inset: 0; pointer-events: none;
         background-image: linear-gradient(105deg,
@@ -144,8 +144,8 @@
           rgba(255,255,255,0.16) 52.5%, rgba(255,255,255,0) 56%);
         background-size: 220% 100%; background-repeat: no-repeat;
         /* ボタン画像そのものの形でくり抜き、光がボタンの外へはみ出さないようにする */
-        -webkit-mask-image: url(images/cta-btn-3d.webp);
-        mask-image: url(images/cta-btn-3d.webp);
+        -webkit-mask-image: url(images/cta-btn-3d-slim.webp);
+        mask-image: url(images/cta-btn-3d-slim.webp);
         -webkit-mask-size: 100% 100%;
         mask-size: 100% 100%;
         animation: ctaShine 3.6s linear infinite;
@@ -407,7 +407,7 @@
           <span><span class="ok">✓</span>14日間 無料</span>
           <span><span class="ok">✓</span>カード登録 不要</span>
         </div>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
       </div>
     </div>
 
@@ -512,7 +512,7 @@
         <li>電話・LINEでの「入りました」連絡が丸ごと不要になる</li>
         <li>ルーム（部屋）の重複も自動でチェックしてから通知される</li>
       </ul>
-      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
     </section>
 
     <!-- 05. 委託金の自動計算 -->
@@ -567,7 +567,7 @@
 
     <div class="cta-seam">
       <div class="cta-seam-inner">
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
       </div>
     </div>
 
@@ -619,7 +619,7 @@
         <div class="offer-card">コース・オプション・バック率の初期登録を無料代行</div>
         <div class="offer-card">14日間、全機能無料。カード登録は不要</div>
       </div>
-      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+      <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
     </section>
 
     <!-- 11. 料金＋FAQ＋クロージング -->
@@ -638,7 +638,7 @@
           <span><span class="ok">✓</span>カード登録 不要</span>
           <span><span class="ok">✓</span>いつでも解約可能</span>
         </div>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
       </div>
 
       <div class="eyebrow">FAQ</div>
@@ -671,7 +671,7 @@
       <div class="closing">
         <h3>"なんとなく経営"を、<br><span class="hl">今日で終わりに</span>しませんか。</h3>
         <p>予約が入るだけで、売上も委託金もシフトも自動で整う。</p>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
+        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
         <p class="note">カード登録なし・初期費用0円・いつでも解約可能</p>
       </div>
 
