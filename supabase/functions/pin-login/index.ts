@@ -247,11 +247,16 @@ serve(async (req) => {
       // 前倒し加算（照合前）で呼ぶときは true。RPCが使えなかった場合に
       // 旧方式で書き戻すと、読んでいない既存カウントを 1 で上書きしてしまうため書かない。
       probeOnly = false,
+      // 失敗回数を数える時間窓（分）。既定はロック時間と同じ＝従来の挙動。
+      // ★段階ロックで「ロック時間」を延ばすときに、ここまで一緒に延ばしてはいけない。
+      //   窓が24時間になると、1日かけて5回間違えただけでロックに達してしまい、
+      //   受付の共用端末では普通の打ち間違いでも到達しうるため。
+      windowMins?: number,
     ): Promise<{ rpc: boolean; locked?: boolean; already_locked?: boolean }> => {
       try {
         const args: Record<string, unknown> = {
           p_store_id: store_id, p_principal: key, p_max: limit,
-          p_lock_minutes: mins, p_window_minutes: mins,
+          p_lock_minutes: mins, p_window_minutes: windowMins ?? mins,
         };
         if (devId != null) args.p_device_id = devId;
         const { data, error } = await admin.rpc("record_login_fail", args);
@@ -325,7 +330,8 @@ serve(async (req) => {
     const devLockMinutes = deviceId != null
       ? DEVICE_LOCK_LADDER[Math.min(escLevel, DEVICE_LOCK_LADDER.length - 1)]
       : LOCK_MINUTES;
-    const pre = await bumpFail(principalKey, preLimit, devLockMinutes, 0, deviceId, true);
+    // 窓は常に LOCK_MINUTES（15分）。延ばすのはロック時間だけ。
+    const pre = await bumpFail(principalKey, preLimit, devLockMinutes, 0, deviceId, true, LOCK_MINUTES);
 
     // 030未適用（RPCが無い）なら、従来どおり「読む→判定→照合→失敗時に記録」に戻す。
     // ここで正常なPINが弾かれないことが最優先。
@@ -368,7 +374,7 @@ serve(async (req) => {
       }
       if (!pre.rpc) {
         // 030未適用時のみ、従来どおり照合後に端末カウントを加算する
-        tasks.push(bumpFail(principalKey, preLimit, devLockMinutes, freshCount(att, devLockMinutes), deviceId));
+        tasks.push(bumpFail(principalKey, preLimit, devLockMinutes, freshCount(att, LOCK_MINUTES), deviceId, false, LOCK_MINUTES));
       }
       // この回でロックが掛かったなら段数を1つ進める。規定回数に達した端末は登録を解除する。
       if (deviceId != null && escKey && pre.locked && !pre.already_locked) {
