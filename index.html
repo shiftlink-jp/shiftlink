@@ -4858,7 +4858,14 @@ async function setupInitialStoreData(storeId){
 async function initSaasApp(session){
   _saasSession=session  // 運営者判定（代理店タブ表示）等で使う
   // store_membersからユーザーの所属店舗を取得
-  const{data:member,error:memErr}=await sb.from('store_members').select('store_id,role,cast_id').eq('user_id',session.user.id).single()
+  // ★.single() を使ってはいけない。0件だけでなく「2件以上」でもエラーになるため、
+  //   2店舗目を持ったオーナーがログイン不能になる（＝店舗ごと締め出される）。
+  //   いまの登録導線では2件目の所属は作られない（PINの内部ユーザーはメールにstore_idが入るので
+  //   店舗ごとに別ユーザーになる）が、手動追加や将来の多店舗対応で1件でも増えた瞬間に事故る。
+  //   最も古い所属を選んで必ず入れるようにしておく。店舗の切替UIは未実装＝別途設計が必要。
+  const{data:members,error:memErr}=await sb.from('store_members').select('store_id,role,cast_id,created_at').eq('user_id',session.user.id).order('created_at',{ascending:true})
+  const member=members&&members[0]
+  if(members&&members.length>1) console.warn('[saas] 複数店舗に所属しています。最も古い店舗で開きます:', members.map(m=>m.store_id))
   if(memErr||!member){
     // 店舗に未所属 → ログアウトしてエラー表示
     await sb.auth.signOut()
