@@ -2304,6 +2304,11 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="btn-login btn-login-primary" onclick="showLogin('owner')">店舗ログイン</button>
       <button class="btn-login btn-login-ghost" onclick="showLogin('cast')">セラピストログイン</button>
     </div>
+    <!-- 契約店舗(SaaS)でのみJSがdisplayをblockにする。KYOUKANO(PINモード)では非表示のまま＝画面は従来と同一。
+         この入口が無いと、登録済み端末（オーナーが普段使う端末）からはパスワード再設定に辿り着けない。 -->
+    <div id="top-saas-email-entry" style="display:none;text-align:center;margin-top:.9rem">
+      <a href="#" onclick="showSaasEmailLogin();return false" style="font-size:.78rem;color:var(--text3);text-decoration:underline">オーナーの方（メール／パスワードでログイン）</a>
+    </div>
     <div style="text-align:center;margin-top:1rem;font-size:.72rem;color:var(--text3);line-height:1.6">ログインすることで<a href="/legal.html" target="_blank" style="color:var(--accent);text-decoration:underline">利用規約・プライバシーポリシー</a>に同意したものとみなします。<br><a href="/tokutei.html" target="_blank" style="color:var(--accent);text-decoration:underline">特定商取引法に基づく表示</a></div>
     </div>
   </div>
@@ -3420,6 +3425,11 @@ function makeOwnerTok(pin){
 const KYOUKANO_HOST = 'kyoukano.vercel.app'
 const IS_KYOUKANO_HOST = location.hostname === KYOUKANO_HOST
 const SAAS_MODE = !IS_KYOUKANO_HOST && (new URLSearchParams(location.search).has('saas') || location.hostname === 'app.shiftlink.jp' || location.hostname === 'shiftlink-app.jp' || location.hostname.endsWith('.shiftlink-app.jp'))
+// 契約店舗(SaaS)でだけ、トップに「メールでログイン」の入口を出す。
+// 登録済み端末は PIN_AUTH_MODE で s-top に入り、そこから s-saas-login へ行く手段が無かったため、
+// オーナーがパスワードを忘れると自分の端末からは再設定を要求できなかった。
+// KYOUKANOにはメールのアカウント自体が存在しないので、PINモードでは出さない（画面は不変）。
+if(SAAS_MODE){ const _e=document.getElementById('top-saas-email-entry'); if(_e) _e.style.display='block' }
 
 // Supabase接続（2026-08-01: SaaS・PINとも本番プロジェクトに統一）
 //   KYOUKANOのSaaS並行稼働のため、SaaSモードの接続先を旧・開発用プロジェクト(停止中)から
@@ -4724,9 +4734,18 @@ async function doUpdatePassword(){
       sb.auth.signOut().then(()=>{showSaasLogin()})
     },2000)
   }catch(e){
+    const msg=e.message||'エラーが発生しました'
     err.style.color=''
-    err.textContent=e.message||'エラーが発生しました'
     btn.disabled=false; btn.textContent='パスワードを変更する'
+    // リンクの期限切れ等でセッションが無い場合、この画面だけが出た行き止まりになる
+    // （他のフォームは _hideSaasForms で隠れており、戻る手段が無い）。
+    // 印を消したうえで、ログイン画面へ戻る導線を必ず出す。
+    if(/session|expired|JWT|token/i.test(msg)){
+      try{ sessionStorage.removeItem('shiftlink_recovery') }catch(_e){}
+      err.innerHTML='リンクの有効期限が切れています。お手数ですが、もう一度メールを送り直してください。<br><a href="#" onclick="showSaasLogin();return false" style="color:var(--accent);text-decoration:underline">ログイン画面に戻る</a>'
+      return
+    }
+    err.textContent=msg
   }
 }
 
