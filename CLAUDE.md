@@ -164,7 +164,11 @@ profit = gross_work - net  // miscを引かない
 - [x] Stripe Edge Functions: 全3関数デプロイ済み（shiftlink-dev: fewuonnrgqnxtopkjudt）
 - [x] trial_will_end webhook ハンドラ実装済み
 - [ ] Phase 2: 全SELECTに store_id フィルタ追加（約150箇所、残り多数）
-- [ ] Phase 3: RLS有効化（既存テーブル）
+- [x] Phase 3: RLS有効化（既存テーブル）**完了済み**（2026-08-06に実測確認）
+  - 公開anon鍵では customers / casts / store_settings / reservations / passkeys いずれも0件
+  - ポリシー83本。INSERTも `WITH CHECK (check_store_access(store_id))` で他店IDを弾く
+  - 残る穴は `homepage_shifts` の書き込みが店舗をまたげる1点のみ（2店舗目の契約前に要対応）
+  - 詳細と実測方法: `docs/RLS有効化_設計と手順_20260806.md`
 - [ ] Phase 4: 新規店舗オンボーディング画面
 - [ ] Stripe本番モード切替
 - [ ] tokutei.html: 事業者情報（●●）をバーチャルオフィス登録後に記入
