@@ -21,6 +21,83 @@
   <meta name="twitter:description" content="予約が入るだけで、シフト・売上・委託金の集計が全部自動。電話もLINE連絡も、電卓での手計算ももう要りません。">
   <meta name="twitter:image" content="https://lp.shiftlink-app.jp/images/og-image.jpg">
 
+  <!-- 正規URL。同じLPが www.shiftlink-app.jp/lp/ でも配信されているため、
+       検索エンジンの評価が2つに分散しないようこちらを正とする -->
+  <link rel="canonical" href="https://lp.shiftlink-app.jp/">
+
+  <!-- 構造化データ。FAQPageは検索結果にQ&Aを展開表示させるため。
+       ※価格(offers)は意図的に入れていない。LP・特商法ページと三重管理になり、
+         キャンペーン価格の変更漏れ＝景表法リスクを生むため -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://lp.shiftlink-app.jp/#organization",
+        "name": "SHIFT LINK",
+        "url": "https://lp.shiftlink-app.jp/",
+        "logo": "https://lp.shiftlink-app.jp/images/icon-192.png"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "SHIFT LINK",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web（iOS / Android / PCブラウザ）",
+        "url": "https://lp.shiftlink-app.jp/",
+        "inLanguage": "ja",
+        "description": "メンズエステ店舗向けのシフト・予約・売上・委託金管理アプリ。予約を入れるだけで、セラピストへの共有・バック計算・売上集計が自動で整う。",
+        "publisher": { "@id": "https://lp.shiftlink-app.jp/#organization" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "導入の設定、自分でできますか？難しくないですか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "初期設定はこちらが伴走いたします。コース・オプション・バック率の登録も一緒に進めますのでご安心ください。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "パソコンからでも使えますか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "はい、パソコンのブラウザからもご利用いただけます。スマホでの操作を中心に設計していますが、パソコンでも同じ画面で操作できます。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "今使っているツールからデータを移行することはできますか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "できます。データ移行はこちらで請け負いますので、お気軽にご相談ください。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "途中で解約したいときはどうすればいいですか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "いつでも解約できます。解約方法・データの取り扱いについても事前にご説明いたします。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "何人までセラピストを登録できますか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "人数の上限はございません。少人数の店舗様から多店舗展開まで、同じ料金でご利用いただけます。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {

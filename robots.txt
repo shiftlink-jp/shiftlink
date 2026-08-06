@@ -1,3 +1,9 @@
+# このrobots.txtは www.shiftlink-app.jp（SaaSアプリ側）に配信される。
+# LP（lp.shiftlink-app.jp）には lp/robots.txt が配信されるので、LPの設定はそちらを編集すること。
+
 User-agent: *
 Allow: /
-Sitemap: https://app.shiftlink.jp/sitemap.xml
+
+# 旧: Sitemap: https://app.shiftlink.jp/sitemap.xml
+#     app.shiftlink.jp は未接続のドメインで、その sitemap.xml も存在しなかったため削除した。
+#     LPのサイトマップは https://lp.shiftlink-app.jp/sitemap.xml にある。
