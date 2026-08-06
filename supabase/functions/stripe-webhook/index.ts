@@ -7,7 +7,13 @@ import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
 serve(async (req) => {
-  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2024-06-20' })
+  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+    apiVersion: '2024-06-20',
+    // Deno(Edge)では既定のNode製HTTPクライアントが動かない。環境が更新されると
+    // 'Deno.core.runMicrotasks() is not supported' が出てStripeに接続すらできなくなる。
+    // 2026-08-06に本番で発生し、新規登録のトライアル契約が全て失敗していた。
+    httpClient: Stripe.createFetchHttpClient(),
+  })
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
