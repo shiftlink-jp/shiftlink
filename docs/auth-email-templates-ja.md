@@ -2,14 +2,22 @@
 
 Supabaseの標準メール（英語）を日本語＋ブランドデザインに差し替えるためのHTML。
 
-## 貼り付け場所
-Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
-→ 左メニュー **Authentication** → **Emails**（または Email Templates）
-→ 各テンプレート（タブ）を選び、**Subject（件名）** と **Message body（本文・Source/HTML欄）** をそれぞれ下記に差し替えて保存。
+## 貼り付け場所（2026-08-06 更新：本番向けに修正）
+**本番プロジェクト `qgcgkrcrfzonmmygcdju`**
+→ 左メニュー **Authentication** → **Emails** → **Templates** タブ
+→ 各テンプレート（`Reset password` 等）を開き、**Subject（件名）** と **Message body（本文・HTML欄）**
+　をそれぞれ下記に差し替えて保存。
 
-- 差出人名/アドレス（Auth Supabase / noreply@…supabase.io）はこの画面では変えられない。自社ドメイン化は独自SMTP（Resend等）が必要＝別タスク（レベル2）。
+- ~~差出人名は変えられない~~ → **2026-08-06に独自SMTP(Resend)を設定済み。差出人は
+  `ShiftLink <noreply@shiftlink-app.jp>` になっている**。詳細は `docs/メール送信の設定手順_20260806.md`
 - 本文欄は「HTML（Source）」で貼ること。プレーンテキスト欄しか無い場合はそのままHTMLを貼ってOK。
 - Supabaseの変数（`{{ .ConfirmationURL }}` 等）はそのまま残すこと。消すとリンクが動かなくなる。
+- ロゴ表記は **`SHIFT LINK`**（スペースあり全大文字）で統一済み。詰めた `SHIFTLINK` にしないこと。
+
+### なぜ日本語化が必要か（見た目の問題ではない）
+英語の既定文面は "Reset Password / Follow this link" の一行HTMLで、**フィッシングメールと区別がつかない**。
+実際に2026-08-06のテストでは、届いた3通が**すべてiCloudの迷惑メールフォルダ**に入った。
+オーナーにとって迷惑メール行き＝届かないのと同じなので、差し替えは到達性の対策そのもの。
 
 ---
 
@@ -25,7 +33,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;">
@@ -38,7 +46,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 8px;color:#e8821e;font-size:12px;word-break:break-all;">{{ .ConfirmationURL }}</p>
       <p style="margin:24px 0 0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
@@ -57,7 +65,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;">
@@ -70,7 +78,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 8px;color:#e8821e;font-size:12px;word-break:break-all;">{{ .ConfirmationURL }}</p>
       <p style="margin:24px 0 0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。パスワードは変更されません。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
@@ -89,7 +97,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;">
@@ -102,7 +110,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 8px;color:#e8821e;font-size:12px;word-break:break-all;">{{ .ConfirmationURL }}</p>
       <p style="margin:24px 0 0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
@@ -121,7 +129,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;">
@@ -134,7 +142,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 8px;color:#e8821e;font-size:12px;word-break:break-all;">{{ .ConfirmationURL }}</p>
       <p style="margin:24px 0 0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
@@ -153,7 +161,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;">
@@ -166,7 +174,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 8px;color:#e8821e;font-size:12px;word-break:break-all;">{{ .ConfirmationURL }}</p>
       <p style="margin:24px 0 0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
@@ -187,7 +195,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
 <div style="margin:0;padding:24px;background:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Segoe UI',sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
     <div style="background:#ffffff;padding:28px 32px 8px;text-align:center;">
-      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT<span style="color:#e8821e;">LINK</span></span>
+      <span style="font-size:22px;font-weight:800;letter-spacing:.04em;color:#111;">SHIFT <span style="color:#e8821e;">LINK</span></span>
     </div>
     <div style="height:4px;background:#e8821e;margin:8px 32px 0;border-radius:4px;"></div>
     <div style="padding:28px 32px 8px;color:#333;line-height:1.8;font-size:15px;text-align:center;">
@@ -196,7 +204,7 @@ Supabaseダッシュボード（プロジェクト **fewuonnrgqnxtopkjudt**）
       <p style="margin:0 0 16px;font-size:32px;font-weight:800;letter-spacing:.2em;color:#e8821e;">{{ .Token }}</p>
       <p style="margin:0;color:#aaa;font-size:12px;">このメールに心当たりがない場合は、破棄してください。</p>
     </div>
-    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFTLINK（シフトリンク）／ メンズエステ店舗管理</div>
+    <div style="padding:20px 32px 28px;text-align:center;color:#bbb;font-size:11px;">SHIFT LINK（シフトリンク）／ メンズエステ店舗管理</div>
   </div>
 </div>
 ```
