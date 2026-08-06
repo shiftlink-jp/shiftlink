@@ -2006,7 +2006,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v61';
+const SW_VER = 'v62';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -4858,11 +4858,15 @@ async function doSaasSignup(){
       const trialJson=await trialRes.json()
       if(!trialRes.ok&&trialJson.status!=='already_exists'){
         console.error('Trial creation failed:',trialJson)
-        toast('トライアルの開始に問題がありました。ログイン後に再試行されます。')
+        // 「再試行されます」と書いていたが、自動で再試行する処理は存在しない（嘘だった）。
+      // 実際の復旧手段はアプリ内の「プランに加入」＝stripe-checkout なのでそこへ誘導する。
+      toast('トライアルの開始に失敗しました。アプリ内の「プランに加入」からお手続きください。')
       }
     }catch(e){
       console.error('Trial subscription creation failed:',e)
-      toast('トライアルの開始に問題がありました。ログイン後に再試行されます。')
+      // 「再試行されます」と書いていたが、自動で再試行する処理は存在しない（嘘だった）。
+      // 実際の復旧手段はアプリ内の「プランに加入」＝stripe-checkout なのでそこへ誘導する。
+      toast('トライアルの開始に失敗しました。アプリ内の「プランに加入」からお手続きください。')
     }
     // 4. 初期データ投入（コース・オプション・ルーム）
     try{

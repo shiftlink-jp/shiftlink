@@ -2,6 +2,13 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 
+// 環境変数に貼り付けミスで見えない文字（U+2028 など）が混ざると、HTTPヘッダーを
+// 組み立てられず「Stripeに接続できません」という原因の分かりにくいエラーになる。
+// 2026-08-06に本番で発生し、新規登録のトライアル契約が全て失敗していた。
+// Stripeの鍵・IDは [A-Za-z0-9_] しか含まないので、それ以外を落としてから使う。
+const envClean = (name: string) => (Deno.env.get(name) || '').replace(/[^A-Za-z0-9_]/g, '')
+
+
 const ALLOWED_ORIGINS = ['https://shiftlink-app.jp', 'https://www.shiftlink-app.jp', 'https://app.shiftlink.jp', 'http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500']
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || ''
@@ -17,7 +24,7 @@ serve(async (req) => {
   }
 
   try {
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+    const stripe = new Stripe(envClean('STRIPE_SECRET_KEY'), {
       apiVersion: '2024-06-20',
       // Deno(Edge)では既定のNode製HTTPクライアントが動かない。環境が更新されると
       // 'Deno.core.runMicrotasks() is not supported' が出てStripeに接続すらできなくなる。
@@ -62,7 +69,7 @@ serve(async (req) => {
       await supabase.from('stores').update({ stripe_customer_id: customerId }).eq('id', store_id)
     }
 
-    const priceId = Deno.env.get('STRIPE_PRICE_ID')!
+    const priceId = envClean('STRIPE_PRICE_ID')
 
     // 14日間トライアル付きサブスクリプション作成（カード不要）
     // idempotencyKey で同一store_idの重複リクエスト（ダブルクリック等）を防止
