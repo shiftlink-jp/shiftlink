@@ -2186,6 +2186,11 @@ if("serviceWorker" in navigator){
       <input class="linput" type="password" id="saas-newpw-confirm" placeholder="••••••••" minlength="8" autocomplete="new-password" onkeydown="if(event.key==='Enter')doUpdatePassword()">
       <button class="btn-login btn-login-primary" style="margin-top:.85rem" onclick="doUpdatePassword()" id="btn-saas-newpw">パスワードを変更する</button>
       <div class="lerr" id="saas-newpw-err"></div>
+      <!-- 再設定をやめる導線。これが無いと、途中でやめて開き直しても sessionStorage の印が残り、
+           init() の先頭判定で毎回この画面に戻されて抜け出せなくなる（PWAではタブを閉じる操作も分かりにくい）。 -->
+      <div style="text-align:center;margin-top:1rem">
+        <a href="#" onclick="cancelPasswordRecovery();return false" style="font-size:.78rem;color:var(--text3);text-decoration:underline">パスワードの再設定をやめる</a>
+      </div>
     </div>
 
     <div id="saas-signup-form" style="display:none;margin-top:1.5rem">
@@ -4685,6 +4690,14 @@ function showSaasLogin(){
   _hideSaasForms()
   document.getElementById('saas-login-form').style.display='block'
   document.getElementById('saas-err').textContent=''
+}
+// 再設定を中断する。印を消さないと init() の先頭判定に毎回捕まって抜け出せない。
+// 中断しただけならリンク自体はまだ有効なので、メールから開き直せば再開できる。
+function cancelPasswordRecovery(){
+  try{ sessionStorage.removeItem('shiftlink_recovery') }catch(e){}
+  try{ sb.auth.signOut() }catch(e){}
+  const e2=document.getElementById('saas-newpw-err'); if(e2) e2.textContent=''
+  showSaasLogin()
 }
 function showSaasSignup(){
   _hideSaasForms()
