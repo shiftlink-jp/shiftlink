@@ -60,18 +60,34 @@ serve(async (req) => {
 
     // 14日間トライアル付きサブスクリプション作成（カード不要）
     // idempotencyKey で同一store_idの重複リクエスト（ダブルクリック等）を防止
+    //
+    // ★支払い方法は銀行振込（2026-08-06にカードから切替）。ここを既定のまま
+    //   （collection_method 未指定＝charge_automatically）にしてはいけない。
+    //   カード情報を一切取らない運用なので、トライアル終了時に
+    //   「支払い方法が無い」と判定されて pause され、請求書が発行されない。
+    //   ＝店舗は振込先を知らないまま利用停止、こちらは一円も回収できない。
+    //   send_invoice ＋ create_invoice にすることで、トライアル終了時に
+    //   Stripeが自動で請求書（振込先つき）を発行してメールしてくれる。
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
       trial_period_days: 14,
+      collection_method: 'send_invoice',
+      days_until_due: 7,
       payment_settings: {
-        save_default_payment_method: 'on_subscription',
+        payment_method_types: ['customer_balance'],
+        payment_method_options: {
+          customer_balance: {
+            funding_type: 'bank_transfer',
+            bank_transfer: { type: 'jp_bank_transfer' },
+          },
+        },
       },
       trial_settings: {
-        end_behavior: { missing_payment_method: 'pause' },
+        end_behavior: { missing_payment_method: 'create_invoice' },
       },
       metadata: { store_id },
-    }, {
+    } as never, {
       // idempotencyKey: ダブルクリック等の即時重複を防ぐ。
       // 日付を含めることで日をまたいだ再トライアル（解約後の再申込み）は別キーになる。
       // ※既存サブスクの確認はL40-45で先行実施済み。

@@ -94,6 +94,31 @@ serve(async (req) => {
       ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'].includes(s.status)
     )
     if (existing) {
+      // 2026-08-06以前に作られた契約、および create-trial-subscription が
+      // 銀行振込対応になる前に登録した店舗は、カード引き落とし方式のままになっている。
+      // そのまま使い回すと請求書が発行されず、店舗に振込先が出ないまま止まる。
+      // ここで振込方式へ乗り換えさせる（契約自体は作り直さないので二重請求にならない）。
+      if (existing.collection_method !== 'send_invoice') {
+        const patch: Record<string, unknown> = {
+          collection_method: 'send_invoice',
+          days_until_due: DAYS_UNTIL_DUE,
+          payment_settings: {
+            payment_method_types: ['customer_balance'],
+            payment_method_options: {
+              customer_balance: {
+                funding_type: 'bank_transfer',
+                bank_transfer: { type: 'jp_bank_transfer' },
+              },
+            },
+          },
+        }
+        // trial_settings はトライアル中のみ意味を持つ。終了後に送るとStripeが拒否する。
+        if (existing.status === 'trialing') {
+          patch.trial_settings = { end_behavior: { missing_payment_method: 'create_invoice' } }
+        }
+        await stripe.subscriptions.update(existing.id, patch as never)
+      }
+
       let hosted: string | null = null
       if (existing.latest_invoice) {
         const invId = typeof existing.latest_invoice === 'string'
