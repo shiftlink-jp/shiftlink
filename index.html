@@ -4161,8 +4161,44 @@ function showLogin(type){
   }
 }
 
+// ── パスワード再設定リンクで戻ってきたときの処理 ──────────────────
+// Supabase は #access_token=xxx&type=recovery のようなハッシュを付けてリダイレクトする。
+// ★window.location.hash を直接読んではいけない。ライブラリが生成直後に回収して消すため。
+//   スクリプト冒頭で控えた _authHash を使う（live側は後方互換のフォールバック）。
+// ★Service Workerの自動リロードを跨ぐとハッシュごと消えるので、sessionStorageの印でも判定する。
+// 戻り値 true = この関数が画面を出した（呼び出し側は以降の処理をしない）
+async function handlePasswordRecovery(){
+  const hash=_authHash||window.location.hash
+  let inRecovery=false
+  try{ inRecovery = sessionStorage.getItem('shiftlink_recovery')==='1' }catch(e){}
+  if(!hash.includes('type=recovery') && !inRecovery) return false
+  // パスワード変更(updateUser)はログイン状態を必要とする。ライブラリがセッションを
+  // 張れていない場合に備え、控えたトークンで明示的に張る。これが無いと画面は出るのに
+  // 「Auth session missing」で変更できず、利用者から見れば直っていないのと同じになる。
+  try{
+    const{data:{session:rs}}=await sb.auth.getSession()
+    if(!rs){
+      const hp=new URLSearchParams(hash.replace(/^#/,''))
+      const at=hp.get('access_token'), rt=hp.get('refresh_token')
+      if(at&&rt) await sb.auth.setSession({access_token:at,refresh_token:rt})
+      else console.warn('[recovery] ハッシュにトークンが無い:', hash.slice(0,40))
+    }
+  }catch(e){ console.error('[recovery] セッション確立に失敗:', e) }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
+  document.getElementById('s-saas-login').classList.add('on')
+  _hideSaasForms()
+  document.getElementById('saas-newpw-form').style.display='block'
+  // URLハッシュをクリア（ブックマーク対策）
+  history.replaceState(null,'',location.pathname+'?saas=1')
+  return true
+}
+
 async function init(){
   console.log('[init] SAAS_MODE=', SAAS_MODE, 'PIN_AUTH_MODE=', PIN_AUTH_MODE)
+  // ★パスワード再設定は最優先で判定する。
+  //   登録済み端末は下の PIN_AUTH_MODE で return してしまうため、後ろに置くと
+  //   オーナーが普段使う端末では永久に到達しない（2026-08-06に本番で再現）。
+  if(SAAS_MODE && await handlePasswordRecovery()) return
   // ── 招待リンク(?join=コード)での自動ペアリング。SaaS経路のみ（KYOUKANOは素通り） ──
   if(SAAS_MODE && await tryJoinPairing()) return
   // ── Phase2: PIN認証モード（pin-login経由） ──
@@ -4173,35 +4209,8 @@ async function init(){
   // ── SaaSモード：Supabase Auth認証 ──
   if(SAAS_MODE){
     console.log('[init] SaaS path entered')
-    // パスワードリセットリンクからのリダイレクト検知
-    // Supabase は #access_token=xxx&type=recovery のようなハッシュを付けてリダイレクトする。
-    // ★ここで window.location.hash を読んではいけない。ライブラリが先に消しているため常に空になる。
-    //   スクリプト冒頭で控えた _authHash を使う（live側は後方互換のフォールバック）。
-    const hash=_authHash||window.location.hash
-    // SWのリロードを跨いだ場合はハッシュが無いので、タブに残した印で判定する。
-    let _inRecovery=false
-    try{ _inRecovery = sessionStorage.getItem('shiftlink_recovery')==='1' }catch(e){}
-    if(hash.includes('type=recovery')||_inRecovery){
-      // パスワード変更(updateUser)はログイン状態を必要とする。ライブラリがセッションを
-      // 張れていない場合に備え、控えたトークンで明示的に張る。これが無いと画面は出るのに
-      // 「Auth session missing」で変更できず、利用者から見れば直っていないのと同じになる。
-      try{
-        const{data:{session:rs}}=await sb.auth.getSession()
-        if(!rs){
-          const hp=new URLSearchParams(hash.replace(/^#/,''))
-          const at=hp.get('access_token'), rt=hp.get('refresh_token')
-          if(at&&rt) await sb.auth.setSession({access_token:at,refresh_token:rt})
-          else console.warn('[recovery] ハッシュにトークンが無い:', hash.slice(0,40))
-        }
-      }catch(e){ console.error('[recovery] セッション確立に失敗:', e) }
-      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
-      document.getElementById('s-saas-login').classList.add('on')
-      _hideSaasForms()
-      document.getElementById('saas-newpw-form').style.display='block'
-      // URLハッシュをクリア（ブックマーク対策）
-      history.replaceState(null,'',location.pathname+'?saas=1')
-      return
-    }
+    // パスワード再設定の判定は init() の先頭（handlePasswordRecovery）へ移動した。
+    // ここに置くと、登録済み端末が PIN_AUTH_MODE で先に return してしまい到達しないため。
     try{
       // 既存セッション確認
       const{data:{session}}=await sb.auth.getSession()
