@@ -167,7 +167,9 @@ profit = gross_work - net  // miscを引かない
 - [x] Phase 3: RLS有効化（既存テーブル）**完了済み**（2026-08-06に実測確認）
   - 公開anon鍵では customers / casts / store_settings / reservations / passkeys いずれも0件
   - ポリシー83本。INSERTも `WITH CHECK (check_store_access(store_id))` で他店IDを弾く
-  - 残る穴は `homepage_shifts` の書き込みが店舗をまたげる1点のみ（2店舗目の契約前に要対応）
+  - `homepage_shifts` の書き込みが店舗をまたげた件は **2026-08-07に対応完了**（`033`）。
+    store_id 列が無いテーブルなので `cast_id → casts.store_id` を辿って判定する
+  - **RLSまわりの宿題は無し。2店舗目の契約を受けられる状態**
   - 詳細と実測方法: `docs/RLS有効化_設計と手順_20260806.md`
 - [ ] Phase 4: 新規店舗オンボーディング画面
 - [ ] Stripe本番モード切替
