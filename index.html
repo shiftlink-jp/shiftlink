@@ -2076,6 +2076,10 @@ if("serviceWorker" in navigator){
       // SW更新時の自動リロード + Push subscription変更通知
       navigator.serviceWorker.addEventListener('message', function(e){
         if(e.data && e.data.type === 'SW_UPDATED'){
+          // パスワード再設定の最中はリロードしない。入力途中の画面が消えてしまうため。
+          // （印が残っていればリロードしても復帰できるが、そもそも中断させない）
+          var _rec = false; try{ _rec = sessionStorage.getItem('shiftlink_recovery')==='1' }catch(_e){}
+          if(_rec){ console.log('[SW] 新バージョン検出（パスワード再設定中のためリロードを保留）'); return; }
           console.log('[SW] 新バージョン検出 → 自動リロード');
           window.location.reload(true);
         }
@@ -3455,6 +3459,16 @@ let PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE || !!_devTok0
 let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || _devStore0 || null) : KYOUKANO_STORE_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ★パスワード再設定リンクで戻ってきたときの #access_token=...&type=recovery を、ここで先に控える。
+//   Supabaseのライブラリは生成直後に自分でハッシュを回収し、URLから消してしまう。
+//   init() は先に await を挟むため、読もうとした時には毎回空＝再設定画面に到達できなかった。
+//   （2026-08-06に本番で再現。URLが ?saas=1 だけになり端末登録画面が出ていた）
+const _authHash = location.hash || ''
+// さらに、Service Workerの自動リロード(2080行付近)を挟むとURLごとハッシュが消えるため、
+// 「再設定中」であることをタブに残す。sessionStorageはタブ単位なので他のタブに漏れない。
+// ★新規プロファイル/プライベートウィンドウではSWが初回インストール直後に必ずリロードを
+//   起こすので、この保険が無いと再設定画面が一瞬出て消える（2026-08-06に本番で再現）。
+if(_authHash.includes('type=recovery')){ try{ sessionStorage.setItem('shiftlink_recovery','1') }catch(e){} }
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // SaaS用変数
@@ -4150,9 +4164,26 @@ async function init(){
   if(SAAS_MODE){
     console.log('[init] SaaS path entered')
     // パスワードリセットリンクからのリダイレクト検知
-    // Supabase は #access_token=xxx&type=recovery のようなハッシュを付けてリダイレクトする
-    const hash=window.location.hash
-    if(hash.includes('type=recovery')){
+    // Supabase は #access_token=xxx&type=recovery のようなハッシュを付けてリダイレクトする。
+    // ★ここで window.location.hash を読んではいけない。ライブラリが先に消しているため常に空になる。
+    //   スクリプト冒頭で控えた _authHash を使う（live側は後方互換のフォールバック）。
+    const hash=_authHash||window.location.hash
+    // SWのリロードを跨いだ場合はハッシュが無いので、タブに残した印で判定する。
+    let _inRecovery=false
+    try{ _inRecovery = sessionStorage.getItem('shiftlink_recovery')==='1' }catch(e){}
+    if(hash.includes('type=recovery')||_inRecovery){
+      // パスワード変更(updateUser)はログイン状態を必要とする。ライブラリがセッションを
+      // 張れていない場合に備え、控えたトークンで明示的に張る。これが無いと画面は出るのに
+      // 「Auth session missing」で変更できず、利用者から見れば直っていないのと同じになる。
+      try{
+        const{data:{session:rs}}=await sb.auth.getSession()
+        if(!rs){
+          const hp=new URLSearchParams(hash.replace(/^#/,''))
+          const at=hp.get('access_token'), rt=hp.get('refresh_token')
+          if(at&&rt) await sb.auth.setSession({access_token:at,refresh_token:rt})
+          else console.warn('[recovery] ハッシュにトークンが無い:', hash.slice(0,40))
+        }
+      }catch(e){ console.error('[recovery] セッション確立に失敗:', e) }
       document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))
       document.getElementById('s-saas-login').classList.add('on')
       _hideSaasForms()
@@ -4684,6 +4715,8 @@ async function doUpdatePassword(){
   try{
     const{error}=await sb.auth.updateUser({password:pw})
     if(error) throw error
+    // 再設定は完了。印を消さないと、次にこのタブを開いたとき再設定画面が出続ける。
+    try{ sessionStorage.removeItem('shiftlink_recovery') }catch(e){}
     err.style.color='var(--accent)'
     err.textContent='パスワードを変更しました。ログイン画面に移動します...'
     setTimeout(()=>{
