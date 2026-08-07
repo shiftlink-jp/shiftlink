@@ -405,9 +405,13 @@
       .offer-burst { animation: none; }
     }
     .offer-price-card { background: #fff; border: 2px solid var(--orange-1); border-radius: 18px; padding: 24px 20px; text-align: center; position: relative; z-index: 1; margin-bottom: 18px; box-shadow: 0 10px 24px rgba(255,122,26,0.15); }
-    .offer-price-card .old { font-size: 14px; color: #aaa; text-decoration: line-through; margin-bottom: 4px; }
+    /* 通常価格は「アンカー」。落差を見せるため取り消し線のまま一回り大きくする。
+       ただし新価格より大きくはしない（どちらを払うのか迷わせるとそこで離脱する） */
+    .offer-price-card .old { font-size: 16px; color: #999; text-decoration: line-through; margin-bottom: 6px; }
     .offer-price-card .new { font-size: 34px; font-weight: 800; color: var(--orange-1); }
     .offer-price-card .new small { font-size: 14px; font-weight: 700; }
+    /* 税込は必ず併記する。実際の請求は8,140円なので、隠すと申込後に「聞いてない」になる */
+    .offer-price-card .new-tax { font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-top: 2px; }
     .offer-price-card .note { font-size: 12px; color: var(--ink-soft); margin-top: 8px; line-height: 1.7; }
     .offer-cards { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; margin-bottom: 20px; }
     .offer-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 13px; font-weight: 700; color: var(--ink); display: flex; gap: 8px; align-items: center; }
@@ -422,6 +426,9 @@
     .pricing-card .amount .unit { font-size: 18px; }
     .pricing-card .tax { font-size: 12px; color: #999; margin-bottom: 14px; }
     .pricing-card .perday { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+    /* ※料金カードには取り消し線やキャンペーンバッジを置かない。
+       落差の演出は直前の「先着10店舗限定」セクションで済んでおり、
+       ここで繰り返すと同じ内容が2回並んで冗長になる。ここは申込直前の事実確認に徹する */
     .pricing-checks { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: #555; font-weight: 700; margin-bottom: 18px; }
     .pricing-checks span { display: flex; align-items: center; gap: 4px; }
     .pricing-checks .ok { color: var(--orange-1); }
@@ -690,36 +697,29 @@
       <h2 class="section-title">今なら、月額料金が<br><span class="hl">ずっと半額。</span></h2>
       <div class="section-underline"></div>
       <div class="offer-price-card">
-        <div class="old">通常 月額14,800円（税抜）</div>
+        <div class="old">通常 月額 14,800円（税抜／税込16,280円）</div>
         <div class="new">月額 <small>¥</small>7,400<small>（税抜）</small></div>
+        <div class="new-tax">税込 8,140円</div>
         <div class="note">先着10店舗限定。契約を継続する限り、<br>この価格がずっと続きます。</div>
       </div>
       <div class="offer-cards">
         <div class="offer-card">コース・オプション・バック率の初期登録を無料代行</div>
         <div class="offer-card">14日間、全機能無料。カード登録は不要</div>
+        <div class="offer-card">初期費用0円。いつでも解約できます</div>
       </div>
       <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
     </section>
 
     <!-- 11. 料金＋FAQ＋クロージング -->
-    <section class="section soft reveal faq-section" id="contact" style="background-image:url('images/11-bg.webp')">      <div class="eyebrow">PRICING</div>
-      <h2 class="section-title">料金プラン</h2>
-      <div class="section-underline"></div>
-      <div class="pricing-card">
-        <div class="ribbon">スタンダードプラン</div>
-        <div class="yen">月額</div>
-        <div class="amount"><span class="num">14,800</span><span class="unit">円</span></div>
-        <div class="tax">（税抜）／税込 16,280円</div>
-        <div class="perday">1日あたり 約490円</div>
-        <div class="pricing-checks">
-          <span><span class="ok">✓</span>初期費用 0円</span>
-          <span><span class="ok">✓</span>14日間 無料</span>
-          <span><span class="ok">✓</span>カード登録 不要</span>
-          <span><span class="ok">✓</span>いつでも解約可能</span>
-        </div>
-        <a class="cta-btn" href="https://shiftlink-app.jp/?signup=1"><img loading="lazy" src="images/cta-btn-3d-slim.webp" alt=""><span class="cta-btn-label">14日間無料で体験してみる</span></a>
-      </div>
-
+    <section class="section soft reveal faq-section" id="contact" style="background-image:url('images/11-bg.webp')">
+      <!-- 【PRICING（料金プラン）セクションは先着10店舗キャンペーン中は非表示】
+           直前の「先着10店舗限定」セクションと内容がほぼ完全に重複していたため外した
+           （通常価格→半額の落差／14日間無料／カード登録不要／CTAボタンが二重）。
+           カード内にしか無かった「初期費用0円」「いつでも解約可能」は
+           先着セクションの offer-cards に3枚目として移設済み。
+           ⚠️ 10店舗が埋まって通常価格(14,800円税抜/16,280円税込)に戻すときは、
+              このセクションを復活させること。CSS(.pricing-card 系)は残してある。
+              手順: docs/Stripe本番切替_手順書_20260806.md -->
       <div class="eyebrow">FAQ</div>
       <h2 class="section-title">よくあるご質問</h2>
       <div class="section-underline"></div>
