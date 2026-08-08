@@ -903,6 +903,27 @@
 
     // 自前アナリティクス（訪問数・滞在時間・CTAクリック）: Supabaseへ直接記録
     (function () {
+      // ── 身内のアクセスは数えない ────────────────────────────────
+      // これが無いと、LPを1日いじるだけで数百行の自分のアクセスが積み上がり、
+      // 本物の訪問者が埋もれて数字が読めなくなる（2026-08-08に実測: 1187行中95%が作業日の自分）。
+      //   ① 本番のLPドメイン以外（localhost・Vercelのプレビュー等）では計測しない
+      //   ② 「?notrack=1」を一度開いた端末は、以後ずっと計測しない（解除は「?notrack=0」）
+      //      → 今野さんのスマホとPCで1回ずつ開いておくこと
+      // ここで return すると CTAリンクへの lp_sid 付与も止まるので、
+      // 申し込み完了(conversion)も記録されない＝身内のテスト申込も数字に混ざらない。
+      var PROD_HOSTS = ['lp.shiftlink-app.jp', 'shiftlink-app.jp', 'www.shiftlink-app.jp'];
+      try {
+        var nt = new URLSearchParams(location.search).get('notrack');
+        if (nt === '1') localStorage.setItem('lp_notrack', '1');
+        if (nt === '0') localStorage.removeItem('lp_notrack');
+      } catch (e) { /* プライベートブラウズ等。計測可否の判定だけ続ける */ }
+      var optedOut = false;
+      try { optedOut = localStorage.getItem('lp_notrack') === '1'; } catch (e) {}
+      if (optedOut || PROD_HOSTS.indexOf(location.hostname) === -1) {
+        window.trackEvent = function () {};   // 呼ばれても何もしない（他の箇所が壊れないように）
+        return;
+      }
+
       var SUPABASE_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co';
       var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE';
       var sessionId = sessionStorage.getItem('lp_session_id');

@@ -22,6 +22,16 @@ const json = (body: unknown, status = 200) =>
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
 
+interface LpEvent {
+  event_type: string
+  session_id: string
+  cta_text: string | null
+  dwell_ms: number | null
+  section: string | null
+  max_section: string | null
+  created_at: string
+}
+
 function todayJstDateOnly(daysAgo: number): string {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000 - daysAgo * 86400000)
   return now.toISOString().slice(0, 10)
@@ -42,14 +52,28 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data, error } = await supabase
-      .from('lp_analytics_events')
-      .select('event_type, session_id, cta_text, dwell_ms, section, max_section, created_at')
-      .gte('created_at', since)
+    // ★1000行の壁★ SupabaseのREST APIは1回の取得を既定で1000行に打ち切る。
+    //   打ち切られても error にはならず、静かに少ない数字が出るだけ＝気づけない。
+    //   （2026-08-08に実測: 1187行あるのに pageview 200→173, cta_click 17→10 と過少集計されていた）
+    //   なので .range() で最後まで読み切る。1ページでも取り漏らすと全部の数字が狂うため、
+    //   途中でエラーが出たら部分集計を返さずに 500 にする。
+    const PAGE = 1000
+    const MAX_PAGES = 200            // 20万行で頭打ち（無限ループの保険）
+    const rows: LpEvent[] = []
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const { data, error } = await supabase
+        .from('lp_analytics_events')
+        .select('event_type, session_id, cta_text, dwell_ms, section, max_section, created_at')
+        .gte('created_at', since)
+        .order('id', { ascending: true })   // 並び順を固定しないとページ間で重複・欠落が起きる
+        .range(page * PAGE, page * PAGE + PAGE - 1)
 
-    if (error) return json({ error: 'server' }, 500)
+      if (error) return json({ error: 'server' }, 500)
+      const chunk = (data || []) as unknown as LpEvent[]
+      rows.push(...chunk)
+      if (chunk.length < PAGE) break        // 最終ページ
+    }
 
-    const rows = data || []
     const pageviews = rows.filter((r) => r.event_type === 'pageview')
     const clicks = rows.filter((r) => r.event_type === 'cta_click')
     const dwells = rows.filter((r) => r.event_type === 'dwell' && typeof r.dwell_ms === 'number')
