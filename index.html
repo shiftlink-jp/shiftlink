@@ -2010,7 +2010,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v64';
+const SW_VER = 'v65';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3905,6 +3905,27 @@ async function pkLoginV2(castId){
       try{ localStorage.removeItem(pkFlag(castId)) }catch(_){}
       return false   // この主体に登録済みパスキー無し
     }
+    // この端末の中にある鍵だけを対象にする。
+    // そうしないと、ブラウザが「別の端末の鍵をQRで使う」経路(hybrid)を親切に提案してしまい、
+    // この端末に鍵が無いときにQR画面が出てログインが止まる（2026-08-08にオーナーのスマホで発生）。
+    // ・transports の情報が無い鍵は判断できないのでそのまま残す（古い登録を壊さない）
+    // ・iCloudキーチェーンで同期される鍵も internal を持つため、同期利用には影響しない
+    // ・この端末に該当が1つも無ければ、QRを出さずに静かに諦めてPIN入力へ進ませる
+    try{
+      const ac = opt.options && opt.options.allowCredentials
+      if(Array.isArray(ac) && ac.length){
+        const only = ac.map(c=>{
+          if(!Array.isArray(c.transports) || !c.transports.length) return c
+          const t = c.transports.filter(x=>x==='internal')
+          return t.length ? Object.assign({}, c, {transports:t}) : null
+        }).filter(Boolean)
+        if(!only.length){
+          try{ localStorage.removeItem(pkFlag(castId)) }catch(_){}
+          return false   // この端末には鍵が無い。目印を消して登録案内が出るようにする
+        }
+        opt.options.allowCredentials = only
+      }
+    }catch(_){ /* 失敗しても従来どおりの挙動に落とす */ }
     const lib=await pkBrowser()
     const asr=await lib.startAuthentication({optionsJSON:opt.options})
     const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
