@@ -2010,7 +2010,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v62';
+const SW_VER = 'v63';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3888,7 +3888,16 @@ async function pkLoginV2(castId){
     const pre=_pkPrep[castId]; delete _pkPrep[castId]   // チャレンジは単回使用
     if(pre && (Date.now()-pre.at)<240000) opt=await pre.p   // 先読み(進行中可)を待つ
     if(!opt){ const o=await pkApi('auth-options',{cast_id:castId}); opt=(o&&o.options&&o.credentials)?o:null }
-    if(!opt) return false   // この主体に登録済みパスキー無し
+    if(!opt){
+      // サーバーに登録が無いのに端末の目印だけ残っていると、
+      //   ・ログイン: ここで黙って false（生体認証が出ない）
+      //   ・登録案内: offerPasskeyRegistration が「登録済み」と判断して出ない
+      // の両方が起きて詰む（2026-08-08に本番のオーナーで発生。8/5のパスキー掃除で
+      // cast_id=0 の行が「持ち主なし」として消えたのが発端）。
+      // サーバーが無いと言った時点で目印を捨て、次のPINログイン後に登録し直せるようにする。
+      try{ localStorage.removeItem(pkFlag(castId)) }catch(_){}
+      return false   // この主体に登録済みパスキー無し
+    }
     const lib=await pkBrowser()
     const asr=await lib.startAuthentication({optionsJSON:opt.options})
     const j=await pkApi('auth-verify',{cast_id:castId, challenge_id:opt.challenge_id, response:asr})
