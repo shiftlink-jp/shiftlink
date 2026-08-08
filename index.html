@@ -2010,7 +2010,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v63';
+const SW_VER = 'v64';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -3089,6 +3089,13 @@ document.addEventListener('DOMContentLoaded',function(){
         <span id="device-toggle-ar" style="margin-left:auto;font-size:.7rem;color:var(--text3)">▼</span>
       </div>
       <div id="device-list" style="display:none"></div>
+      <div style="border-top:1px solid var(--border);margin:.7rem 0 0;padding:.7rem 0 0">
+        <div style="font-size:.7rem;color:var(--text3);line-height:1.7;margin:0 0 .45rem">
+          <b>この端末で顔認証・指紋認証が出ないとき</b>に押してください。<br>
+          別の端末で登録し直したあとは、こちらでも登録が必要です。
+        </div>
+        <button class="f2-savebtn-sm" style="width:100%" onclick="reRegisterPasskeyHere()">この端末で生体認証を登録</button>
+      </div>
     </div>
     <!-- 予約確認URLの挨拶文 -->
     <div class="f2-card">
@@ -3918,6 +3925,25 @@ async function pkRegisterV2(castId){
     await pkApi('reg-verify',{challenge_id:opt.challenge_id, response:att}, tok)
     try{ localStorage.setItem(pkFlag(castId),'1') }catch(e){}
   } finally { pkInProgress=false; _lastHiddenAt=0 }
+}
+// この端末で生体認証を登録し直す（設定画面からの手動復旧口）
+// 端末の目印(pkv2_*)は「この端末が登録済みか」ではなく「どこかの端末が登録済みか」しか
+// 表せない。そのため別の端末で登録した直後は、この端末が
+//   ・ログイン → 自分は鍵を持たないのでブラウザがQR(別端末で認証)を出す
+//   ・登録案内 → 目印があるので出ない
+// という詰みに入る（2026-08-08にオーナーのスマホで発生）。目印に関係なく登録できる口を用意する。
+// 既にこの端末で登録済みなら WebAuthn が InvalidStateError を返すので pkNoteIfAlready が拾う。
+async function reRegisterPasskeyHere(){
+  if(!window.PublicKeyCredential){ toast('この端末は生体認証に対応していません'); return }
+  const id = (me && !me.is_owner && Number.isFinite(Number(me.id))) ? Number(me.id) : 0
+  try{
+    await pkRegisterV2(id)
+    toast('この端末で生体認証を登録しました。次回からこの端末でログインできます')
+  }catch(e){
+    if(pkNoteIfAlready(e,id)) return
+    if(e.name==='NotAllowedError') return   // 本人がキャンセルしただけ
+    toast('登録できませんでした: '+(e.message||e))
+  }
 }
 // PIN設定/変更をサーバ(set-pin)経由で auth_pins に保存する（平文をDBに書かない）。
 // target: 'owner' または セラピストID(number)。オーナーのセッションでのみ成功する。
