@@ -6012,8 +6012,19 @@ async function submitShift(){
       else toast('保存エラー: '+(err.message||JSON.stringify(err)))
       return
     }
-    // オーナーへPush通知
-    await sendPushNotification(0, 'シフトが提出されました', me.name+'さんが'+selectedDate+'のシフトを申請しました。');
+    // オーナーへPush通知。新規申請と「出し直し（＝変更）」を区別しないと、
+    // オーナーは既に見た申請なのか変更なのか判断できない。承認済みを直した場合は
+    // status が requested に戻る（上のpayload）ので、再承認が要ることも伝える。
+    const mdStr=fmtMD(selectedDate)
+    const tmStr='（'+start.slice(0,5)+'〜'+end.slice(0,5)+'）'
+    const isRedo=existing&&existing.status==='rejected'   // 却下後の再申請は「新規」扱い
+    if(existing&&!isRedo&&existing.status==='approved'){
+      await sendPushNotification(0, 'シフト変更（要再承認）', me.name+'さんが'+mdStr+'の承認済みシフトを変更しました'+tmStr+'再承認をお願いします');
+    }else if(existing&&!isRedo){
+      await sendPushNotification(0, 'シフト変更', me.name+'さんが'+mdStr+'のシフトを変更しました'+tmStr);
+    }else{
+      await sendPushNotification(0, 'シフトが提出されました', me.name+'さんが'+mdStr+'のシフトを申請しました'+tmStr);
+    }
     toast('申請しました！')
     closeSheet('shift-req')
     selectedDate=null; loadCal()
@@ -6904,7 +6915,18 @@ async function saveCastShiftEdit(){
 async function deleteCastShift(){
   if(!confirm('このシフトを取消しますか？')) return
   const{error} = await withStoreFilter(sb.from('shifts').delete()).eq('id', castShiftEditId)
-  if(error){ toast('エラー: '+error.message); return }
+  if(error){
+    // 23503 = 予約が紐づいているため消せない（オーナー側deleteShiftは予約ごと消すが、
+    // セラピストに予約・売上を消させるのは危険なのでここでは消さない）。
+    // 従来は「エラー」とだけ出て通知も飛ばず、オーナーは取消希望に気づけなかった。
+    if(error.code==='23503'){
+      toast('このシフトには予約が入っているため取り消せません。オーナーに連絡してください')
+      await sendPushNotification(0, 'シフト取消の希望', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフト取消を希望しています（予約が入っているため本人は取消できません）', 'shiftcancelreq:'+castShiftEditId)
+    }else{
+      toast('エラー: '+error.message)
+    }
+    return
+  }
   // 店舗に通知
   await sendPushNotification(0, 'シフト取消', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフトを取消しました', 'shift:'+castShiftEditId);
   toast('シフトを取消しました')
