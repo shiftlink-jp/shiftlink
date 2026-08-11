@@ -12282,8 +12282,18 @@ const RV_COPY_DEFAULT='{店名}です。\nご予約ありがとうございま�
 // 予約確認URLをLINE等に貼り付ける形の本文にする
 //   ・店舗設定(public_copy_message)が空なら既定文。列が未追加のDBでも既定文で動く
 //   ・{URL}/{店名} は全角カッコ・小文字も許容（日本語入力での打ち間違い対策）
+// 店名を取得する。store_settings に店名の列が無く、SaaS版は stores テーブル、
+// PIN版はどこにも保存場所が無いため、KYOUKANOだけは店舗IDで判定して既定値を持つ。
+// アプリの版(SAAS_MODE)ではなく店舗IDで見るので、どのURLから開いても同じ結果になり、
+// かつ他店舗には絶対に出ない（store_idが一致しないため）。
+function shopName(){
+  const s=String(storeSettings.store_name||storeSettings.name||'').trim()
+  if(s) return s
+  return currentStoreId===KYOUKANO_STORE_ID?'KYOUKANO NAGOYA':''
+}
+
 function buildRvCopyText(url){
-  const shop=String(storeSettings.store_name||storeSettings.name||'').trim()
+  const shop=shopName()
   let t=String(storeSettings.public_copy_message||'').trim()
   if(!t){
     t=RV_COPY_DEFAULT
