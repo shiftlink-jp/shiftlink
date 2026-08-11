@@ -779,7 +779,8 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-owner-customer .cust-search-wrap{position:relative;margin-bottom:.75rem}
 #p-owner-customer .cust-search-wrap::before{content:'';position:absolute;left:.9rem;top:50%;width:13px;height:13px;border:1.6px solid #A89B88;border-radius:50%;transform:translateY(-65%)}
 #p-owner-customer .cust-search-wrap::after{content:'';position:absolute;left:1.58rem;top:50%;width:6px;height:1.6px;background:#A89B88;transform:translateY(40%) rotate(45deg);transform-origin:left center}
-#p-owner-customer .cust-search-input{width:100%;background:#FAF8F4;border:none;border-radius:12px;height:46px;padding:0 .9rem 0 2.3rem;font-size:.85rem;color:#211C16;font-family:inherit;outline:none;box-sizing:border-box}
+#p-owner-customer .cust-search-input{width:100%;background:#FAF8F4;border:none;border-radius:12px;height:46px;padding:0 3.2rem 0 2.3rem;font-size:.85rem;color:#211C16;font-family:inherit;outline:none;box-sizing:border-box}
+#p-owner-customer .cust-search-mode{position:absolute;right:.45rem;top:50%;transform:translateY(-50%);height:32px;min-width:40px;padding:0 .5rem;border:none;border-radius:9px;background:#EDE9E1;color:#7A6E5E;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer}
 #p-owner-customer .cust-list-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
 #p-owner-customer .cust-list-lbl{font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:#A89B88}
 #p-owner-customer .cust-list-count{font-size:.6875rem;font-weight:700;color:#A89B88}
@@ -2580,7 +2581,8 @@ document.addEventListener('DOMContentLoaded',function(){
         <button class="cust-add-btn" onclick="openAddCustomer()">＋ 顧客を追加</button>
       </div>
       <div class="cust-search-wrap">
-        <input id="customer-search" class="cust-search-input" type="text" placeholder="名前・顧客番号で検索" oninput="filterCustomers()">
+        <input id="customer-search" class="cust-search-input" type="text" inputmode="numeric" placeholder="名前・顧客番号で検索" oninput="filterCustomers()">
+        <button type="button" id="customer-search-mode" class="cust-search-mode" aria-label="名前で検索に切替" onpointerdown="event.preventDefault()" onclick="toggleCustomerSearchMode()">あ</button>
       </div>
       <div class="cust-list-hdr">
         <div class="cust-list-lbl">登録顧客</div>
@@ -7379,8 +7381,26 @@ async function loadCustomers(){
     allCustomers.forEach(c=>{ c._lastVisit=lastMap[c.id]||null })
   }catch(e){ console.error('最終来店日取得エラー:',e) }
   renderCustomers(allCustomers)
+  setCustomerSearchMode(true)
   const badge=document.getElementById('customer-count-badge')
   if(badge) badge.textContent=allCustomers.length+'名登録'
+}
+
+// 顧客検索欄のキーボード切替。顧客番号での検索が圧倒的に多いので既定は数字キーボード
+function setCustomerSearchMode(numeric){
+  const el=document.getElementById('customer-search')
+  if(!el)return
+  el.inputMode=numeric?'numeric':'text'
+  const btn=document.getElementById('customer-search-mode')
+  if(btn){btn.textContent=numeric?'あ':'123';btn.setAttribute('aria-label',numeric?'名前で検索に切替':'顧客番号で検索に切替')}
+}
+
+function toggleCustomerSearchMode(){
+  const el=document.getElementById('customer-search')
+  if(!el)return
+  setCustomerSearchMode(el.inputMode==='text')
+  // iOSはinputmodeを変えるだけではキーボードが切り替わらないのでフォーカスを入れ直す
+  el.blur();el.focus()
 }
 
 function filterCustomers(){
