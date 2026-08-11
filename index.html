@@ -3102,12 +3102,14 @@ document.addEventListener('DOMContentLoaded',function(){
     <!-- 予約確認URLの挨拶文 -->
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span class="f2-card-title">予約確認URLの挨拶文</span></div>
-      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">お客様に送る予約確認URLの先頭に表示される文章です（店名やお礼など）。</div>
-      <textarea id="st-rv-greeting" rows="4" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="例）KYOUKANO NAGOYAです。&#10;この度はご予約いただき誠にありがとうございます。&#10;当日お会いできることを楽しみにしております。"></textarea>
+      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">お客様が予約確認URLを開いたときに、ページの先頭に出る文章です（店名やお礼など）。<b>「URLをコピー」でLINEに貼り付ける文章としても、同じものが使われます</b>（URLは文章の最後に付きます）。</div>
+      <textarea id="st-rv-greeting" rows="4" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="例）KYOUKANO NAGOYAです。&#10;ご予約ありがとうございます。&#10;お気をつけてお越しください。"></textarea>
       <button class="f2-savebtn-sm" onclick="saveRvGreeting()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
-    <!-- 予約確認URLと一緒にコピーされる文章（LINE等に貼り付ける本文） -->
-    <div class="f2-card">
+    <!-- 予約確認URLと一緒にコピーされる文章（LINE等に貼り付ける本文）
+         034(public_copy_message)未適用の間は保存できず紛らわしいので隠しておく。
+         DOMは残す（JSが参照するため。列を追加したらheight:0を外すだけで使える） -->
+    <div class="f2-card" style="height:0;overflow:hidden;padding:0;margin:0;border:none">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="f2-card-title">LINEに貼り付ける文章</span></div>
       <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">「お客様用 予約確認URLをコピー」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります（書かなければ文章の最後に付きます）。<b>{店名}</b> と書くと店名が入ります。空のままなら下の見本の文章が使われます。</div>
       <textarea id="st-rv-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;ご予約ありがとうございます。&#10;下記より内容をご確認ください。&#10;&#10;{URL}&#10;&#10;お気をつけてお越しください。"></textarea>
@@ -12294,7 +12296,9 @@ function shopName(){
 
 function buildRvCopyText(url){
   const shop=shopName()
-  let t=String(storeSettings.public_copy_message||'').trim()
+  // 専用の文章(034)が未設定なら、店舗設定の「予約確認URLの挨拶文」をそのまま使う。
+  // お客様ページの先頭に出る文章と同じものになるが、設定欄が1つで済み追加のDB作業も要らない。
+  let t=String(storeSettings.public_copy_message||storeSettings.public_greeting||'').trim()
   if(!t){
     t=RV_COPY_DEFAULT
     if(!shop) t=t.replace('{店名}です。\n','')  // 店名未設定なら1行目を出さない
