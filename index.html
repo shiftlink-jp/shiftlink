@@ -3110,7 +3110,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="f2-card-title">LINEに貼り付ける文章</span></div>
       <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">「お客様用 予約確認URLをコピー」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります（書かなければ文章の最後に付きます）。<b>{店名}</b> と書くと店名が入ります。空のままなら下の見本の文章が使われます。</div>
-      <textarea id="st-rv-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;ご予約ありがとうございます。&#10;下記より内容をご確認ください。&#10;&#10;{URL}&#10;&#10;当日お会いできるのを楽しみにしております。"></textarea>
+      <textarea id="st-rv-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;ご予約ありがとうございます。&#10;下記より内容をご確認ください。&#10;&#10;{URL}&#10;&#10;お気をつけてお越しください。"></textarea>
       <button class="f2-savebtn-sm" onclick="saveRvCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
     <!-- ルーム設定 -->
@@ -12277,7 +12277,7 @@ async function openRvDetail(rvId, shiftId, castName){
 }
 
 // コピー時にURLと一緒に貼り付けられる文章の既定値（店舗設定が空のとき使う）
-const RV_COPY_DEFAULT='{店名}です。\nご予約ありがとうございます。\n下記より内容をご確認ください。\n\n{URL}\n\n当日お会いできるのを楽しみにしております。'
+const RV_COPY_DEFAULT='{店名}です。\nご予約ありがとうございます。\n下記より内容をご確認ください。\n\n{URL}\n\nお気をつけてお越しください。'
 
 // 予約確認URLをLINE等に貼り付ける形の本文にする
 //   ・店舗設定(public_copy_message)が空なら既定文。列が未追加のDBでも既定文で動く
