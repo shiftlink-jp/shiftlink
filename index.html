@@ -9700,7 +9700,7 @@ async function saveRvCopyMsg(){
   if(error){
     // 034のマイグレーション未適用の場合（列が無い）は分かりやすく案内する
     const noCol=error.code==='PGRST204'||error.code==='42703'||/public_copy_message/.test(error.message||'')
-    toast(noCol?'この文章を書き換えるには、先にデータベースへ項目を1つ追加する必要があります（034）':'保存失敗: '+error.message)
+    toast(noCol?'文章を変えるには準備が1つ必要です。Claudeに「予約URLの文章を変えたい」と伝えてください':'保存失敗: '+error.message)
     return
   }
   storeSettings.public_copy_message=msg
