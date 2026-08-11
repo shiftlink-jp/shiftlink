@@ -3106,6 +3106,13 @@ document.addEventListener('DOMContentLoaded',function(){
       <textarea id="st-rv-greeting" rows="4" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="例）KYOUKANO NAGOYAです。&#10;この度はご予約いただき誠にありがとうございます。&#10;当日お会いできることを楽しみにしております。"></textarea>
       <button class="f2-savebtn-sm" onclick="saveRvGreeting()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
+    <!-- 予約確認URLと一緒にコピーされる文章（LINE等に貼り付ける本文） -->
+    <div class="f2-card">
+      <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="f2-card-title">LINEに貼り付ける文章</span></div>
+      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">「お客様用 予約確認URLをコピー」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります（書かなければ文章の最後に付きます）。<b>{店名}</b> と書くと店名が入ります。空のままなら下の見本の文章が使われます。</div>
+      <textarea id="st-rv-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;ご予約ありがとうございます。&#10;下記より内容をご確認ください。&#10;&#10;{URL}&#10;&#10;当日お会いできるのを楽しみにしております。"></textarea>
+      <button class="f2-savebtn-sm" onclick="saveRvCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
+    </div>
     <!-- ルーム設定 -->
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg></span><span class="f2-card-title">ルーム</span></div>
@@ -9685,6 +9692,20 @@ async function saveRvGreeting(){
   storeSettings.public_greeting=greeting
   toast('挨拶文を保存しました')
 }
+
+// 予約確認URLと一緒にコピーされる文章（LINE等に貼る本文）を保存
+async function saveRvCopyMsg(){
+  const msg=(document.getElementById('st-rv-copymsg')?.value||'').trim()
+  const{error}=await withStoreFilter(sb.from('store_settings').update({public_copy_message:msg}))
+  if(error){
+    // 034のマイグレーション未適用の場合（列が無い）は分かりやすく案内する
+    const noCol=error.code==='PGRST204'||error.code==='42703'||/public_copy_message/.test(error.message||'')
+    toast(noCol?'この文章を書き換えるには、先にデータベースへ項目を1つ追加する必要があります（034）':'保存失敗: '+error.message)
+    return
+  }
+  storeSettings.public_copy_message=msg
+  toast('文章を保存しました')
+}
 async function saveCardFeeSettings(){
   const surcharge=parseFloat(document.getElementById('st-card-surcharge')?.value)
   const feeRate=parseFloat(document.getElementById('st-card-fee-rate')?.value)
@@ -11718,6 +11739,9 @@ async function openStoreSettings(){
     // 予約確認URLの挨拶文
     const grEl=document.getElementById('st-rv-greeting')
     if(grEl) grEl.value=ss.public_greeting||''
+    // 予約確認URLと一緒にコピーされる文章（列が無い環境ではundefined→空欄のまま既定文が使われる）
+    const cmEl=document.getElementById('st-rv-copymsg')
+    if(cmEl) cmEl.value=ss.public_copy_message||''
     // 端末一覧は畳んだ状態で開始する（開いたときに読み込む）。
     const dl=document.getElementById('device-list'), dar=document.getElementById('device-toggle-ar')
     if(dl){ dl.style.display='none'; dl.innerHTML='' }
@@ -12252,6 +12276,24 @@ async function openRvDetail(rvId, shiftId, castName){
   document.getElementById('rv-detail-overlay').classList.add('on')
 }
 
+// コピー時にURLと一緒に貼り付けられる文章の既定値（店舗設定が空のとき使う）
+const RV_COPY_DEFAULT='{店名}です。\nご予約ありがとうございます。\n下記より内容をご確認ください。\n\n{URL}\n\n当日お会いできるのを楽しみにしております。'
+
+// 予約確認URLをLINE等に貼り付ける形の本文にする
+//   ・店舗設定(public_copy_message)が空なら既定文。列が未追加のDBでも既定文で動く
+//   ・{URL}/{店名} は全角カッコ・小文字も許容（日本語入力での打ち間違い対策）
+function buildRvCopyText(url){
+  const shop=String(storeSettings.store_name||storeSettings.name||'').trim()
+  let t=String(storeSettings.public_copy_message||'').trim()
+  if(!t){
+    t=RV_COPY_DEFAULT
+    if(!shop) t=t.replace('{店名}です。\n','')  // 店名未設定なら1行目を出さない
+  }
+  t=t.replace(/[{｛]\s*店名\s*[}｝]/g,shop)
+  const ph=/[{｛]\s*URL\s*[}｝]/i
+  return ph.test(t)?t.replace(new RegExp(ph.source,'gi'),url):t+'\n\n'+url
+}
+
 // お客様用「予約確認URL」を生成してクリップボードにコピー
 //   ・トークン(推測不能なUUID)を発行し、その時点の予約内容をスナップショットとして保存
 //   ・URLは r.html?t=<token>。予約日を過ぎると自動で無効（Edge Function側で判定）
@@ -12348,14 +12390,15 @@ async function copyRvUrl(rvId){
     if(error){toast('URL作成に失敗しました: '+error.message);return}
 
     const url=`${location.origin}/r.html?t=${token}`
+    const msg=buildRvCopyText(url)
     let copied=false
-    try{ await navigator.clipboard.writeText(url); copied=true }catch(e){}
+    try{ await navigator.clipboard.writeText(msg); copied=true }catch(e){}
     if(!copied){
-      const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select()
+      const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select()
       try{document.execCommand('copy');copied=true}catch(e){}
       document.body.removeChild(ta)
     }
-    toast(copied?'予約確認URLをコピーしました！LINE等に貼り付けてください':'コピー失敗: '+url)
+    toast(copied?'文章とURLをコピーしました！LINE等に貼り付けてください':'コピー失敗: '+url)
   }catch(e){ toast('エラー: '+(e?.message||e)) }
 }
 
