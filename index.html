@@ -8256,7 +8256,8 @@ async function saveReservation(){
     const {data:shiftData} = await withStoreFilter(sb.from('shifts').select('cast_id').eq('id',shiftId)).maybeSingle();
     if(shiftData?.cast_id){
       const timeStr = checkin ? `（${checkin}〜）` : '';
-      await sendPushNotification(shiftData.cast_id, '予約が入りました', `${finalName}様 ${course}${timeStr}`);
+      // finalNameは既に「様」付き（上で自動付与済み）。ここで足すと「様様」になる
+      await sendPushNotification(shiftData.cast_id, '予約が入りました', `${finalName} ${course}${timeStr}`);
     }
   } catch(e) { console.error('通知エラー',e); }
   toast('予約を登録しました')
