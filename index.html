@@ -6914,11 +6914,21 @@ async function saveCastShiftEdit(){
 
 async function deleteCastShift(){
   if(!confirm('このシフトを取消しますか？')) return
+  // ★予約が入っているシフトは取り消させない。
+  // DBに外部キー制約が無く（2026-08-11に実機で確認：予約があっても削除できてしまう）、
+  // シフトを消すと予約はどの画面からも表示されなくなる（予約は全てshift_id経由で取得しているため）。
+  // オーナー側(deleteShift)は予約と来店履歴を消してからシフトを消す運用なので、
+  // 予約をどうするかの判断はオーナーに委ねる。
+  const{data:rvs}=await withStoreFilter(sb.from('reservations').select('id').eq('shift_id',castShiftEditId))
+  if(rvs&&rvs.length){
+    toast('このシフトには予約が'+rvs.length+'件入っているため取り消せません。オーナーに連絡してください')
+    await sendPushNotification(0, 'シフト取消の希望', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフト取消を希望しています（予約'+rvs.length+'件あり・本人は取消できません）', 'shiftcancelreq:'+castShiftEditId)
+    closeSheet('cast-shift-edit')
+    return
+  }
   const{error} = await withStoreFilter(sb.from('shifts').delete()).eq('id', castShiftEditId)
   if(error){
-    // 23503 = 予約が紐づいているため消せない（オーナー側deleteShiftは予約ごと消すが、
-    // セラピストに予約・売上を消させるのは危険なのでここでは消さない）。
-    // 従来は「エラー」とだけ出て通知も飛ばず、オーナーは取消希望に気づけなかった。
+    // 保険: DB側に外部キー制約が入った場合はここで弾かれる（23503）
     if(error.code==='23503'){
       toast('このシフトには予約が入っているため取り消せません。オーナーに連絡してください')
       await sendPushNotification(0, 'シフト取消の希望', me.name+'さんが'+fmtMD(castShiftEditDate)+'のシフト取消を希望しています（予約が入っているため本人は取消できません）', 'shiftcancelreq:'+castShiftEditId)
