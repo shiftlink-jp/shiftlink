@@ -5334,6 +5334,11 @@ function startApp(){
 const _pushRecentKeys = new Map();
 const _castRoomProcessing = new Set();
 
+// 顧客名に「様」を1つだけ付ける。
+// customers.name / reservations.customer_name は保存時に「様」が自動付与される（saveReservation等）が、
+// 付いていないデータも混在しうるため、一度落としてから付け直して「様様」を防ぐ。
+function withSama(n){ return String(n||'お客様').replace(/様\s*$/,'')+'様' }
+
 async function sendPushNotification(castId, title, body, dedupeExtra) {
   // 3秒以内の同一通知を重複送信しない
   // dedupeExtra: 表示本文には含めないが重複判定だけ一意化したい場合に渡す（例: シフトID）
@@ -6592,7 +6597,7 @@ async function confirmRoomIn() {
     // DBに入室時刻を保存
     await withStoreFilter(sb.from('reservations').update({ room_in_at: new Date().toISOString() })).eq('id', rvId);
     // オーナーに通知
-    await sendPushNotification(0, 'お客様入室', me.name + ' / ' + custName + 'さんが入室しました（' + time + '〜）');
+    await sendPushNotification(0, 'お客様入室', me.name + ' / ' + withSama(custName) + 'が入室しました（' + time + '〜）');
     closeSheet('room-in');
     toast('入室通知を送りました');
     loadCastToday();
@@ -6645,7 +6650,7 @@ async function confirmRoomOut() {
   try {
     // DBに退室時刻を保存
     await withStoreFilter(sb.from('reservations').update({ room_out_at: new Date().toISOString() })).eq('id', rvId);
-    await sendPushNotification(0, 'お客様退室', me.name + ' / ' + custName + 'さんが退室しました（〜' + time + '）');
+    await sendPushNotification(0, 'お客様退室', me.name + ' / ' + withSama(custName) + 'が退室しました（〜' + time + '）');
     closeSheet('room-out');
     toast('退室通知を送りました');
     loadCastToday();
@@ -6741,7 +6746,7 @@ async function confirmAddOption() {
     } catch(e){ console.error('customer_visits同期エラー(追加OP):', e); }
 
     // オーナーに通知
-    await sendPushNotification(0, '追加OP', me.name + ' / ' + custName + 'さんに追加OP：' + checked.join('、'));
+    await sendPushNotification(0, '追加OP', me.name + ' / ' + withSama(custName) + 'に追加OP：' + checked.join('、'));
     closeSheet('add-opt');
     toast('追加OP通知を送りました');
     loadCastToday();
@@ -6841,7 +6846,7 @@ async function confirmExtend() {
     await withStoreFilter(sb.from('reservations').update({ checkout_time: newTime, extension_count: newExtCount, payment: JSON.stringify(pj) })).eq('id', rvId);
 
     // オーナーに通知
-    await sendPushNotification(0, '延長⏱', me.name + ' / ' + custName + 'さんが' + o.min + '分延長（〜' + newTime.slice(0,5) + '）');
+    await sendPushNotification(0, '延長⏱', me.name + ' / ' + withSama(custName) + 'が' + o.min + '分延長（〜' + newTime.slice(0,5) + '）');
     closeSheet('ext');
     toast('延長通知を送りました');
     loadCastToday();
