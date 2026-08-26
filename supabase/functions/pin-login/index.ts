@@ -35,8 +35,14 @@ const ANON_MAX_FAILS = 10;
 // ★fail-open設計★ 環境変数が未設定・書式不正でも「猶予ON」に倒す。
 //   ここをfail-closed（未設定なら即トークン必須）にすると、Secret設定を1つ忘れた瞬間や
 //   タイポ（全角・スラッシュ区切り等でInvalid Date）で全店が即ログイン不能になるため。
-//   移行完了後は下の DEFAULT_GRACE_UNTIL を過去日に書き換えて締める（＝コードで明示的に締める）。
-const DEFAULT_GRACE_UNTIL = "2026-09-30T00:00:00+09:00";
+//   （2026-08-26に方針変更: 締めずに恒久化した。理由は下の DEFAULT_GRACE_UNTIL のコメント参照）
+// 2026-08-26: 端末ペアリングの必須化を取りやめ、PINだけでログインできる形に戻した。
+//   理由: iPhoneが端末の記憶(localStorage)を消すことがあり、消えると店舗コード画面で
+//   行き止まりになる。出勤前のセラピストは自力で復帰できず、営業に支障が出た
+//   （store_devices に同一端末の再登録が多数）。
+//   端末単位の失効は使えなくなるため、退職時はPIN変更で対応する（オーナー承認済み）。
+//   ※実際に効かせるには環境変数 PAIRING_GRACE_UNTIL の設定が必要（下は再デプロイ時の既定値）。
+const DEFAULT_GRACE_UNTIL = "2099-12-31T00:00:00+09:00";
 function graceDeadline(): number {
   const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
   const t = raw ? Date.parse(raw) : NaN;

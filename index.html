@@ -3496,6 +3496,12 @@ let PIN_AUTH_MODE = !!_pinAuthParam || !SAAS_MODE || !!_devTok0
 // SaaSでは端末登録時に控えた店舗ID(_devStore0)を使う。これは画面表示用の手がかりに過ぎず、
 // サーバー(pin-login / list-store-casts)は端末トークンから店舗を再判定するため詐称しても意味がない。
 let PIN_STORE_ID = SAAS_MODE ? (_pinAuthParam || _devStore0 || null) : KYOUKANO_STORE_ID
+// 2026-08-26: SaaS URLで端末の記憶(localStorage)が消えたときに使う店舗。
+// iPhoneは保存領域を勝手に消すことがあり、消えると店舗が分からず店舗コード画面で
+// 行き止まりになっていた（実際にセラピストが出勤時にログインできない事故が発生）。
+// 現状 shiftlink-app.jp を使っているのはKYOUKANOのみのためここに固定する。
+// ★2店舗目を契約したら「店舗を選ぶ」画面が必要（このフォールバックは使えなくなる）。
+const SAAS_PIN_FALLBACK_STORE_ID = KYOUKANO_STORE_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ★パスワード再設定リンクで戻ってきたときの #access_token=...&type=recovery を、ここで先に控える。
@@ -4302,8 +4308,13 @@ async function init(){
     // SaaS移行(2026-08-02): 端末未登録なら店舗コード入力画面を既定にする。
     //   店舗スタッフはメール/パスワードを持たずPINで入るため、ここでメール画面を出すと行き止まりになる。
     //   新規契約導線(?signup)とパスワード再設定は従来どおりメール画面を出す。
+    // 2026-08-26: 店舗コード画面は行き止まりだった（店舗コードはオーナーしか発行できず、
+    //   出勤前のセラピストは自力で復帰できない）。端末の記憶が消えてもPINだけで入れる
+    //   従来の形に戻す。店舗コードでの登録は招待リンク(?join=)から従来どおり可能。
     if(!new URLSearchParams(location.search).has('signup')){
-      showPairingScreen('')
+      if(!PIN_STORE_ID) PIN_STORE_ID = SAAS_PIN_FALLBACK_STORE_ID
+      PIN_AUTH_MODE = true
+      await initPinAuth()
       return
     }
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'))

@@ -70,7 +70,13 @@ function b64urlToBuf(b64url: string): Uint8Array {
 // これが無いと、端末を解除しても・退店処理をしても「生体認証だけは通る」状態が残る。
 // PIN は 015_resolve_cast_pin.sql で在籍者しか通さない（fail-closed）のに、
 // パスキーだけ fail-open だったのを揃える。
-const DEFAULT_GRACE_UNTIL = "2026-09-30T00:00:00+09:00";
+// 2026-08-26: 端末ペアリングの必須化を取りやめ、PINだけでログインできる形に戻した。
+//   理由: iPhoneが端末の記憶(localStorage)を消すことがあり、消えると店舗コード画面で
+//   行き止まりになる。出勤前のセラピストは自力で復帰できず、営業に支障が出た
+//   （store_devices に同一端末の再登録が多数）。
+//   端末単位の失効は使えなくなるため、退職時はPIN変更で対応する（オーナー承認済み）。
+//   ※実際に効かせるには環境変数 PAIRING_GRACE_UNTIL の設定が必要（下は再デプロイ時の既定値）。
+const DEFAULT_GRACE_UNTIL = "2099-12-31T00:00:00+09:00";
 function graceDeadline(): number {
   const raw = (Deno.env.get("PAIRING_GRACE_UNTIL") ?? "").trim();
   const t = raw ? Date.parse(raw) : NaN;
