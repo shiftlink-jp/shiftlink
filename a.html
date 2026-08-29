@@ -32,6 +32,9 @@
   .in{width:100%;border:1.5px solid #e6e0d8;border-radius:10px;padding:.7rem .8rem;
     font-size:1rem;font-family:inherit;color:var(--ink);background:#fff;outline:none}
   .in:focus{border-color:var(--accent)}
+  select.in{appearance:none;-webkit-appearance:none;padding-right:2.4rem;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right .85rem center;background-size:14px}
   .in-row{display:flex;align-items:center;gap:.5rem}
   .in-row .in{flex:1}
   .unit{font-size:.85rem;color:var(--sub);flex:0 0 auto}
@@ -83,7 +86,7 @@
 
   let store='', sending=false
   const photos=[null,null]          // 縮小後の data URL
-  const form={bust:'',experience:''}
+  const form={experience:''}
 
   function stateView(em,title,msg){
     app.innerHTML=`<div class="state"><div class="em">${em}</div><div class="t">${esc(title)}</div><div>${esc(msg)}</div></div>`
@@ -122,8 +125,9 @@
       <div class="wrap">
         <div class="card">
           <div class="fld">
-            <div class="lbl">お名前<span class="req">必須</span></div>
-            <input class="in" id="f-name" type="text" maxlength="50" placeholder="源氏名でも構いません">
+            <div class="lbl">お名前（本名）<span class="req">必須</span></div>
+            <input class="in" id="f-name" type="text" maxlength="50" placeholder="例）山田 花子">
+            <div class="hint">ご本名でご記入ください。</div>
           </div>
           <div class="fld">
             <div class="lbl">年齢<span class="req">必須</span></div>
@@ -147,9 +151,10 @@
           </div>
           <div class="fld">
             <div class="lbl">バスト（カップ）<span class="opt">任意</span></div>
-            <div class="chips" id="f-bust">
-              ${BUSTS.map(b=>`<button type="button" class="chip" data-bust="${b}">${b}</button>`).join('')}
-            </div>
+            <select class="in" id="f-bust">
+              <option value="">選択してください</option>
+              ${BUSTS.map(b=>`<option value="${b}">${b}カップ</option>`).join('')}
+            </select>
           </div>
         </div>
 
@@ -188,10 +193,6 @@
 
     document.getElementById('f-name').addEventListener('input',refreshSend)
     document.getElementById('f-age').addEventListener('input',refreshSend)
-    document.querySelectorAll('#f-bust .chip').forEach(b=>b.addEventListener('click',()=>{
-      form.bust=(form.bust===b.dataset.bust)?'':b.dataset.bust
-      document.querySelectorAll('#f-bust .chip').forEach(x=>x.classList.toggle('on',x.dataset.bust===form.bust))
-    }))
     document.querySelectorAll('#f-exp .chip').forEach(b=>b.addEventListener('click',()=>{
       form.experience=(form.experience===b.dataset.exp)?'':b.dataset.exp
       document.querySelectorAll('#f-exp .chip').forEach(x=>x.classList.toggle('on',x.dataset.exp===form.experience))
@@ -266,7 +267,7 @@
     return {
       name:v('f-name'), age:v('f-age'), area:v('f-area'),
       height:v('f-height'), weight:v('f-weight'),
-      bust:form.bust, experience:form.experience, experience_note:v('f-note')
+      bust:v('f-bust'), experience:form.experience, experience_note:v('f-note')
     }
   }
 
