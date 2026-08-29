@@ -291,7 +291,18 @@
     const btn=document.getElementById('send'); btn.disabled=true; btn.textContent='送信中...'
 
     const payload={t:token,...f,age,photos:photos.filter(Boolean)}
-    fetch(FN,{method:'POST',headers:HDR,body:JSON.stringify(payload)})
+    const raw=JSON.stringify(payload)
+    // 5MBを超えるとサーバーに届く前に遮断され、理由の分からないエラーになる。
+    // 縮小後は通常1〜2MBなので、ここに来るのは特殊な写真のときだけ
+    if(raw.length>5*1024*1024){
+      sending=false
+      btn.disabled=false; btn.textContent='応募を送信する'
+      const note=document.getElementById('send-note')
+      note.textContent='お写真のサイズが大きすぎます。枚数を減らすか、別のお写真でお試しください。'
+      note.classList.add('err')
+      return
+    }
+    fetch(FN,{method:'POST',headers:HDR,body:raw})
       .then(async res=>{
         const body=await res.json().catch(()=>({}))
         if(res.ok){ doneView(); return }
