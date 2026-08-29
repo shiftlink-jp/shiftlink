@@ -67,6 +67,12 @@ DO $$ BEGIN
     CHECK (status IN ('未対応','連絡済み','面接済み','採用','不採用'));
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- カップ数も決まった値だけ（UPDATE経由で任意の文字列が入らないように）
+DO $$ BEGIN
+  ALTER TABLE applications ADD CONSTRAINT applications_bust_check
+    CHECK (bust IS NULL OR bust IN ('A','B','C','D','E','F','G','H','I','J',''));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 CREATE INDEX IF NOT EXISTS idx_applications_store_id ON applications(store_id);
 CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications(submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);

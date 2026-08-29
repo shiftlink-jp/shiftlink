@@ -9877,11 +9877,11 @@ async function saveRecruitEnabled(){
 // 応募フォームURLと一緒にコピーされる文章を保存
 async function saveRecruitCopyMsg(){
   const msg=(document.getElementById('st-recruit-copymsg')?.value||'').trim()
-  const{error}=await withStoreFilter(sb.from('store_settings').update({recruit_copy_message:msg}))
-  if(error){
+  const{data:upd,error}=await withStoreFilter(sb.from('store_settings').update({recruit_copy_message:msg})).select('id')
+  if(error||!upd||!upd.length){
     toast(isMissingRecruitSchema(error)
       ?'文章を変えるには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
-      :'保存失敗: '+error.message)
+      :'保存失敗: '+(error?.message||'店舗設定が見つかりません'))
     return
   }
   storeSettings.recruit_copy_message=msg
@@ -12570,8 +12570,10 @@ function buildSurveyCopyText(url){ return buildCopyText(url,storeSettings.survey
 //   PostgREST は表 'PGRST205' / 列 'PGRST204'、DB側は '42P01' / '42703' を返す
 function isMissingSchema(error,re){
   if(!error) return false
-  if(['PGRST205','PGRST204','42P01','42703'].includes(error.code)) return true
   const m=error.message||''
+  // エラーコードが一致しても、対象のテーブル/列の名前がメッセージに無ければ別物とみなす
+  // （関係ないエラーで「準備が必要です」と案内すると、原因調査を遠回りさせるため）
+  if(['PGRST205','PGRST204','42P01','42703'].includes(error.code)) return re.test(m) || !m
   return re.test(m) && /(does not exist|find the table|find the .* column)/i.test(m)
 }
 function isMissingSurveyTable(error){ return isMissingSchema(error,/surveys/) }
@@ -12768,7 +12770,10 @@ const RECRUIT_COPY_DEFAULT='{店名}です。\nこの度はご興味をお持ち
 
 let ivFilter='すべて'
 let _ivRows=[]
-let _ivUrlMap={}   // 写真パス → 一時URL（有効5分）
+let _ivUrlMap={}   // 写真パス → 一時URL
+let _ivSignedAt=0  // 一時URLを発行した時刻
+const IV_SIGN_TTL=3600            // 一時URLの有効期限（秒）
+const IV_SIGN_REFRESH=50*60*1000  // 50分たったら取り直す（画面を開きっぱなしでも割れないように）
 
 // 応募フォームのURLをコピー（トークンが無ければ発行する）
 async function copyRecruitUrl(){
@@ -12827,15 +12832,23 @@ async function loadApplications(){
   }
 
   _ivRows=data||[]
-  // 写真の一時URLをまとめて発行する（有効5分）
-  const paths=_ivRows.flatMap(r=>Array.isArray(r.photo_paths)?r.photo_paths:[])
-  _ivUrlMap={}
-  if(paths.length){
-    const {data:signed}=await sb.storage.from('applicant-photos').createSignedUrls(paths,300)
-    ;(signed||[]).forEach(x=>{ if(x&&x.path&&x.signedUrl) _ivUrlMap[x.path]=x.signedUrl })
-  }
+  await ensureIvPhotoUrls(true)
   renderIvFilter()
   renderApplications()
+}
+
+// 写真の一時URLを用意する。
+//   一時URLには期限があるので、画面を開いたまま操作し続けても割れないよう、
+//   古くなっていたら描き直す前に発行し直す
+async function ensureIvPhotoUrls(force){
+  const paths=_ivRows.flatMap(r=>Array.isArray(r.photo_paths)?r.photo_paths:[])
+  if(!paths.length){ _ivUrlMap={}; return }
+  const fresh=Date.now()-_ivSignedAt<IV_SIGN_REFRESH && Object.keys(_ivUrlMap).length>0
+  if(!force && fresh) return
+  const {data:signed}=await sb.storage.from('applicant-photos').createSignedUrls(paths,IV_SIGN_TTL)
+  const map={}
+  ;(signed||[]).forEach(x=>{ if(x&&x.path&&x.signedUrl) map[x.path]=x.signedUrl })
+  if(Object.keys(map).length){ _ivUrlMap=map; _ivSignedAt=Date.now() }
 }
 
 function renderIvFilter(){
@@ -12848,9 +12861,10 @@ function renderIvFilter(){
   ).join('')
 }
 
-function setIvFilter(st){
+async function setIvFilter(st){
   ivFilter=st
   renderIvFilter()
+  await ensureIvPhotoUrls()
   renderApplications()
 }
 
@@ -12872,7 +12886,7 @@ function renderApplications(){
       r.area?escapeHtml(r.area):'',
       r.height?'T'+r.height:'',
       r.weight?r.weight+'kg':'',
-      r.bust?r.bust+'カップ':'',
+      r.bust?escapeHtml(r.bust)+'カップ':'',
       r.experience?escapeHtml(r.experience):''
     ].filter(Boolean).map(x=>`<span class="iv-chip">${x}</span>`).join('')
 
@@ -12904,12 +12918,17 @@ function renderApplications(){
 // 対応状況を変える
 async function setAppStatus(id,status){
   if(!IV_STATUSES.includes(status)) return
-  const {error}=await withStoreFilter(sb.from('applications').update({status})).eq('id',id)
-  if(error){ toast('変更に失敗しました: '+error.message); return }
+  const {data:upd,error}=await withStoreFilter(sb.from('applications').update({status})).eq('id',id).select('id')
+  if(error||!upd||!upd.length){
+    toast('変更に失敗しました'+(error?.message?': '+error.message:'（権限がない可能性があります）'))
+    loadApplications()
+    return
+  }
   const row=_ivRows.find(r=>r.id===id)
   if(row) row.status=status
   toast(status+'にしました')
   renderIvFilter()
+  await ensureIvPhotoUrls()
   renderApplications()
 }
 
@@ -12919,8 +12938,13 @@ async function deleteApplication(id){
   const nm=row?.name||'この応募'
   if(!confirm(`${nm} さんの応募を削除します。\nお写真も一緒に消えます。元に戻せません。よろしいですか？`)) return
   const paths=Array.isArray(row?.photo_paths)?row.photo_paths:[]
-  const {error}=await withStoreFilter(sb.from('applications').delete()).eq('id',id)
-  if(error){ toast('削除に失敗しました: '+error.message); return }
+  const {data:del,error}=await withStoreFilter(sb.from('applications').delete()).eq('id',id).select('id')
+  if(error||!del||!del.length){
+    // 消えていないのに写真だけ消すと復元できなくなるので、ここで必ず止める
+    toast('削除に失敗しました'+(error?.message?': '+error.message:'（権限がない可能性があります）'))
+    loadApplications()
+    return
+  }
   if(paths.length){
     const {error:sErr}=await sb.storage.from('applicant-photos').remove(paths)
     if(sErr) toast('応募は削除しましたが、写真の削除に失敗しました')
@@ -12928,6 +12952,7 @@ async function deleteApplication(id){
   } else toast('削除しました')
   _ivRows=_ivRows.filter(r=>r.id!==id)
   renderIvFilter()
+  await ensureIvPhotoUrls()
   renderApplications()
 }
 

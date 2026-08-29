@@ -154,7 +154,10 @@ Deno.serve(async (req) => {
     const weight = numOrNull(body?.weight, 30, 150)
 
     // 連投制限（生のIPは保存せず、店舗ごとのハッシュにする）
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown'
+    // x-forwarded-for は "送信元が名乗った値, 中継1, 中継2" と連結されるため、
+    // 先頭は呼び出す側が自由に書ける（＝連投制限をすり抜けられる）。最後の値を使う。
+    const xff = (req.headers.get('x-forwarded-for') || '').split(',').map(v => v.trim()).filter(Boolean)
+    const ip = xff.length ? xff[xff.length - 1] : 'unknown'
     const ipHash = await sha256Hex(`${storeId || 'none'}:${ip}`)
     const since = new Date(Date.now() - RATE_WINDOW_MIN * 60 * 1000).toISOString()
     const { count: recent } = await supabase
@@ -182,34 +185,36 @@ Deno.serve(async (req) => {
     // 先に写真を置いてから、パスが確定した状態で行を1回で作る
     const folder = crypto.randomUUID()
     const photoPaths: string[] = []
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i]
-      const path = `${storeId || 'none'}/${folder}/${i + 1}.${f.ext}`
-      const { error: upErr } = await supabase.storage
-        .from('applicant-photos')
-        .upload(path, f.bytes, { contentType: f.mime, upsert: false })
-      if (upErr) {
-        // 途中まで置いた分は消してから諦める（保管庫にゴミを残さない）
-        if (photoPaths.length) await supabase.storage.from('applicant-photos').remove(photoPaths)
-        return json({ error: 'server' }, 500)
+    let saved = false
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const path = `${storeId || 'none'}/${folder}/${i + 1}.${f.ext}`
+        const { error: upErr } = await supabase.storage
+          .from('applicant-photos')
+          .upload(path, f.bytes, { contentType: f.mime, upsert: false })
+        if (upErr) return json({ error: 'server' }, 500)
+        photoPaths.push(path)
       }
-      photoPaths.push(path)
+
+      const { error: insErr } = await supabase.from('applications').insert({
+        store_id: storeId,
+        name, age: ageNum, area, height, weight, bust,
+        experience, experience_note: experienceNote,
+        photo_paths: photoPaths.length ? photoPaths : null,
+        ip_hash: ipHash,
+      })
+      if (insErr) return json({ error: 'server' }, 500)
+
+      saved = true
+      return json({ ok: true, state: 'submitted', store: storeName })
+    } finally {
+      // 保存しきれなかったときは、置いた写真を必ず片付ける。
+      // エラー戻りだけでなく通信断などの例外でも通るように finally に置く
+      if (!saved && photoPaths.length) {
+        try { await supabase.storage.from('applicant-photos').remove(photoPaths) } catch (_e) { /* 掃除の失敗は握りつぶす */ }
+      }
     }
-
-    const { error: insErr } = await supabase.from('applications').insert({
-      store_id: storeId,
-      name, age: ageNum, area, height, weight, bust,
-      experience, experience_note: experienceNote,
-      photo_paths: photoPaths.length ? photoPaths : null,
-      ip_hash: ipHash,
-    })
-
-    if (insErr) {
-      if (photoPaths.length) await supabase.storage.from('applicant-photos').remove(photoPaths)
-      return json({ error: 'server' }, 500)
-    }
-
-    return json({ ok: true, state: 'submitted', store: storeName })
   } catch (_e) {
     return json({ error: 'server' }, 500)
   }

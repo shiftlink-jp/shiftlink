@@ -172,10 +172,7 @@
             <div class="lbl">お写真（2枚まで）<span class="opt">任意</span></div>
             <div class="hint" style="margin:0 0 .6rem">お顔やスタイルが分かるお写真をいただけると、選考がスムーズに進みます。加工なしのものだと助かります。</div>
             <div class="photos">
-              ${[0,1].map(i=>`<label class="ph" id="ph-${i}">
-                <span class="plus">＋</span>
-                <input type="file" accept="image/*" id="file-${i}" style="display:none">
-              </label>`).join('')}
+              ${[0,1].map(i=>`<label class="ph" id="ph-${i}"></label>`).join('')}
             </div>
             <div class="hint" id="ph-msg" style="margin-top:.5rem"></div>
           </div>
@@ -199,9 +196,7 @@
       form.experience=(form.experience===b.dataset.exp)?'':b.dataset.exp
       document.querySelectorAll('#f-exp .chip').forEach(x=>x.classList.toggle('on',x.dataset.exp===form.experience))
     }))
-    ;[0,1].forEach(i=>{
-      document.getElementById('file-'+i).addEventListener('change',e=>onPick(i,e.target.files&&e.target.files[0]))
-    })
+    ;[0,1].forEach(paintPhoto)
     document.getElementById('send').addEventListener('click',submit)
   }
 
@@ -218,6 +213,7 @@
       msg.textContent=''
     }catch(e){
       photos[i]=null
+      paintPhoto(i)
       msg.textContent='この写真は読み込めませんでした。別の写真をお試しください。'
     }finally{
       box.classList.remove('busy')
@@ -230,7 +226,7 @@
       const img=new Image()
       img.onload=()=>{
         URL.revokeObjectURL(url)
-        const MAX=1600
+        const MAX=1280
         let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height
         if(!w||!h) return reject(new Error('size'))
         if(w>=h && w>MAX){ h=Math.round(h*MAX/w); w=MAX }
@@ -239,7 +235,7 @@
         const ctx=cv.getContext('2d')
         ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h)     // 透過PNG対策
         ctx.drawImage(img,0,0,w,h)
-        try{ resolve(cv.toDataURL('image/jpeg',0.82)) }catch(e){ reject(e) }
+        try{ resolve(cv.toDataURL('image/jpeg',0.78)) }catch(e){ reject(e) }
       }
       img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('load')) }
       img.src=url
@@ -248,14 +244,18 @@
 
   function paintPhoto(i){
     const box=document.getElementById('ph-'+i)
-    if(!photos[i]){
-      box.innerHTML=`<span class="plus">＋</span><input type="file" accept="image/*" id="file-${i}" style="display:none">`
-      document.getElementById('file-'+i).addEventListener('change',e=>onPick(i,e.target.files&&e.target.files[0]))
-      return
-    }
-    box.innerHTML=`<img src="${photos[i]}" alt="">
-      <button type="button" class="del" data-i="${i}">×</button>`
-    box.querySelector('.del').addEventListener('click',ev=>{
+    if(!box) return
+    box.innerHTML=photos[i]
+      ? `<img src="${photos[i]}" alt=""><button type="button" class="del">×</button>`
+      : '<span class="plus">＋</span>'
+    // 写真があるときも選択欄は残す（枠をタップすれば選び直せる）。
+    // 毎回作り直すので、同じ写真を選び直したときもきちんと反応する
+    const inp=document.createElement('input')
+    inp.type='file'; inp.accept='image/*'; inp.style.display='none'
+    inp.addEventListener('change',ev=>onPick(i,ev.target.files&&ev.target.files[0]))
+    box.appendChild(inp)
+    const del=box.querySelector('.del')
+    if(del) del.addEventListener('click',ev=>{
       ev.preventDefault(); ev.stopPropagation()
       photos[i]=null; paintPhoto(i)
     })
