@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>スタッフ募集フォーム</title>
+<style>
+  :root{
+    --accent:#F5820A; --accent2:#ff9e3d; --ink:#2b2b2b; --sub:#8a8a8a;
+    --line:#eee; --bg:#faf7f4; --card:#fff; --err:#c62828;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding:0 0 3rem}
+  .wrap{max-width:460px;margin:0 auto;padding:0 1rem}
+  .hero{background:#fff;padding:1.6rem 1.2rem 1.2rem;border-bottom:1px solid var(--line)}
+  .hero .store{font-size:.8rem;color:var(--sub);font-weight:600}
+  .hero .ttl{font-size:1.2rem;font-weight:800;margin-top:.15rem}
+  .hero .lead{font-size:.85rem;color:#666;margin-top:.5rem}
+  .age-note{background:#fff5f5;border:1.5px solid #f0b8b8;border-radius:12px;
+    padding:.6rem .8rem;margin-top:.8rem;font-size:.8rem;font-weight:700;color:var(--err)}
+  .card{background:var(--card);border-radius:16px;padding:1.1rem;margin-top:1rem;
+    box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .fld{margin-bottom:1rem}
+  .fld:last-child{margin-bottom:0}
+  .lbl{font-size:.82rem;font-weight:700;margin-bottom:.35rem;display:flex;align-items:center;gap:.4rem}
+  .req{font-size:.62rem;font-weight:700;color:#fff;background:var(--accent);
+    border-radius:4px;padding:.1rem .35rem}
+  .opt{font-size:.62rem;font-weight:700;color:var(--sub);background:#f2efea;
+    border-radius:4px;padding:.1rem .35rem}
+  .in{width:100%;border:1.5px solid #e6e0d8;border-radius:10px;padding:.7rem .8rem;
+    font-size:1rem;font-family:inherit;color:var(--ink);background:#fff;outline:none}
+  .in:focus{border-color:var(--accent)}
+  .in-row{display:flex;align-items:center;gap:.5rem}
+  .in-row .in{flex:1}
+  .unit{font-size:.85rem;color:var(--sub);flex:0 0 auto}
+  .hint{font-size:.72rem;color:var(--sub);margin-top:.3rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem}
+  .chip{border:1.5px solid #e6e0d8;background:#fff;border-radius:999px;padding:.45rem .9rem;
+    font-size:.85rem;font-family:inherit;color:#666;cursor:pointer;font-weight:600}
+  .chip.on{border-color:var(--accent);background:#fff6ec;color:var(--accent)}
+  .photos{display:flex;gap:.6rem}
+  .ph{flex:1;aspect-ratio:3/4;border:1.5px dashed #d8d0c6;border-radius:12px;background:#fcfaf7;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+  .ph img{width:100%;height:100%;object-fit:cover}
+  .ph .plus{font-size:1.6rem;color:#c9c0b4;font-weight:300}
+  .ph .del{position:absolute;top:.3rem;right:.3rem;width:26px;height:26px;border-radius:50%;
+    background:rgba(0,0,0,.55);color:#fff;border:none;font-size:.9rem;cursor:pointer;line-height:1}
+  .ph.busy{opacity:.5}
+  .send{width:100%;margin-top:1.2rem;padding:1rem;border:none;border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    font-family:inherit;font-size:1rem;font-weight:800;cursor:pointer;
+    box-shadow:0 6px 16px rgba(245,130,10,.28)}
+  .send:disabled{background:#ded8d0;box-shadow:none;cursor:default}
+  .send-note{text-align:center;font-size:.75rem;color:var(--sub);margin-top:.6rem;line-height:1.7}
+  .send-note.err{color:var(--err);font-weight:700}
+  .foot{text-align:center;color:var(--sub);font-size:.72rem;margin-top:1.5rem;line-height:1.7}
+  .state{text-align:center;padding:4rem 1.5rem;color:var(--sub)}
+  .state .em{font-size:2.5rem;margin-bottom:.6rem}
+  .state .t{font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem}
+  .spin{width:34px;height:34px;border:3px solid #f0e5da;border-top-color:var(--accent);
+    border-radius:50%;animation:sp .8s linear infinite;margin:4rem auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div id="app"><div class="spin"></div></div>
+
+<script>
+(function(){
+  const app=document.getElementById('app')
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+
+  // Supabase接続（r.html / s.html と同じ本番プロジェクト）
+  const SUPA_URL='https://qgcgkrcrfzonmmygcdju.supabase.co'
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
+  const FN=SUPA_URL+'/functions/v1/submit-application'
+  const HDR={'apikey':ANON,'Authorization':'Bearer '+ANON,'Content-Type':'application/json'}
+
+  const BUSTS=['A','B','C','D','E','F','G','H','I','J']
+  const MAX_PHOTOS=2
+
+  let store='', sending=false
+  const photos=[null,null]          // 縮小後の data URL
+  const form={bust:'',experience:''}
+
+  function stateView(em,title,msg){
+    app.innerHTML=`<div class="state"><div class="em">${em}</div><div class="t">${esc(title)}</div><div>${esc(msg)}</div></div>`
+  }
+
+  const token=new URLSearchParams(location.search).get('t')||''
+  if(!token){ stateView('🔍','リンクが正しくありません','お手数ですが、お店までお問い合わせください。'); return }
+
+  fetch(`${FN}?t=${encodeURIComponent(token)}`,{headers:HDR})
+    .then(async res=>{
+      const body=await res.json().catch(()=>({}))
+      if(res.status===404||res.status===400){ stateView('🔍','フォームが見つかりません','リンクが無効な可能性があります。お手数ですがお店までお問い合わせください。'); return }
+      if(!res.ok){ stateView('⚠️','表示できませんでした','時間をおいて再度お試しください。'); return }
+      store=body.store||''
+      if(body.state==='closed'){ closedView(); return }
+      renderForm()
+    })
+    .catch(()=>stateView('⚠️','通信に失敗しました','電波の良い場所で再度お試しください。'))
+
+  function closedView(){
+    app.innerHTML=`<div class="state"><div class="em">🙇</div>
+      <div class="t">現在、応募の受付を停止しています</div>
+      <div>${esc(store)}<br>またの機会にご応募をお待ちしております。</div></div>`
+  }
+
+  function renderForm(){
+    app.innerHTML=`
+      <div class="hero">
+        <div class="wrap" style="padding:0">
+          ${store?`<div class="store">${esc(store)}</div>`:''}
+          <div class="ttl">スタッフ募集フォーム</div>
+          <div class="lead">ご応募ありがとうございます。<br>下記をご入力のうえ、送信してください。</div>
+          <div class="age-note">18歳未満（高校生を含む）の方はご応募いただけません。</div>
+        </div>
+      </div>
+      <div class="wrap">
+        <div class="card">
+          <div class="fld">
+            <div class="lbl">お名前<span class="req">必須</span></div>
+            <input class="in" id="f-name" type="text" maxlength="50" placeholder="源氏名でも構いません">
+          </div>
+          <div class="fld">
+            <div class="lbl">年齢<span class="req">必須</span></div>
+            <div class="in-row"><input class="in" id="f-age" type="number" inputmode="numeric" min="18" max="99" placeholder="22"><span class="unit">歳</span></div>
+          </div>
+          <div class="fld">
+            <div class="lbl">お住まい<span class="opt">任意</span></div>
+            <input class="in" id="f-area" type="text" maxlength="60" placeholder="例）名古屋市中区">
+            <div class="hint">お通いいただける範囲の確認のためです。番地までは不要です。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="fld">
+            <div class="lbl">身長<span class="opt">任意</span></div>
+            <div class="in-row"><input class="in" id="f-height" type="number" inputmode="numeric" min="100" max="220" placeholder="158"><span class="unit">cm</span></div>
+          </div>
+          <div class="fld">
+            <div class="lbl">体重<span class="opt">任意</span></div>
+            <div class="in-row"><input class="in" id="f-weight" type="number" inputmode="numeric" min="30" max="150" placeholder="48"><span class="unit">kg</span></div>
+          </div>
+          <div class="fld">
+            <div class="lbl">バスト（カップ）<span class="opt">任意</span></div>
+            <div class="chips" id="f-bust">
+              ${BUSTS.map(b=>`<button type="button" class="chip" data-bust="${b}">${b}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="fld">
+            <div class="lbl">この業界のご経験<span class="opt">任意</span></div>
+            <div class="chips" id="f-exp">
+              <button type="button" class="chip" data-exp="未経験">未経験</button>
+              <button type="button" class="chip" data-exp="経験あり">経験あり</button>
+            </div>
+          </div>
+          <div class="fld">
+            <div class="lbl">経験の詳細・ご質問など<span class="opt">任意</span></div>
+            <textarea class="in" id="f-note" rows="3" maxlength="300" placeholder="例）他店で1年ほど勤務しておりました。"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="fld">
+            <div class="lbl">お写真（2枚まで）<span class="opt">任意</span></div>
+            <div class="hint" style="margin:0 0 .6rem">お顔やスタイルが分かるお写真をいただけると、選考がスムーズに進みます。加工なしのものだと助かります。</div>
+            <div class="photos">
+              ${[0,1].map(i=>`<label class="ph" id="ph-${i}">
+                <span class="plus">＋</span>
+                <input type="file" accept="image/*" id="file-${i}" style="display:none">
+              </label>`).join('')}
+            </div>
+            <div class="hint" id="ph-msg" style="margin-top:.5rem"></div>
+          </div>
+        </div>
+
+        <button class="send" id="send" disabled>応募を送信する</button>
+        <div class="send-note" id="send-note">お名前と年齢を入力してください</div>
+        <div class="foot">
+          いただいた情報は採用選考のみに使用し、他の目的には利用しません。<br>
+          Powered by ShiftLink
+        </div>
+      </div>`
+
+    document.getElementById('f-name').addEventListener('input',refreshSend)
+    document.getElementById('f-age').addEventListener('input',refreshSend)
+    document.querySelectorAll('#f-bust .chip').forEach(b=>b.addEventListener('click',()=>{
+      form.bust=(form.bust===b.dataset.bust)?'':b.dataset.bust
+      document.querySelectorAll('#f-bust .chip').forEach(x=>x.classList.toggle('on',x.dataset.bust===form.bust))
+    }))
+    document.querySelectorAll('#f-exp .chip').forEach(b=>b.addEventListener('click',()=>{
+      form.experience=(form.experience===b.dataset.exp)?'':b.dataset.exp
+      document.querySelectorAll('#f-exp .chip').forEach(x=>x.classList.toggle('on',x.dataset.exp===form.experience))
+    }))
+    ;[0,1].forEach(i=>{
+      document.getElementById('file-'+i).addEventListener('change',e=>onPick(i,e.target.files&&e.target.files[0]))
+    })
+    document.getElementById('send').addEventListener('click',submit)
+  }
+
+  // 写真を選んだとき：縮小してからプレビューする
+  //   縮小のために描き直すので、撮影場所などの情報（Exif）はこの時点で落ちる
+  async function onPick(i,file){
+    if(!file) return
+    const box=document.getElementById('ph-'+i)
+    const msg=document.getElementById('ph-msg')
+    box.classList.add('busy'); msg.textContent='写真を読み込んでいます...'
+    try{
+      photos[i]=await shrink(file)
+      paintPhoto(i)
+      msg.textContent=''
+    }catch(e){
+      photos[i]=null
+      msg.textContent='この写真は読み込めませんでした。別の写真をお試しください。'
+    }finally{
+      box.classList.remove('busy')
+    }
+  }
+
+  function shrink(file){
+    return new Promise((resolve,reject)=>{
+      const url=URL.createObjectURL(file)
+      const img=new Image()
+      img.onload=()=>{
+        URL.revokeObjectURL(url)
+        const MAX=1600
+        let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height
+        if(!w||!h) return reject(new Error('size'))
+        if(w>=h && w>MAX){ h=Math.round(h*MAX/w); w=MAX }
+        else if(h>w && h>MAX){ w=Math.round(w*MAX/h); h=MAX }
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h
+        const ctx=cv.getContext('2d')
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h)     // 透過PNG対策
+        ctx.drawImage(img,0,0,w,h)
+        try{ resolve(cv.toDataURL('image/jpeg',0.82)) }catch(e){ reject(e) }
+      }
+      img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('load')) }
+      img.src=url
+    })
+  }
+
+  function paintPhoto(i){
+    const box=document.getElementById('ph-'+i)
+    if(!photos[i]){
+      box.innerHTML=`<span class="plus">＋</span><input type="file" accept="image/*" id="file-${i}" style="display:none">`
+      document.getElementById('file-'+i).addEventListener('change',e=>onPick(i,e.target.files&&e.target.files[0]))
+      return
+    }
+    box.innerHTML=`<img src="${photos[i]}" alt="">
+      <button type="button" class="del" data-i="${i}">×</button>`
+    box.querySelector('.del').addEventListener('click',ev=>{
+      ev.preventDefault(); ev.stopPropagation()
+      photos[i]=null; paintPhoto(i)
+    })
+  }
+
+  function readForm(){
+    const v=id=>(document.getElementById(id)?.value||'').trim()
+    return {
+      name:v('f-name'), age:v('f-age'), area:v('f-area'),
+      height:v('f-height'), weight:v('f-weight'),
+      bust:form.bust, experience:form.experience, experience_note:v('f-note')
+    }
+  }
+
+  function refreshSend(){
+    const f=readForm()
+    const age=Number(f.age)
+    const ok=!!f.name && Number.isInteger(age) && age>=18 && age<=99
+    const btn=document.getElementById('send'); const note=document.getElementById('send-note')
+    if(!btn) return
+    btn.disabled=!ok||sending
+    note.classList.remove('err')
+    if(f.age && Number.isInteger(age) && age<18) { note.textContent='18歳未満の方はご応募いただけません'; note.classList.add('err') }
+    else if(!ok) note.textContent='お名前と年齢を入力してください'
+    else note.textContent=''
+  }
+
+  function submit(){
+    const f=readForm()
+    const age=Number(f.age)
+    if(sending||!f.name||!Number.isInteger(age)||age<18||age>99) return
+    sending=true
+    const btn=document.getElementById('send'); btn.disabled=true; btn.textContent='送信中...'
+
+    const payload={t:token,...f,age,photos:photos.filter(Boolean)}
+    fetch(FN,{method:'POST',headers:HDR,body:JSON.stringify(payload)})
+      .then(async res=>{
+        const body=await res.json().catch(()=>({}))
+        if(res.ok){ doneView(); return }
+        if(res.status===403){ closedView(); return }
+        throw new Error(body.error||'failed')
+      })
+      .catch(e=>{
+        sending=false
+        btn.textContent='応募を送信する'
+        refreshSend()
+        const note=document.getElementById('send-note')
+        const m=String(e&&e.message||'')
+        // サーバーからの日本語メッセージはそのまま見せる（英語の内部コードは定型文にする）
+        note.textContent=/^[\x20-\x7e]*$/.test(m)?'送信に失敗しました。もう一度お試しください。':m
+        note.classList.add('err')
+      })
+  }
+
+  function doneView(){
+    app.innerHTML=`
+      <div class="hero">
+        <div class="wrap" style="padding:0">
+          ${store?`<div class="store">${esc(store)}</div>`:''}
+          <div class="ttl">ご応募ありがとうございました</div>
+          <div class="lead">内容を確認のうえ、担当者よりご連絡いたします。<br>今しばらくお待ちください。</div>
+        </div>
+      </div>
+      <div class="wrap"><div class="foot" style="margin-top:2.5rem">この画面は閉じていただいて大丈夫です。<br>Powered by ShiftLink</div></div>`
+  }
+})();
+</script>
+</body>
+</html>

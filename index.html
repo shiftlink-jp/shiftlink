@@ -813,9 +813,36 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-owner-survey .sv-item-detail{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
 #p-owner-survey .sv-chip{font-size:.6875rem;color:#7A6E5E;background:#FAF8F4;border-radius:999px;padding:.2rem .55rem}
 #p-owner-survey .sv-empty{text-align:center;color:#A89B88;font-size:.8125rem;padding:2.5rem 1rem;line-height:1.9}
-#p-owner-interview .iv-soon{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:2.5rem 1.2rem;text-align:center}
-#p-owner-interview .iv-soon-t{font-size:.9375rem;font-weight:700;color:#211C16}
-#p-owner-interview .iv-soon-s{font-size:.75rem;color:#A89B88;margin-top:.5rem;line-height:1.9}
+/* 面接（求人応募） #p-owner-interview（オーナーのみ閲覧） */
+#p-owner-interview .iv-filter{display:flex;gap:.35rem;overflow-x:auto;margin-bottom:.75rem;padding-bottom:.2rem;-webkit-overflow-scrolling:touch}
+#p-owner-interview .iv-fchip{flex:0 0 auto;border:1px solid #EDE9E1;background:#fff;border-radius:999px;padding:.35rem .8rem;font-size:.75rem;font-family:inherit;font-weight:700;color:#7A6E5E;cursor:pointer;white-space:nowrap}
+#p-owner-interview .iv-fchip.on{background:#FF9124;border-color:#FF9124;color:#fff}
+#p-owner-interview .iv-card{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:.9rem;margin-bottom:.7rem}
+#p-owner-interview .iv-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem}
+#p-owner-interview .iv-name{font-size:.9375rem;font-weight:700;color:#211C16}
+#p-owner-interview .iv-age{font-size:.8125rem;color:#7A6E5E;font-weight:600;margin-left:.3rem}
+#p-owner-interview .iv-date{font-size:.6875rem;color:#A89B88;white-space:nowrap}
+#p-owner-interview .iv-badge{display:inline-block;font-size:.625rem;font-weight:700;border-radius:999px;padding:.15rem .5rem;margin-right:.35rem}
+#p-owner-interview .iv-badge.b0{background:#FEE2E2;color:#DC2626}
+#p-owner-interview .iv-badge.b1{background:#FEF3C7;color:#B45309}
+#p-owner-interview .iv-badge.b2{background:#E0E7FF;color:#4338CA}
+#p-owner-interview .iv-badge.b3{background:#DCFCE7;color:#15803D}
+#p-owner-interview .iv-badge.b4{background:#F1EFEB;color:#8A8175}
+#p-owner-interview .iv-spec{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
+#p-owner-interview .iv-chip{font-size:.6875rem;color:#7A6E5E;background:#FAF8F4;border-radius:999px;padding:.2rem .55rem}
+#p-owner-interview .iv-note{font-size:.78rem;color:#5C5449;background:#FAF8F4;border-radius:10px;padding:.5rem .65rem;margin-top:.5rem;white-space:pre-wrap;word-break:break-word}
+#p-owner-interview .iv-photos{display:flex;gap:.4rem;margin-top:.55rem}
+#p-owner-interview .iv-ph{width:74px;height:98px;border-radius:10px;overflow:hidden;background:#F3EFE8;border:1px solid #EDE9E1;cursor:pointer;flex:0 0 auto}
+#p-owner-interview .iv-ph img{width:100%;height:100%;object-fit:cover;display:block}
+#p-owner-interview .iv-nophoto{font-size:.6875rem;color:#A89B88;margin-top:.5rem}
+#p-owner-interview .iv-acts{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.7rem;padding-top:.7rem;border-top:1px solid #F3EFE8}
+#p-owner-interview .iv-act{border:1px solid #EDE9E1;background:#fff;border-radius:999px;padding:.3rem .65rem;font-size:.6875rem;font-family:inherit;font-weight:700;color:#7A6E5E;cursor:pointer}
+#p-owner-interview .iv-act.on{background:#211C16;border-color:#211C16;color:#fff}
+#p-owner-interview .iv-act.del{margin-left:auto;color:#DC2626;border-color:#F5D0D0}
+#p-owner-interview .iv-empty{text-align:center;color:#A89B88;font-size:.8125rem;padding:2.5rem 1rem;line-height:1.9}
+.iv-photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
+.iv-photo-overlay.on{display:flex}
+.iv-photo-overlay img{max-width:100%;max-height:100%;object-fit:contain}
 
 /* 顧客追加/編集の共通フォームパーツ（顧客追加シート #customer-edit-overlay と 顧客詳細シート #customer-detail-overlay 内編集フォーム） */
 #customer-edit-overlay .cf-lbl,#customer-detail-overlay .cf-lbl{font-size:.75rem;font-weight:700;color:#7A6E5E;margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
@@ -2033,7 +2060,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v66';
+const SW_VER = 'v67';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2621,15 +2648,14 @@ document.addEventListener('DOMContentLoaded',function(){
       <div id="survey-area"><div class="spin">読み込み中...</div></div>
     </div>
 
-    <!-- 面接（枠のみ。中身は次の実装で入れる） -->
+    <!-- 面接（求人応募。オーナーのみ閲覧。RLSでもセラピストには見せない） -->
     <div class="panel" id="p-owner-interview">
       <div class="pg-hdr">
         <div class="pg-title">面接</div>
+        <button class="cust-add-btn" onclick="copyRecruitUrl()"><svg class="ei" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 応募フォームURL</button>
       </div>
-      <div class="iv-soon">
-        <div class="iv-soon-t">準備中です</div>
-        <div class="iv-soon-s">面接の管理機能はこれから作ります。<br>応募者の記録・面接結果などをここにまとめる予定です。</div>
-      </div>
+      <div class="iv-filter" id="iv-filter"></div>
+      <div id="application-area"><div class="spin">読み込み中...</div></div>
     </div>
 
     <!-- 運営者：代理店管理 -->
@@ -3149,6 +3175,18 @@ document.addEventListener('DOMContentLoaded',function(){
       <textarea id="st-survey-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;本日はご来店いただきありがとうございました。&#10;よろしければ、30秒で終わるアンケートにご協力ください。&#10;&#10;{URL}&#10;&#10;今後のサービス向上に役立てさせていただきます。"></textarea>
       <button class="f2-savebtn-sm" onclick="saveSurveyCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
+    <!-- 求人応募フォーム -->
+    <div class="f2-card">
+      <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg></span><span class="f2-card-title">求人応募フォーム</span></div>
+      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">応募の受付を止めると、フォームを開いても「受付を停止しています」と表示されます。</div>
+      <label style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;cursor:pointer">
+        <input type="checkbox" id="st-recruit-enabled" style="width:20px;height:20px;accent-color:var(--accent)" onchange="saveRecruitEnabled()">
+        <span style="font-size:.9rem;font-weight:700">応募を受け付ける</span>
+      </label>
+      <div style="font-size:.75rem;color:var(--text3);margin:.5rem 0">「応募フォームURL」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります。<b>{店名}</b> と書くと店名が入ります。空のままなら見本の文章が使われます。</div>
+      <textarea id="st-recruit-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;この度はご興味をお持ちいただきありがとうございます。&#10;下記のフォームにご入力のうえ、送信をお願いいたします。&#10;&#10;{URL}"></textarea>
+      <button class="f2-savebtn-sm" onclick="saveRecruitCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
+    </div>
     <!-- ルーム設定 -->
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg></span><span class="f2-card-title">ルーム</span></div>
@@ -3461,6 +3499,8 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 <div class="toast" id="toast"></div>
+<!-- 応募写真の拡大表示 -->
+<div id="iv-photo-overlay" class="iv-photo-overlay" onclick="closeIvPhoto()"><img id="iv-photo-img" alt=""></div>
 
 <script>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -5749,6 +5789,7 @@ function tabMgmtSub(name){
   if(name==='owner-customer') loadCustomers()
   if(name==='owner-referral') loadReferralMgmt()
   if(name==='owner-survey') loadSurveys()
+  if(name==='owner-interview') loadApplications()
 }
 
 // ── 代理店管理（運営者専用）──
@@ -5846,7 +5887,7 @@ function refreshCurrentTab(){
   else if(name==='owner-cast')    { loadCastMgmt(); checkOwnerPushBtn(); }
   else if(name==='owner-monthly')  loadMonthly()
   else if(name==='owner-survey')  loadSurveys()
-  else if(name==='owner-interview'){}
+  else if(name==='owner-interview') loadApplications()
   else tab(name)
 }
 ;(function initPullToRefresh(){
@@ -9818,6 +9859,34 @@ async function saveSurveyCopyMsg(){
   storeSettings.survey_copy_message=msg
   toast('文章を保存しました')
 }
+// 応募の受付ON/OFF
+async function saveRecruitEnabled(){
+  const el=document.getElementById('st-recruit-enabled')
+  const on=!!el?.checked
+  const{error}=await withStoreFilter(sb.from('store_settings').update({recruit_enabled:on}))
+  if(error){
+    if(el) el.checked=!on   // 保存できていないのにONに見えると事故るので戻す
+    toast(isMissingRecruitSchema(error)
+      ?'応募フォームを使うには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
+      :'保存失敗: '+error.message)
+    return
+  }
+  storeSettings.recruit_enabled=on
+  toast(on?'応募を受け付けます':'応募の受付を停止しました')
+}
+// 応募フォームURLと一緒にコピーされる文章を保存
+async function saveRecruitCopyMsg(){
+  const msg=(document.getElementById('st-recruit-copymsg')?.value||'').trim()
+  const{error}=await withStoreFilter(sb.from('store_settings').update({recruit_copy_message:msg}))
+  if(error){
+    toast(isMissingRecruitSchema(error)
+      ?'文章を変えるには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
+      :'保存失敗: '+error.message)
+    return
+  }
+  storeSettings.recruit_copy_message=msg
+  toast('文章を保存しました')
+}
 async function saveCardFeeSettings(){
   const surcharge=parseFloat(document.getElementById('st-card-surcharge')?.value)
   const feeRate=parseFloat(document.getElementById('st-card-fee-rate')?.value)
@@ -11785,6 +11854,11 @@ async function openStoreSettings(){
     // アンケートURLと一緒にコピーされる文章
     const svEl=document.getElementById('st-survey-copymsg')
     if(svEl) svEl.value=ss.survey_copy_message||''
+    // 求人応募フォーム（列が無い環境では受付ONの既定で表示）
+    const reEl=document.getElementById('st-recruit-enabled')
+    if(reEl) reEl.checked=ss.recruit_enabled!==false
+    const rcEl=document.getElementById('st-recruit-copymsg')
+    if(rcEl) rcEl.value=ss.recruit_copy_message||''
     // 端末一覧は畳んだ状態で開始する（開いたときに読み込む）。
     const dl=document.getElementById('device-list'), dar=document.getElementById('device-toggle-ar')
     if(dl){ dl.style.display='none'; dl.innerHTML='' }
@@ -12492,13 +12566,16 @@ const SURVEY_COPY_DEFAULT='{店名}です。\n本日はご来店いただきあ�
 
 function buildSurveyCopyText(url){ return buildCopyText(url,storeSettings.survey_copy_message,SURVEY_COPY_DEFAULT) }
 
-// surveysテーブルがまだ無い（035未適用）かどうか
-//   PostgREST は 'PGRST205'、DB側は '42P01' を返す
-function isMissingSurveyTable(error){
+// テーブルや列がまだ無い（マイグレーション未適用）かどうか
+//   PostgREST は表 'PGRST205' / 列 'PGRST204'、DB側は '42P01' / '42703' を返す
+function isMissingSchema(error,re){
   if(!error) return false
-  if(error.code==='PGRST205'||error.code==='42P01') return true
-  return /surveys/.test(error.message||'') && /(does not exist|find the table)/i.test(error.message||'')
+  if(['PGRST205','PGRST204','42P01','42703'].includes(error.code)) return true
+  const m=error.message||''
+  return re.test(m) && /(does not exist|find the table|find the .* column)/i.test(m)
 }
+function isMissingSurveyTable(error){ return isMissingSchema(error,/surveys/) }
+function isMissingRecruitSchema(error){ return isMissingSchema(error,/applications|recruit_/) }
 
 // 予約から、アンケートに写しておく内容を作る
 //   予約が後から削除・変更されてもアンケートの履歴が壊れないよう、値をコピーして持つ
@@ -12677,6 +12754,191 @@ async function loadSurveys(){
     ${castRows?`<div class="sv-card"><div class="sv-card-t">セラピスト別（総合満足度）</div>${castRows}</div>`:''}
     <div class="sv-card-t" style="font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:#A89B88;margin:1.1rem 0 .5rem">最近の回答</div>
     ${items}`
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 面接（求人応募フォーム）
+//   ・応募フォームのURLは店舗ごとに1本。求人広告に貼っても、個別に送ってもよい
+//   ・応募内容と写真はオーナーだけが見られる（UIだけでなくDB側でも role=owner を要求）
+//   ・写真は非公開の保管庫にあり、表示のたびに数分で切れる一時URLを発行する
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const IV_STATUSES=['未対応','連絡済み','面接済み','採用','不採用']
+const RECRUIT_COPY_DEFAULT='{店名}です。\nこの度はご興味をお持ちいただきありがとうございます。\n下記のフォームにご入力のうえ、送信をお願いいたします。\n\n{URL}\n\nお写真もご添付いただけますと、その後のご案内がスムーズです。'
+
+let ivFilter='すべて'
+let _ivRows=[]
+let _ivUrlMap={}   // 写真パス → 一時URL（有効5分）
+
+// 応募フォームのURLをコピー（トークンが無ければ発行する）
+async function copyRecruitUrl(){
+  try{
+    let tok=storeSettings.recruit_token
+    const shop=shopName()
+    const patch={}
+    if(!tok){
+      tok=newPublicToken()
+      if(!tok){toast('この環境ではURLを発行できません');return}
+      patch.recruit_token=tok
+    }
+    // 応募フォームに出す店名は、アプリ側の表示名に合わせておく
+    if(shop && storeSettings.recruit_store_name!==shop) patch.recruit_store_name=shop
+    if(Object.keys(patch).length){
+      const {error}=await withStoreFilter(sb.from('store_settings').update(patch))
+      if(error){
+        toast(isMissingRecruitSchema(error)
+          ?'応募フォームを使うには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
+          :'URL作成に失敗しました: '+error.message)
+        return
+      }
+      Object.assign(storeSettings,patch)
+    }
+    const url=`${location.origin}/a.html?t=${tok}`
+    const msg=buildCopyText(url,storeSettings.recruit_copy_message,RECRUIT_COPY_DEFAULT)
+    const copied=await copyToClipboard(msg)
+    toast(copied?'文章とURLをコピーしました！求人サイトやLINEに貼り付けてください':'コピー失敗: '+url)
+  }catch(e){ toast('エラー: '+(e?.message||e)) }
+}
+
+// 日時を日本時間の「M/D HH:MM」にする
+function jstDateTime(iso){
+  const d=new Date(iso); if(isNaN(d)) return ''
+  const j=new Date(d.getTime()+9*3600*1000)
+  return `${j.getUTCMonth()+1}/${j.getUTCDate()} ${String(j.getUTCHours()).padStart(2,'0')}:${String(j.getUTCMinutes()).padStart(2,'0')}`
+}
+
+// 応募一覧（管理 → 面接）
+async function loadApplications(){
+  const area=document.getElementById('application-area')
+  if(!area) return
+  area.innerHTML='<div class="spin">読み込み中...</div>'
+
+  const {data,error}=await withStoreFilter(sb.from('applications').select('*')).order('submitted_at',{ascending:false}).limit(300)
+  if(error){
+    area.innerHTML=`<div class="iv-empty">${isMissingRecruitSchema(error)
+      ?'応募フォームを使うには準備が1つ必要です。<br>Claudeに「面接の準備をして」と伝えてください。'
+      :'読み込みに失敗しました<br>'+escapeHtml(error.message||'')}</div>`
+    document.getElementById('iv-filter').innerHTML=''
+    return
+  }
+
+  _ivRows=data||[]
+  // 写真の一時URLをまとめて発行する（有効5分）
+  const paths=_ivRows.flatMap(r=>Array.isArray(r.photo_paths)?r.photo_paths:[])
+  _ivUrlMap={}
+  if(paths.length){
+    const {data:signed}=await sb.storage.from('applicant-photos').createSignedUrls(paths,300)
+    ;(signed||[]).forEach(x=>{ if(x&&x.path&&x.signedUrl) _ivUrlMap[x.path]=x.signedUrl })
+  }
+  renderIvFilter()
+  renderApplications()
+}
+
+function renderIvFilter(){
+  const wrap=document.getElementById('iv-filter')
+  if(!wrap) return
+  const counts={'すべて':_ivRows.length}
+  IV_STATUSES.forEach(st=>{counts[st]=_ivRows.filter(r=>(r.status||'未対応')===st).length})
+  wrap.innerHTML=['すべて',...IV_STATUSES].map(st=>
+    `<button class="iv-fchip${ivFilter===st?' on':''}" onclick="setIvFilter('${st}')">${st} ${counts[st]}</button>`
+  ).join('')
+}
+
+function setIvFilter(st){
+  ivFilter=st
+  renderIvFilter()
+  renderApplications()
+}
+
+function renderApplications(){
+  const area=document.getElementById('application-area')
+  if(!area) return
+  const rows=ivFilter==='すべて'?_ivRows:_ivRows.filter(r=>(r.status||'未対応')===ivFilter)
+
+  if(!_ivRows.length){
+    area.innerHTML='<div class="iv-empty">まだ応募はありません。<br>上の「応募フォームURL」を押して、求人サイトやLINEに貼り付けてください。</div>'
+    return
+  }
+  if(!rows.length){ area.innerHTML=`<div class="iv-empty">「${escapeHtml(ivFilter)}」の応募はありません。</div>`; return }
+
+  area.innerHTML=rows.map(r=>{
+    const st=r.status||'未対応'
+    const bi=Math.max(0,IV_STATUSES.indexOf(st))
+    const specs=[
+      r.area?escapeHtml(r.area):'',
+      r.height?'T'+r.height:'',
+      r.weight?r.weight+'kg':'',
+      r.bust?r.bust+'カップ':'',
+      r.experience?escapeHtml(r.experience):''
+    ].filter(Boolean).map(x=>`<span class="iv-chip">${x}</span>`).join('')
+
+    const ph=(Array.isArray(r.photo_paths)?r.photo_paths:[])
+      .map(p=>_ivUrlMap[p]?`<div class="iv-ph" onclick="openIvPhoto('${jsEsc(_ivUrlMap[p])}')"><img src="${escapeHtml(_ivUrlMap[p])}" alt=""></div>`:'')
+      .join('')
+
+    const acts=IV_STATUSES.map(x=>
+      `<button class="iv-act${x===st?' on':''}" onclick="setAppStatus(${r.id},'${x}')">${x}</button>`
+    ).join('')
+
+    return `<div class="iv-card">
+      <div class="iv-top">
+        <div>
+          <span class="iv-badge b${bi}">${escapeHtml(st)}</span>
+          <span class="iv-name">${escapeHtml(r.name||'（お名前なし）')}</span>
+          <span class="iv-age">${r.age?r.age+'歳':''}</span>
+        </div>
+        <div class="iv-date">${escapeHtml(jstDateTime(r.submitted_at))}</div>
+      </div>
+      ${specs?`<div class="iv-spec">${specs}</div>`:''}
+      ${r.experience_note?`<div class="iv-note">${escapeHtml(r.experience_note)}</div>`:''}
+      ${ph?`<div class="iv-photos">${ph}</div>`:'<div class="iv-nophoto">写真の添付はありません</div>'}
+      <div class="iv-acts">${acts}<button class="iv-act del" onclick="deleteApplication(${r.id})">削除</button></div>
+    </div>`
+  }).join('')
+}
+
+// 対応状況を変える
+async function setAppStatus(id,status){
+  if(!IV_STATUSES.includes(status)) return
+  const {error}=await withStoreFilter(sb.from('applications').update({status})).eq('id',id)
+  if(error){ toast('変更に失敗しました: '+error.message); return }
+  const row=_ivRows.find(r=>r.id===id)
+  if(row) row.status=status
+  toast(status+'にしました')
+  renderIvFilter()
+  renderApplications()
+}
+
+// 応募を削除する（写真も保管庫から消す）
+async function deleteApplication(id){
+  const row=_ivRows.find(r=>r.id===id)
+  const nm=row?.name||'この応募'
+  if(!confirm(`${nm} さんの応募を削除します。\nお写真も一緒に消えます。元に戻せません。よろしいですか？`)) return
+  const paths=Array.isArray(row?.photo_paths)?row.photo_paths:[]
+  const {error}=await withStoreFilter(sb.from('applications').delete()).eq('id',id)
+  if(error){ toast('削除に失敗しました: '+error.message); return }
+  if(paths.length){
+    const {error:sErr}=await sb.storage.from('applicant-photos').remove(paths)
+    if(sErr) toast('応募は削除しましたが、写真の削除に失敗しました')
+    else toast('削除しました')
+  } else toast('削除しました')
+  _ivRows=_ivRows.filter(r=>r.id!==id)
+  renderIvFilter()
+  renderApplications()
+}
+
+function openIvPhoto(url){
+  const ov=document.getElementById('iv-photo-overlay')
+  const img=document.getElementById('iv-photo-img')
+  if(!ov||!img) return
+  img.src=url
+  ov.classList.add('on')
+}
+function closeIvPhoto(){
+  const ov=document.getElementById('iv-photo-overlay')
+  const img=document.getElementById('iv-photo-img')
+  if(ov) ov.classList.remove('on')
+  if(img) img.src=''
 }
 
 function backToShiftReservations(){
