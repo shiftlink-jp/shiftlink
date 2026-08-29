@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ご利用アンケート</title>
+<style>
+  :root{
+    --accent:#F5820A; --accent2:#ff9e3d; --ink:#2b2b2b; --sub:#8a8a8a;
+    --line:#eee; --bg:#faf7f4; --card:#fff; --star:#FFB020; --staroff:#e3ddd5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;padding:0 0 3rem}
+  .wrap{max-width:460px;margin:0 auto;padding:0 1rem}
+  .hero{background:#fff;color:var(--ink);
+    padding:1.6rem 1.2rem 1.2rem;border-bottom:1px solid var(--line)}
+  .hero .store{font-size:.8rem;color:var(--sub);font-weight:600;letter-spacing:.02em}
+  .hero .ttl{font-size:1.2rem;font-weight:800;margin-top:.15rem}
+  .hero .lead{font-size:.85rem;color:#666;margin-top:.5rem}
+  .card{background:var(--card);border-radius:16px;padding:1.1rem 1.1rem 1.2rem;margin-top:1rem;
+    box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .q-lbl{font-size:.95rem;font-weight:700;text-align:center}
+  .q-sub{font-size:.72rem;color:var(--sub);text-align:center;margin-top:.15rem}
+  .stars{display:flex;justify-content:center;gap:.15rem;margin-top:.7rem}
+  .star{background:none;border:none;padding:.25rem .2rem;cursor:pointer;line-height:0;
+    color:var(--staroff);transition:transform .12s ease,color .12s ease}
+  .star svg{width:40px;height:40px;display:block}
+  .star.on{color:var(--star)}
+  .star:active{transform:scale(.88)}
+  .q-val{text-align:center;font-size:.72rem;color:var(--accent);font-weight:700;
+    margin-top:.45rem;min-height:1.1em}
+  .send{width:100%;margin-top:1.2rem;padding:1rem;border:none;border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    font-family:inherit;font-size:1rem;font-weight:800;cursor:pointer;
+    box-shadow:0 6px 16px rgba(245,130,10,.28)}
+  .send:disabled{background:#ded8d0;color:#fff;box-shadow:none;cursor:default}
+  .send-note{text-align:center;font-size:.72rem;color:var(--sub);margin-top:.6rem}
+  .foot{text-align:center;color:var(--sub);font-size:.72rem;margin-top:1.5rem;line-height:1.7}
+  .state{text-align:center;padding:4rem 1.5rem;color:var(--sub)}
+  .state .em{font-size:2.5rem;margin-bottom:.6rem}
+  .state .t{font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem}
+  .spin{width:34px;height:34px;border:3px solid #f0e5da;border-top-color:var(--accent);
+    border-radius:50%;animation:sp .8s linear infinite;margin:4rem auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="spin"></div>
+  </div>
+
+<script>
+(function(){
+  const app = document.getElementById('app')
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+
+  // Supabase接続（r.html と同じ本番プロジェクト）
+  const SUPA_URL = 'https://qgcgkrcrfzonmmygcdju.supabase.co'
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnY2drcmNyZnpvbm1teWdjZGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTY3NDcsImV4cCI6MjA5MDc3Mjc0N30.2kTAP333XfchMUpOJQB-Ex44wdj51JqjJR9nyTboBPE'
+  const FN = SUPA_URL + '/functions/v1/submit-survey'
+  const HDR = { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Content-Type': 'application/json' }
+
+  // 評価項目（キーは Edge Function 側と一致させること）
+  const QUESTIONS = [
+    { key:'service', label:'接客・お人柄',     sub:'お迎えからお見送りまでの印象' },
+    { key:'skill',   label:'施術の技術',       sub:'マッサージの満足度' },
+    { key:'clean',   label:'お部屋の清潔感',   sub:'室内・アメニティなど' },
+    { key:'total',   label:'総合満足度',       sub:'全体を通してのご満足度' }
+  ]
+  const SCORE_TEXT = ['','とても不満','不満','ふつう','満足','とても満足']
+
+  const answers = {}
+  let info = { store:'', cast:'' }
+  let sending = false
+
+  function stateView(em, title, msg){
+    app.innerHTML = `<div class="state"><div class="em">${em}</div><div class="t">${esc(title)}</div><div>${esc(msg)}</div></div>`
+  }
+
+  const token = new URLSearchParams(location.search).get('t') || ''
+  if(!token){ stateView('🔍','リンクが正しくありません','お手数ですが、店舗までお問い合わせください。'); return }
+
+  fetch(`${FN}?t=${encodeURIComponent(token)}`, { headers: HDR })
+    .then(async res => {
+      const body = await res.json().catch(()=>({}))
+      if(res.status === 410){ stateView('⏰','受付を終了しました','このアンケートの受付期間が過ぎています。'); return }
+      if(res.status === 404 || res.status === 400){ stateView('🔍','アンケートが見つかりません','リンクが無効な可能性があります。お手数ですが店舗までお問い合わせください。'); return }
+      if(!res.ok){ stateView('⚠️','表示できませんでした','時間をおいて再度お試しください。'); return }
+      info = { store: body.store || '', cast: body.cast || '' }
+      if(body.state === 'submitted'){ doneView(); return }
+      renderForm()
+    })
+    .catch(()=>stateView('⚠️','通信に失敗しました','電波の良い場所で再度お試しください。'))
+
+  function starSvg(){
+    return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6z"/></svg>'
+  }
+
+  function renderForm(){
+    const cards = QUESTIONS.map(q => `
+      <div class="card">
+        <div class="q-lbl">${esc(q.label)}</div>
+        <div class="q-sub">${esc(q.sub)}</div>
+        <div class="stars" id="st-${q.key}" role="group" aria-label="${esc(q.label)}">
+          ${[1,2,3,4,5].map(n=>`<button type="button" class="star" data-k="${q.key}" data-n="${n}" aria-label="${n}">${starSvg()}</button>`).join('')}
+        </div>
+        <div class="q-val" id="vl-${q.key}"></div>
+      </div>`).join('')
+
+    app.innerHTML = `
+      <div class="hero">
+        <div class="wrap" style="padding:0">
+          ${info.store?`<div class="store">${esc(info.store)}</div>`:''}
+          <div class="ttl">本日はありがとうございました</div>
+          <div class="lead">${info.cast?esc(info.cast)+'の施術は':'ご利用は'}いかがでしたか？<br>今後のサービス向上のため、5段階でお聞かせください。</div>
+        </div>
+      </div>
+      <div class="wrap">
+        ${cards}
+        <button class="send" id="send" disabled>送信する</button>
+        <div class="send-note" id="send-note">すべての項目を選んでください</div>
+        <div class="foot">
+          いただいた評価はお店の改善のみに使用します。<br>
+          Powered by ShiftLink
+        </div>
+      </div>`
+
+    app.querySelectorAll('.star').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        if(sending) return
+        const k=b.dataset.k, n=Number(b.dataset.n)
+        answers[k]=n
+        paint(k)
+        refreshSend()
+      })
+    })
+    document.getElementById('send').addEventListener('click', submit)
+  }
+
+  function paint(k){
+    const n=answers[k]||0
+    document.querySelectorAll(`#st-${k} .star`).forEach(b=>{
+      b.classList.toggle('on', Number(b.dataset.n)<=n)
+    })
+    const v=document.getElementById('vl-'+k)
+    if(v) v.textContent = n?SCORE_TEXT[n]:''
+  }
+
+  function allAnswered(){
+    return QUESTIONS.every(q => answers[q.key]>=1 && answers[q.key]<=5)
+  }
+
+  function refreshSend(){
+    const btn=document.getElementById('send')
+    const note=document.getElementById('send-note')
+    if(!btn) return
+    const ok=allAnswered()
+    btn.disabled = !ok || sending
+    if(note) note.textContent = ok?'':'すべての項目を選んでください'
+  }
+
+  function submit(){
+    if(sending || !allAnswered()) return
+    sending = true
+    const btn=document.getElementById('send')
+    btn.disabled = true
+    btn.textContent = '送信中...'
+
+    fetch(FN, { method:'POST', headers:HDR, body: JSON.stringify({ t: token, ratings: answers }) })
+      .then(async res => {
+        const body = await res.json().catch(()=>({}))
+        if(res.ok || res.status === 409){ doneView(); return }   // 409=回答済み。お客様には完了として見せる
+        if(res.status === 410){ stateView('⏰','受付を終了しました','このアンケートの受付期間が過ぎています。'); return }
+        throw new Error(body.error||'failed')
+      })
+      .catch(()=>{
+        sending = false
+        btn.textContent = '送信する'
+        const note=document.getElementById('send-note')
+        if(note) note.textContent = '送信に失敗しました。もう一度お試しください。'
+        refreshSend()
+      })
+  }
+
+  function doneView(){
+    app.innerHTML = `
+      <div class="hero">
+        <div class="wrap" style="padding:0">
+          ${info.store?`<div class="store">${esc(info.store)}</div>`:''}
+          <div class="ttl">ご協力ありがとうございました</div>
+          <div class="lead">いただいたご評価は、より良いサービスのために活用させていただきます。<br>またのご来店を心よりお待ちしております。</div>
+        </div>
+      </div>
+      <div class="wrap"><div class="foot" style="margin-top:2.5rem">この画面は閉じていただいて大丈夫です。<br>Powered by ShiftLink</div></div>`
+  }
+})();
+</script>
+</body>
+</html>

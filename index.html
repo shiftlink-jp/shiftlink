@@ -792,6 +792,30 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-owner-customer .cust-card-right{flex-shrink:0;text-align:right}
 #p-owner-customer .cust-card-no{font-size:.6875rem;font-weight:700;background:#FAF8F4;border-radius:999px;padding:.25rem .65rem;color:#7A6E5E;display:inline-block;font-family:'Inter','Noto Sans JP',sans-serif}
 #p-owner-customer .cust-card-last{font-size:.625rem;color:#A89B88;margin-top:.35rem}
+/* アンケート #p-owner-survey（オーナーのみ閲覧） */
+#p-owner-survey .sv-hero{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:1.1rem;margin-bottom:.75rem;text-align:center}
+#p-owner-survey .sv-hero-v{font-family:'Inter','Noto Sans JP',sans-serif;font-size:34px;font-weight:700;color:#211C16;line-height:1.1}
+#p-owner-survey .sv-hero-st{color:#FFB020;font-size:19px;letter-spacing:2px;margin-top:.15rem}
+#p-owner-survey .sv-hero-sub{font-size:.6875rem;color:#A89B88;margin-top:.4rem}
+#p-owner-survey .sv-card{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:1rem;margin-bottom:.75rem}
+#p-owner-survey .sv-card-t{font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:#A89B88;margin-bottom:.7rem}
+#p-owner-survey .sv-row{display:grid;grid-template-columns:6em 1fr 2.8em;align-items:center;gap:.5rem;margin-bottom:.55rem;font-size:.8125rem}
+#p-owner-survey .sv-row:last-child{margin-bottom:0}
+#p-owner-survey .sv-row-l{color:#7A6E5E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#p-owner-survey .sv-bar{height:8px;background:#F3EFE8;border-radius:999px;overflow:hidden}
+#p-owner-survey .sv-bar-i{height:100%;background:linear-gradient(90deg,#FF9124,#FFB020);border-radius:999px}
+#p-owner-survey .sv-row-v{text-align:right;font-weight:700;color:#211C16;font-family:'Inter','Noto Sans JP',sans-serif}
+#p-owner-survey .sv-item{background:#fff;border:1px solid #EDE9E1;border-radius:14px;padding:.8rem .875rem;margin-bottom:.5rem}
+#p-owner-survey .sv-item-hd{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+#p-owner-survey .sv-item-st{color:#FFB020;font-size:.95rem;letter-spacing:1px}
+#p-owner-survey .sv-item-dt{font-size:.6875rem;color:#A89B88;white-space:nowrap}
+#p-owner-survey .sv-item-meta{font-size:.75rem;color:#7A6E5E;margin-top:.4rem}
+#p-owner-survey .sv-item-detail{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem}
+#p-owner-survey .sv-chip{font-size:.6875rem;color:#7A6E5E;background:#FAF8F4;border-radius:999px;padding:.2rem .55rem}
+#p-owner-survey .sv-empty{text-align:center;color:#A89B88;font-size:.8125rem;padding:2.5rem 1rem;line-height:1.9}
+#p-owner-interview .iv-soon{background:#fff;border:1px solid #EDE9E1;border-radius:16px;padding:2.5rem 1.2rem;text-align:center}
+#p-owner-interview .iv-soon-t{font-size:.9375rem;font-weight:700;color:#211C16}
+#p-owner-interview .iv-soon-s{font-size:.75rem;color:#A89B88;margin-top:.5rem;line-height:1.9}
 
 /* 顧客追加/編集の共通フォームパーツ（顧客追加シート #customer-edit-overlay と 顧客詳細シート #customer-detail-overlay 内編集フォーム） */
 #customer-edit-overlay .cf-lbl,#customer-detail-overlay .cf-lbl{font-size:.75rem;font-weight:700;color:#7A6E5E;margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
@@ -2009,7 +2033,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v65';
+const SW_VER = 'v66';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -2589,6 +2613,25 @@ document.addEventListener('DOMContentLoaded',function(){
       <div id="customer-area"><div class="spin">読み込み中...</div></div>
     </div>
 
+    <!-- アンケート（オーナーのみ閲覧。セラピストには表示しない） -->
+    <div class="panel" id="p-owner-survey">
+      <div class="pg-hdr">
+        <div class="pg-title">アンケート</div>
+      </div>
+      <div id="survey-area"><div class="spin">読み込み中...</div></div>
+    </div>
+
+    <!-- 面接（枠のみ。中身は次の実装で入れる） -->
+    <div class="panel" id="p-owner-interview">
+      <div class="pg-hdr">
+        <div class="pg-title">面接</div>
+      </div>
+      <div class="iv-soon">
+        <div class="iv-soon-t">準備中です</div>
+        <div class="iv-soon-s">面接の管理機能はこれから作ります。<br>応募者の記録・面接結果などをここにまとめる予定です。</div>
+      </div>
+    </div>
+
     <!-- 運営者：代理店管理 -->
     <div class="panel" id="p-owner-referral">
       <div class="pg-hdr">
@@ -3098,6 +3141,13 @@ document.addEventListener('DOMContentLoaded',function(){
       <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">「お客様用 予約確認URLをコピー」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります（書かなければ文章の最後に付きます）。<b>{店名}</b> と書くと店名が入ります。空のままなら下の見本の文章が使われます。</div>
       <textarea id="st-rv-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;ご予約ありがとうございます。&#10;下記より内容をご確認ください。&#10;&#10;{URL}&#10;&#10;お気をつけてお越しください。"></textarea>
       <button class="f2-savebtn-sm" onclick="saveRvCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
+    </div>
+    <!-- アンケートURLと一緒にコピーされる文章 -->
+    <div class="f2-card">
+      <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6Z"/></svg></span><span class="f2-card-title">アンケートの文章</span></div>
+      <div style="font-size:.75rem;color:var(--text3);margin:0 0 .5rem">「お客様用 アンケートURLをコピー」を押したときに、URLと一緒にコピーされる文章です。<b>{URL}</b> と書いた場所にURLが入ります（書かなければ文章の最後に付きます）。<b>{店名}</b> と書くと店名が入ります。空のままなら下の見本の文章が使われます。</div>
+      <textarea id="st-survey-copymsg" rows="6" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:.6rem;font-size:.85rem;font-family:inherit;resize:vertical" placeholder="{店名}です。&#10;本日はご来店いただきありがとうございました。&#10;よろしければ、30秒で終わるアンケートにご協力ください。&#10;&#10;{URL}&#10;&#10;今後のサービス向上に役立てさせていただきます。"></textarea>
+      <button class="f2-savebtn-sm" onclick="saveSurveyCopyMsg()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>保存</button>
     </div>
     <!-- ルーム設定 -->
     <div class="f2-card">
@@ -5637,6 +5687,26 @@ function tab(name){
   if(name==='owner-monthly') loadMonthly()
 }
 
+// 管理タブのサブメニュー定義（表示順）。
+//   ・4つ以上あるので2列グリッドで並べる（tabMgmt側）
+//   ・full:true は最終行を横いっぱいに使う（列数が奇数になっても崩れない）
+function mgmtSubList(){
+  const list=[
+    {id:'mgmt-cast-btn',      name:'owner-cast',      label:'セラピスト', icon:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'},
+    {id:'mgmt-customer-btn',  name:'owner-customer',  label:'顧客',       icon:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'},
+    {id:'mgmt-survey-btn',    name:'owner-survey',    label:'アンケート', icon:'<path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6Z"/>'},
+    {id:'mgmt-interview-btn', name:'owner-interview', label:'面接',       icon:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>'}
+  ]
+  // 運営者のみ「代理店」サブタブを追加（一般店舗オーナーには出さない）
+  if(isPlatformOperator()) list.push({id:'mgmt-referral-btn',name:'owner-referral',label:'代理店',full:true,icon:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'})
+  return list
+}
+function mgmtBtnCss(active,full){
+  return 'padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.3rem;'
+    +(full?'grid-column:1/-1;':'')
+    +(active?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
+}
+
 // 管理タブ：セラピストと顧客をサブメニューで切り替え
 let mgmtSub = 'owner-cast' // 最後に開いたサブ
 function tabMgmt(){
@@ -5651,25 +5721,18 @@ function tabMgmt(){
   if(!sheet){
     sheet = document.createElement('div')
     sheet.id = 'mgmt-subsheet'
-    sheet.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom) + 96px);left:14px;right:14px;max-width:680px;margin:0 auto;background:#fff;border:1px solid #EDE9E1;border-radius:18px;display:flex;gap:0;z-index:49;overflow:hidden;box-shadow:0 6px 20px rgba(33,32,24,.10)'
-    sheet.innerHTML=`
-      <button id="mgmt-cast-btn" onclick="tabMgmtSub('owner-cast')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-right:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> セラピスト</button>
-      <button id="mgmt-customer-btn" onclick="tabMgmtSub('owner-customer')" style="flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;cursor:pointer;font-weight:600;color:#555"><svg class="ei" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 顧客</button>`
-    // 運営者のみ「代理店」サブタブを追加（一般店舗オーナーには出さない）
-    if(isPlatformOperator()){
-      const ab=document.createElement('button')
-      ab.id='mgmt-referral-btn'
-      ab.setAttribute('onclick',"tabMgmtSub('owner-referral')")
-      ab.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;background:#fff;border-left:1px solid #EDE9E1;cursor:pointer;font-weight:600;color:#555'
-      ab.innerHTML='<svg class="ei" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 代理店'
-      sheet.appendChild(ab)
-    }
+    // ボタンが4つ以上になったので2列グリッドで並べる（1行に詰めると文字が潰れるため）
+    sheet.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom) + 96px);left:14px;right:14px;max-width:680px;margin:0 auto;background:#EDE9E1;border:1px solid #EDE9E1;border-radius:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;z-index:49;overflow:hidden;box-shadow:0 6px 20px rgba(33,32,24,.10)'
+    sheet.innerHTML=mgmtSubList().map(s=>
+      `<button id="${s.id}" onclick="tabMgmtSub('${s.name}')" style="${mgmtBtnCss(false,s.full)}"><svg class="ei" viewBox="0 0 24 24">${s.icon}</svg> ${s.label}</button>`
+    ).join('')
     document.body.appendChild(sheet)
   }
-  sheet.style.display='flex'
+  sheet.style.display='grid'
   // サブタブ分の余白をapp-bodyに追加
   const appBody=document.getElementById('app-body')
-  if(appBody) appBody.style.paddingBottom='calc(96px + 64px + env(safe-area-inset-bottom))'
+  const subRows=Math.ceil(mgmtSubList().filter(s=>!s.full).length/2)+mgmtSubList().filter(s=>s.full).length
+  if(appBody) appBody.style.paddingBottom=`calc(96px + ${subRows*48+16}px + env(safe-area-inset-bottom))`
   tabMgmtSub(mgmtSub)
 }
 function tabMgmtSub(name){
@@ -5678,15 +5741,14 @@ function tabMgmtSub(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'))
   document.getElementById('p-'+name)?.classList.add('on')
   // サブボタンのハイライト
-  const cb=document.getElementById('mgmt-cast-btn')
-  const kb=document.getElementById('mgmt-customer-btn')
-  if(cb) cb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;border-right:1px solid #e0e0e0;'+(name==='owner-cast'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
-  if(kb) kb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;'+(name==='owner-customer'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
-  const rb=document.getElementById('mgmt-referral-btn')
-  if(rb) rb.style.cssText='flex:1;padding:.7rem 0;font-size:.85rem;border:none;cursor:pointer;font-weight:600;border-left:1px solid #EDE9E1;'+(name==='owner-referral'?'background:#fff3e0;color:#f57c00':'background:#fff;color:#555')
+  mgmtSubList().forEach(s=>{
+    const b=document.getElementById(s.id)
+    if(b) b.style.cssText=mgmtBtnCss(name===s.name,s.full)
+  })
   if(name==='owner-cast') { loadCastMgmt(); checkOwnerPushBtn(); }
   if(name==='owner-customer') loadCustomers()
   if(name==='owner-referral') loadReferralMgmt()
+  if(name==='owner-survey') loadSurveys()
 }
 
 // ── 代理店管理（運営者専用）──
@@ -5783,6 +5845,8 @@ function refreshCurrentTab(){
   else if(name==='owner-salary')  loadOwnerSal()
   else if(name==='owner-cast')    { loadCastMgmt(); checkOwnerPushBtn(); }
   else if(name==='owner-monthly')  loadMonthly()
+  else if(name==='owner-survey')  loadSurveys()
+  else if(name==='owner-interview'){}
   else tab(name)
 }
 ;(function initPullToRefresh(){
@@ -9741,6 +9805,19 @@ async function saveRvCopyMsg(){
   storeSettings.public_copy_message=msg
   toast('文章を保存しました')
 }
+// アンケートURLと一緒にコピーされる文章を保存
+async function saveSurveyCopyMsg(){
+  const msg=(document.getElementById('st-survey-copymsg')?.value||'').trim()
+  const{error}=await withStoreFilter(sb.from('store_settings').update({survey_copy_message:msg}))
+  if(error){
+    // 035のマイグレーション未適用の場合（列が無い）は分かりやすく案内する
+    const noCol=error.code==='PGRST204'||error.code==='42703'||/survey_copy_message/.test(error.message||'')
+    toast(noCol?'文章を変えるには準備が1つ必要です。Claudeに「アンケートの準備をして」と伝えてください':'保存失敗: '+error.message)
+    return
+  }
+  storeSettings.survey_copy_message=msg
+  toast('文章を保存しました')
+}
 async function saveCardFeeSettings(){
   const surcharge=parseFloat(document.getElementById('st-card-surcharge')?.value)
   const feeRate=parseFloat(document.getElementById('st-card-fee-rate')?.value)
@@ -11705,6 +11782,9 @@ async function openStoreSettings(){
     // 予約確認URLと一緒にコピーされる文章（列が無い環境ではundefined→空欄のまま既定文が使われる）
     const cmEl=document.getElementById('st-rv-copymsg')
     if(cmEl) cmEl.value=ss.public_copy_message||''
+    // アンケートURLと一緒にコピーされる文章
+    const svEl=document.getElementById('st-survey-copymsg')
+    if(svEl) svEl.value=ss.survey_copy_message||''
     // 端末一覧は畳んだ状態で開始する（開いたときに読み込む）。
     const dl=document.getElementById('device-list'), dar=document.getElementById('device-toggle-ar')
     if(dl){ dl.style.display='none'; dl.innerHTML='' }
@@ -12231,6 +12311,10 @@ async function openRvDetail(rvId, shiftId, castName){
         <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         お客様用 予約確認URLをコピー
       </button>
+      <button class="rvd-btn-survey" onclick="copySurveyUrl(${r.id})" style="width:100%;margin-top:.5rem;padding:.7rem;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:700;font-size:.9rem;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
+        <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6Z"/></svg>
+        お客様用 アンケートURLをコピー
+      </button>
       <div class="rvd-actions">
         <button class="rvd-btn-edit" onclick="openRvEdit(${r.id})">編集</button>
         <button class="rvd-btn-del" onclick="deleteRv(${r.id})">削除</button>
@@ -12255,16 +12339,42 @@ function shopName(){
   return currentStoreId===KYOUKANO_STORE_ID?'KYOUKANO NAGOYA':''
 }
 
-function buildRvCopyText(url){
+// 店舗設定の文章にURLと店名を差し込む（予約確認URL・アンケートURLで共通）
+//   tmpl … 店舗設定の文章。空なら def（既定文）を使う
+function buildCopyText(url,tmpl,def){
   const shop=shopName()
-  let t=String(storeSettings.public_copy_message||'').trim()
+  let t=String(tmpl||'').trim()
   if(!t){
-    t=RV_COPY_DEFAULT
+    t=def
     if(!shop) t=t.replace('{店名}です。\n','')  // 店名未設定なら1行目を出さない
   }
   t=t.replace(/[{｛]\s*店名\s*[}｝]/g,shop)
   const ph=/[{｛]\s*URL\s*[}｝]/i
   return ph.test(t)?t.replace(new RegExp(ph.source,'gi'),url):t+'\n\n'+url
+}
+function buildRvCopyText(url){ return buildCopyText(url,storeSettings.public_copy_message,RV_COPY_DEFAULT) }
+
+// 推測不能なトークン（UUID）を1つ作る。作れない環境では空文字を返す
+function newPublicToken(){
+  if(crypto.randomUUID) return crypto.randomUUID()
+  if(crypto.getRandomValues){
+    // RFC4122 v4（randomUUID非対応環境向けフォールバック）
+    const b=crypto.getRandomValues(new Uint8Array(16))
+    b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80
+    const h=[...b].map(x=>x.toString(16).padStart(2,'0'))
+    return `${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
+  }
+  return ''
+}
+
+// クリップボードへコピー（navigator.clipboardが使えない環境ではtextareaで代替）
+async function copyToClipboard(text){
+  try{ await navigator.clipboard.writeText(text); return true }catch(e){}
+  const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select()
+  let ok=false
+  try{ ok=document.execCommand('copy') }catch(e){}
+  document.body.removeChild(ta)
+  return ok
 }
 
 // お客様用「予約確認URL」を生成してクリップボードにコピー
@@ -12350,29 +12460,188 @@ async function copyRvUrl(rvId){
     // トークン（なければ発行）
     let token=r.public_token
     if(!token){
-      if(crypto.randomUUID){ token=crypto.randomUUID() }
-      else if(crypto.getRandomValues){
-        // RFC4122 v4（randomUUID非対応環境向けフォールバック）
-        const b=crypto.getRandomValues(new Uint8Array(16))
-        b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80
-        const h=[...b].map(x=>x.toString(16).padStart(2,'0'))
-        token=`${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
-      } else { toast('この環境ではURLを発行できません');return }
+      token=newPublicToken()
+      if(!token){ toast('この環境ではURLを発行できません');return }
     }
     const {error}=await withStoreFilter(sb.from('reservations').update({public_token:token,public_snapshot:snapshot})).eq('id',rvId)
     if(error){toast('URL作成に失敗しました: '+error.message);return}
 
     const url=`${location.origin}/r.html?t=${token}`
     const msg=buildRvCopyText(url)
-    let copied=false
-    try{ await navigator.clipboard.writeText(msg); copied=true }catch(e){}
-    if(!copied){
-      const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select()
-      try{document.execCommand('copy');copied=true}catch(e){}
-      document.body.removeChild(ta)
-    }
+    const copied=await copyToClipboard(msg)
     toast(copied?'文章とURLをコピーしました！LINE等に貼り付けてください':'コピー失敗: '+url)
   }catch(e){ toast('エラー: '+(e?.message||e)) }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 施術後アンケート（星5段階・4項目）
+//   ・送信は手動。予約詳細の「アンケートURLをコピー」でLINE等に貼って送る
+//   ・回答はオーナーのみ閲覧（セラピスト側の画面には出さない）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// アンケートの評価項目。キーは s.html / Edge Function submit-survey と一致させること
+const SURVEY_QS=[
+  {key:'service',label:'接客・お人柄'},
+  {key:'skill',  label:'施術の技術'},
+  {key:'clean',  label:'お部屋の清潔感'},
+  {key:'total',  label:'総合満足度'}
+]
+
+// コピー時にURLと一緒に貼り付けられる文章の既定値（店舗設定が空のとき使う）
+const SURVEY_COPY_DEFAULT='{店名}です。\n本日はご来店いただきありがとうございました。\nよろしければ、30秒で終わるアンケートにご協力ください。\n\n{URL}\n\n今後のサービス向上に役立てさせていただきます。'
+
+function buildSurveyCopyText(url){ return buildCopyText(url,storeSettings.survey_copy_message,SURVEY_COPY_DEFAULT) }
+
+// surveysテーブルがまだ無い（035未適用）かどうか
+//   PostgREST は 'PGRST205'、DB側は '42P01' を返す
+function isMissingSurveyTable(error){
+  if(!error) return false
+  if(error.code==='PGRST205'||error.code==='42P01') return true
+  return /surveys/.test(error.message||'') && /(does not exist|find the table)/i.test(error.message||'')
+}
+
+// お客様用「アンケートURL」を生成してクリップボードにコピー
+//   ・予約1件につきアンケートは1枚。2回押しても同じURLをコピーする
+//   ・セラピスト名・コース・来店日はこの時点でコピーして保存する
+//     （予約を後から削除・変更してもアンケートの履歴が壊れないようにするため）
+async function copySurveyUrl(rvId){
+  try{
+    let {data:sv}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
+    if(!sv){
+      const {data:r}=await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
+      if(!r){toast('予約データが見つかりません');return}
+      // 来店日・セラピストは shift から取得
+      const shId=r.shift_id||currentRvShiftId
+      let shift=null
+      if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,cast_id').eq('id',shId)).maybeSingle(); shift=s }
+      let castName=currentRvCastName||''
+      const castId=shift?.cast_id||null
+      if(!castName&&castId){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',castId)).maybeSingle(); castName=c?.name||'' }
+
+      const token=newPublicToken()
+      if(!token){toast('この環境ではURLを発行できません');return}
+
+      const payload=withStoreId({
+        reservation_id:rvId,
+        cast_id:castId,
+        cast_name:castName,
+        store_name:shopName(),
+        course:r.course||'',
+        customer_no:r.customer_no||null,
+        visit_date:shift?.date||null,
+        token
+      })
+      const {data:ins,error}=await sb.from('surveys').insert(payload).select().maybeSingle()
+      if(error){
+        // 035のマイグレーション未適用（テーブルが無い）は分かりやすく案内する
+        if(isMissingSurveyTable(error)){
+          toast('アンケートを使うには準備が1つ必要です。Claudeに「アンケートの準備をして」と伝えてください');return
+        }
+        // 同時に2回押された場合など、既に作られていたら作られた行を読み直す
+        const {data:again}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
+        if(!again){toast('アンケートURLの作成に失敗しました: '+error.message);return}
+        sv=again
+      } else sv=ins
+    }
+
+    const url=`${location.origin}/s.html?t=${sv.token}`
+    const msg=buildSurveyCopyText(url)
+    const copied=await copyToClipboard(msg)
+    if(!copied){ toast('コピー失敗: '+url); return }
+    toast(sv.submitted_at?'回答済みのアンケートです（URLをコピーしました）':'文章とURLをコピーしました！LINE等に貼り付けてください')
+  }catch(e){ toast('エラー: '+(e?.message||e)) }
+}
+
+// アンケート集計ページ（管理 → アンケート）
+async function loadSurveys(){
+  const area=document.getElementById('survey-area')
+  if(!area) return
+  area.innerHTML='<div class="spin">読み込み中...</div>'
+
+  const {data,error}=await withStoreFilter(sb.from('surveys').select('*')).order('id',{ascending:false}).limit(300)
+  if(error){
+    const noTbl=isMissingSurveyTable(error)
+    area.innerHTML=`<div class="sv-empty">${noTbl
+      ?'アンケートを使うには準備が1つ必要です。<br>Claudeに「アンケートの準備をして」と伝えてください。'
+      :'読み込みに失敗しました<br>'+escapeHtml(error.message||'')}</div>`
+    return
+  }
+
+  const all=data||[]
+  if(!all.length){
+    area.innerHTML='<div class="sv-empty">まだアンケートを送っていません。<br>予約の詳細画面にある「お客様用 アンケートURLをコピー」から送れます。</div>'
+    return
+  }
+
+  const ans=all.filter(s=>s.submitted_at&&s.ratings)
+  const rate=Math.round(ans.length/all.length*100)
+  const avgOf=(rows,key)=>rows.length?rows.reduce((s,r)=>s+(Number(r.ratings?.[key])||0),0)/rows.length:0
+  const one=n=>(Math.round(n*10)/10).toFixed(1)
+  const starStr=n=>{const k=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(k)+'☆'.repeat(5-k)}
+  const bar=(v,max)=>`<div class="sv-bar"><div class="sv-bar-i" style="width:${max>0?Math.round(v/max*100):0}%"></div></div>`
+
+  if(!ans.length){
+    area.innerHTML=`<div class="sv-empty">送信済み ${all.length}件。<br>まだ回答が届いていません。</div>`
+    return
+  }
+
+  const total=avgOf(ans,'total')
+
+  // 項目別の平均
+  const qRows=SURVEY_QS.map(q=>{
+    const v=avgOf(ans,q.key)
+    return `<div class="sv-row"><div class="sv-row-l">${escapeHtml(q.label)}</div>${bar(v,5)}<div class="sv-row-v">${one(v)}</div></div>`
+  }).join('')
+
+  // 総合満足度の分布（★5〜★1）
+  const dist=[5,4,3,2,1].map(n=>ans.filter(s=>Number(s.ratings?.total)===n).length)
+  const distMax=Math.max(...dist,1)
+  const distRows=[5,4,3,2,1].map((n,i)=>
+    `<div class="sv-row"><div class="sv-row-l" style="color:#FFB020">${'★'.repeat(n)}</div>${bar(dist[i],distMax)}<div class="sv-row-v">${dist[i]}</div></div>`
+  ).join('')
+
+  // セラピスト別（総合満足度）
+  const byCast={}
+  ans.forEach(s=>{
+    const k=s.cast_name||'（未設定）'
+    if(!byCast[k]) byCast[k]={sum:0,n:0}
+    byCast[k].sum+=Number(s.ratings?.total)||0
+    byCast[k].n++
+  })
+  const castRows=Object.entries(byCast)
+    .map(([name,v])=>({name,avg:v.sum/v.n,n:v.n}))
+    .sort((a,b)=>b.avg-a.avg||b.n-a.n)
+    .map(c=>`<div class="sv-row"><div class="sv-row-l">${escapeHtml(c.name)}<span style="color:#A89B88;font-size:.6875rem"> ${c.n}件</span></div>${bar(c.avg,5)}<div class="sv-row-v">${one(c.avg)}</div></div>`)
+    .join('')
+
+  // 最近の回答（新しい順に30件）
+  const recent=[...ans].sort((a,b)=>String(b.submitted_at).localeCompare(String(a.submitted_at))).slice(0,30)
+  const items=recent.map(s=>{
+    const d=s.visit_date||String(s.submitted_at||'').slice(0,10)
+    const md=d?`${+d.slice(5,7)}/${+d.slice(8,10)}`:''
+    const meta=[s.customer_no?'No.'+s.customer_no:'',s.cast_name||'',s.course||''].filter(Boolean).map(escapeHtml).join(' ・ ')
+    const chips=SURVEY_QS.map(q=>`<span class="sv-chip">${escapeHtml(q.label)} ${Number(s.ratings?.[q.key])||0}</span>`).join('')
+    return `<div class="sv-item">
+      <div class="sv-item-hd">
+        <div class="sv-item-st">${starStr(Number(s.ratings?.total)||0)}</div>
+        <div class="sv-item-dt">${escapeHtml(md)}</div>
+      </div>
+      ${meta?`<div class="sv-item-meta">${meta}</div>`:''}
+      <div class="sv-item-detail">${chips}</div>
+    </div>`
+  }).join('')
+
+  area.innerHTML=`
+    <div class="sv-hero">
+      <div class="sv-hero-v">${one(total)}</div>
+      <div class="sv-hero-st">${starStr(total)}</div>
+      <div class="sv-hero-sub">回答 ${ans.length}件 / 送信 ${all.length}件（回収率 ${rate}%）</div>
+    </div>
+    <div class="sv-card"><div class="sv-card-t">項目別の平均</div>${qRows}</div>
+    <div class="sv-card"><div class="sv-card-t">総合満足度の内訳</div>${distRows}</div>
+    ${castRows?`<div class="sv-card"><div class="sv-card-t">セラピスト別（総合満足度）</div>${castRows}</div>`:''}
+    <div class="sv-card-t" style="font-size:.6875rem;font-weight:700;letter-spacing:.05em;color:#A89B88;margin:1.1rem 0 .5rem">最近の回答</div>
+    ${items}`
 }
 
 function backToShiftReservations(){
