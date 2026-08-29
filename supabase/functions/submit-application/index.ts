@@ -76,6 +76,27 @@ async function sha256Hex(s: string): Promise<string> {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// 応募が届いたことをオーナーに知らせる。
+//   send-push は service_role を Authorization に載せると「サーバ間の信頼済み経路」として通る。
+//   通知はおまけなので、失敗しても応募そのものは成立させる（例外は握りつぶす）。
+//   プッシュはロック画面に出るため、本文に載せるのは名前と年齢まで。
+//   住所・体型・写真には触れない。
+async function notifyOwner(storeId: string | null, name: string, age: number): Promise<void> {
+  try {
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    await fetch(Deno.env.get('SUPABASE_URL')! + '/functions/v1/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': key, 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({
+        cast_id: 0,                    // 0 = オーナー
+        title: '新しい応募が届きました',
+        body: `${name}様（${age}歳）から求人応募がありました`,
+        store_id: storeId,
+      }),
+    })
+  } catch (_e) { /* 通知の失敗で応募を止めない */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -207,6 +228,13 @@ Deno.serve(async (req) => {
       if (insErr) return json({ error: 'server' }, 500)
 
       saved = true
+
+      // 応答を返した後に通知を送る（応募者の画面を待たせない）。
+      // waitUntil が使えない環境では送信を待ってから返す。
+      const notifying = notifyOwner(storeId, name, ageNum)
+      const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime
+      if (rt?.waitUntil) rt.waitUntil(notifying); else await notifying
+
       return json({ ok: true, state: 'submitted', store: storeName })
     } finally {
       // 保存しきれなかったときは、置いた写真を必ず片付ける。
