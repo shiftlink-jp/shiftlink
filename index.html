@@ -12509,9 +12509,12 @@ async function buildSurveySnapshot(rvId){
   const shId=r.shift_id||currentRvShiftId
   let shift=null
   if(shId){ const {data:sh}=await withStoreFilter(sb.from('shifts').select('date,cast_id').eq('id',shId)).maybeSingle(); shift=sh }
-  let castName=currentRvCastName||''
+  // 名前はDBを優先する。画面の表示名(currentRvCastName)は開いたときの値なので、
+  // cast_id と食い違うとセラピスト別の集計がずれる
   const castId=shift?.cast_id||null
-  if(!castName&&castId){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',castId)).maybeSingle(); castName=c?.name||'' }
+  let castName=''
+  if(castId){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',castId)).maybeSingle(); castName=c?.name||'' }
+  if(!castName) castName=currentRvCastName||''
   return {
     cast_id:castId,
     cast_name:castName,
@@ -12532,11 +12535,15 @@ async function copySurveyUrl(rvId){
   try{
     let {data:sv}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
 
+    let updateFailed=false
     if(!sv||!sv.submitted_at){
       const snap=await buildSurveySnapshot(rvId)
-      if(!snap){toast('予約データが見つかりません');return}
+      // 予約が読めないとき：未発行なら作れないので中止。発行済みなら写し直しを諦めてURLだけ渡す
+      if(!snap&&!sv){toast('予約データが見つかりません');return}
 
-      if(!sv){
+      if(!snap){
+        updateFailed=true
+      } else if(!sv){
         const token=newPublicToken()
         if(!token){toast('この環境ではURLを発行できません');return}
         const {data:ins,error}=await sb.from('surveys').insert(withStoreId({reservation_id:rvId,token,...snap})).select().maybeSingle()
@@ -12552,11 +12559,12 @@ async function copySurveyUrl(rvId){
         } else sv=ins
       } else {
         // 2回目以降：予約が変わっているかもしれないので写し直す
-        const {data:upd}=await withStoreFilter(
+        const {data:upd,error:uErr}=await withStoreFilter(
           sb.from('surveys').update({...snap,issued_at:new Date().toISOString()}).eq('id',sv.id)
         ).select().maybeSingle()
-        // 写し直しに失敗しても発行済みURLは使えるので、そのまま続行する
-        if(upd) sv=upd
+        // 写し直しに失敗しても発行済みURLは使えるので、コピーまでは進める（結果はトーストで知らせる）
+        if(uErr||!upd) updateFailed=true
+        else sv=upd
       }
     }
 
@@ -12564,6 +12572,7 @@ async function copySurveyUrl(rvId){
     const msg=buildSurveyCopyText(url)
     const copied=await copyToClipboard(msg)
     if(!copied){ toast('コピー失敗: '+url); return }
+    if(updateFailed){ toast('最新内容の反映に失敗しました。URLはコピーしています'); return }
     toast(sv.submitted_at?'回答済みのアンケートです（URLをコピーしました）':'文章とURLをコピーしました！LINE等に貼り付けてください')
   }catch(e){ toast('エラー: '+(e?.message||e)) }
 }
@@ -12661,7 +12670,7 @@ async function loadSurveys(){
     <div class="sv-hero">
       <div class="sv-hero-v">${one(total)}</div>
       <div class="sv-hero-st">${starStr(total)}</div>
-      <div class="sv-hero-sub">回答 ${answeredN}件 / 発行 ${issuedN}件（回収率 ${rate}%）${ans.length<answeredN?'<br>平均は直近'+ans.length+'件の回答をもとに集計しています':''}</div>
+      <div class="sv-hero-sub">回答 ${answeredN}件 / 発行 ${issuedN}件（回収率 ${rate}%）${ans.length<answeredN?'<br>以下の平均・内訳は直近'+ans.length+'件の回答をもとに集計しています':''}</div>
     </div>
     <div class="sv-card"><div class="sv-card-t">項目別の平均</div>${qRows}</div>
     <div class="sv-card"><div class="sv-card-t">総合満足度の内訳</div>${distRows}</div>

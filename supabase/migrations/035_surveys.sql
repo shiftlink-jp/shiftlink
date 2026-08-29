@@ -6,8 +6,9 @@
 -- 設計メモ:
 --   ・お客様の画面(s.html)は未ログイン。読み書きは service_role を使う Edge Function
 --     `submit-survey` がトークン照合して1件だけ扱う（anon鍵では直接読めない）。
---   ・cast_name / course / visit_date / customer_no は発行時にコピーして持つ。
---     予約が後から削除・変更されてもアンケート履歴が壊れないようにするため（JOINしない）。
+--   ・cast_name / course / visit_date / customer_no は予約から写して持つ（JOINしない）。
+--     予約が後から削除・変更されてもアンケート履歴が壊れないようにするため。
+--     URLをコピーし直すたびに最新の内容へ写し直す（回答済みのものは動かさない）。
 --   ・回答の重複は「submitted_at IS NULL のときだけ UPDATE する」で防ぐ。
 --   ・有効期限(30日)は issued_at を起点にする。URLをコピーし直すと期限も延びる。
 --
@@ -34,6 +35,10 @@ CREATE TABLE IF NOT EXISTS surveys (
   issued_at      timestamptz DEFAULT now(), -- URLを発行（コピー）した日時。有効期限30日の起点
   created_at     timestamptz DEFAULT now()
 );
+
+-- CREATE TABLE IF NOT EXISTS は、テーブルが既にあると本文ごと無視される。
+-- 途中で列を足した場合に備えて、あとから追加した列は個別にも追加しておく。
+ALTER TABLE surveys ADD COLUMN IF NOT EXISTS issued_at timestamptz DEFAULT now();
 
 -- token はグローバルに一意（別店舗含め衝突しない）
 CREATE UNIQUE INDEX IF NOT EXISTS idx_surveys_token ON surveys(token);
