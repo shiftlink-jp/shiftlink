@@ -814,6 +814,10 @@ select.fi,select.fi2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 #p-owner-survey .sv-chip{font-size:.6875rem;color:#7A6E5E;background:#FAF8F4;border-radius:999px;padding:.2rem .55rem}
 #p-owner-survey .sv-empty{text-align:center;color:#A89B88;font-size:.8125rem;padding:2.5rem 1rem;line-height:1.9}
 /* 面接（求人応募） #p-owner-interview（オーナーのみ閲覧） */
+/* 応募フォームURL：セラピスト管理の cc2-toolbtn と同じ見た目にそろえる */
+#p-owner-interview .iv-toolrow{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:.85rem}
+#p-owner-interview .iv-toolbtn{background:#fff;border:1.5px solid #EDE9E1;border-radius:10px;height:44px;font-size:13px;font-weight:700;color:#7A6E5E;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+#p-owner-interview .iv-toolbtn svg{width:15px;height:15px;flex-shrink:0}
 #p-owner-interview .iv-filter{display:flex;gap:.35rem;overflow-x:auto;margin-bottom:.75rem;padding-bottom:.2rem;-webkit-overflow-scrolling:touch}
 #p-owner-interview .iv-fchip{flex:0 0 auto;border:1px solid #EDE9E1;background:#fff;border-radius:999px;padding:.35rem .8rem;font-size:.75rem;font-family:inherit;font-weight:700;color:#7A6E5E;cursor:pointer;white-space:nowrap}
 #p-owner-interview .iv-fchip.on{background:#FF9124;border-color:#FF9124;color:#fff}
@@ -2652,7 +2656,9 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="panel" id="p-owner-interview">
       <div class="pg-hdr">
         <div class="pg-title">面接</div>
-        <button class="cust-add-btn" onclick="copyRecruitUrl()"><svg class="ei" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> 応募フォームURL</button>
+      </div>
+      <div class="iv-toolrow">
+        <button class="iv-toolbtn" onclick="copyRecruitUrl()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>応募フォームURLをコピー</button>
       </div>
       <div class="iv-filter" id="iv-filter"></div>
       <div id="application-area"><div class="spin">読み込み中...</div></div>
@@ -12874,7 +12880,7 @@ function renderApplications(){
   const rows=ivFilter==='すべて'?_ivRows:_ivRows.filter(r=>(r.status||'未対応')===ivFilter)
 
   if(!_ivRows.length){
-    area.innerHTML='<div class="iv-empty">まだ応募はありません。<br>上の「応募フォームURL」を押して、求人サイトやLINEに貼り付けてください。</div>'
+    area.innerHTML='<div class="iv-empty">まだ応募はありません。<br>上の「応募フォームURLをコピー」を押して、求人サイトやLINEに貼り付けてください。</div>'
     return
   }
   if(!rows.length){ area.innerHTML=`<div class="iv-empty">「${escapeHtml(ivFilter)}」の応募はありません。</div>`; return }
