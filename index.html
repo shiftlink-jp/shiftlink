@@ -9863,12 +9863,12 @@ async function saveSurveyCopyMsg(){
 async function saveRecruitEnabled(){
   const el=document.getElementById('st-recruit-enabled')
   const on=!!el?.checked
-  const{error}=await withStoreFilter(sb.from('store_settings').update({recruit_enabled:on}))
-  if(error){
+  const{data:upd,error}=await withStoreFilter(sb.from('store_settings').update({recruit_enabled:on})).select('recruit_enabled')
+  if(error||!upd||!upd.length){
     if(el) el.checked=!on   // 保存できていないのにONに見えると事故るので戻す
     toast(isMissingRecruitSchema(error)
       ?'応募フォームを使うには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
-      :'保存失敗: '+error.message)
+      :'保存失敗: '+(error?.message||'店舗設定が見つかりません'))
     return
   }
   storeSettings.recruit_enabled=on
@@ -12784,13 +12784,17 @@ async function copyRecruitUrl(){
     // 応募フォームに出す店名は、アプリ側の表示名に合わせておく
     if(shop && storeSettings.recruit_store_name!==shop) patch.recruit_store_name=shop
     if(Object.keys(patch).length){
-      const {error}=await withStoreFilter(sb.from('store_settings').update(patch))
+      // .select() で「本当に保存された行」を確認する。
+      // UPDATE は1行も一致しなくてもエラーにならないため、これが無いと
+      // 保存されていない鍵のURLを配ってしまい、応募者側が「見つかりません」になる
+      const {data:upd,error}=await withStoreFilter(sb.from('store_settings').update(patch)).select('recruit_token')
       if(error){
         toast(isMissingRecruitSchema(error)
           ?'応募フォームを使うには準備が1つ必要です。Claudeに「面接の準備をして」と伝えてください'
           :'URL作成に失敗しました: '+error.message)
         return
       }
+      if(!upd||!upd.length){ toast('店舗設定が見つからないため、URLを保存できませんでした'); return }
       Object.assign(storeSettings,patch)
     }
     const url=`${location.origin}/a.html?t=${tok}`
