@@ -1536,8 +1536,6 @@ tr:last-child td{border-bottom:none}
 #p-owner-cast .cc2-act.cc2-fee{background:linear-gradient(115deg,#FFB257 0%,#F4790F 100%);color:#fff;box-shadow:0 4px 10px rgba(255,145,36,.25)}
 #p-owner-cast .cc2-act.cc2-pin{background:linear-gradient(115deg,#FFB257 0%,#F4790F 100%);color:#fff;box-shadow:0 4px 10px rgba(255,145,36,.25)}
 #p-owner-cast .cc2-act.cc2-memo{background:linear-gradient(115deg,#FFB257 0%,#F4790F 100%);color:#fff;box-shadow:0 4px 10px rgba(255,145,36,.25)}
-/* 招待（その人専用の登録URLをコピー）。1行を横いっぱいに使い、2×2の並びは崩さない */
-#p-owner-cast .cc2-act.cc2-invite{grid-column:1/-1;background:linear-gradient(115deg,#6FA8FF 0%,#2563EB 100%);color:#fff;box-shadow:0 4px 10px rgba(37,99,235,.25)}
 #p-owner-cast .cc2-act.cc2-leave{background:linear-gradient(115deg,#FF6B6B 0%,#DC2626 100%);color:#fff;box-shadow:0 4px 10px rgba(220,38,38,.25)}
 #p-owner-cast .cc2-addbtn svg,#p-owner-cast .cc2-toolbtn svg{width:15px;height:15px;flex-shrink:0}
 
@@ -2660,17 +2658,6 @@ document.addEventListener('DOMContentLoaded',function(){
         <div class="cc2-section-lbl">在籍中</div>
         <span id="cast-count-badge" class="cc2-count"></span>
       </div>
-      <!-- セラピスト個別の招待URLの表示欄。カードの「招待」ボタンを押したときだけ出る。
-           クリップボードが使えない環境でも、ここを長押しして手でコピーできるようにしてある。 -->
-      <div id="cast-invite-out" style="display:none;background:#f2f7ff;border:1.5px solid #4b7bec;border-radius:12px;padding:.8rem;margin:0 0 .7rem">
-        <div id="cast-invite-title" style="font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:.35rem"></div>
-        <div id="cast-invite-url" style="font-size:.72rem;font-weight:500;white-space:pre-wrap;text-align:left;word-break:break-all;background:#fff;border:1px solid var(--border);border-radius:8px;padding:.5rem;user-select:all;-webkit-user-select:all"></div>
-        <div id="cast-invite-exp" style="font-size:.68rem;color:var(--text3);margin:.35rem 0 .5rem"></div>
-        <div style="display:flex;gap:.4rem">
-          <button style="flex:1;font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.35rem .8rem;cursor:pointer;font-family:inherit" onclick="copyCastInvite()">案内文をコピー</button>
-          <button style="font-size:.75rem;border:1px solid var(--border);background:#fff;border-radius:99px;padding:.35rem .8rem;cursor:pointer;font-family:inherit" onclick="closeCastInvite()">閉じる</button>
-        </div>
-      </div>
       <div id="cast-area"><div class="spin">読み込み中...</div></div>
     </div>
 
@@ -3063,7 +3050,6 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="f2-card">
       <div class="f2-card-hd"><span class="f2-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span><span class="f2-card-title">端末の管理</span></div>
       <div style="font-size:.75rem;color:var(--text3);line-height:1.7;margin:0 0 .6rem">
-        <b>スタッフの端末登録は「セラピスト管理」の各カードの「招待」ボタン</b>から行います。<br>
         下のボタンは<b>オーナーご自身の端末</b>を追加するとき用です（機種変更など）。<br>
         コードは<b>48時間有効・1回きり</b>。<br>
         <b>退店したスタッフの端末は、退店処理をすれば自動で解除されます</b>（この画面での操作は不要です）。
@@ -10966,8 +10952,7 @@ async function loadCastMgmt(){
         <div class="cc2-name">${escapeHtml(c.name)}</div>
         <div class="cc2-badges">${badge}<span class="cc2-badge-pin">PIN ${escapeHtml(castPinMap[c.id]||c.pin||'未設定')}</span></div>
       </div>
-      <div class="cc2-actions">${SAAS_MODE?`
-        <button class="cc2-act cc2-invite" onclick="inviteCast(${c.id},'${jsEsc(c.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>招待（登録URLをコピー）</button>`:''}
+      <div class="cc2-actions">
         <button class="cc2-act cc2-fee" onclick="openFeeSheet(${c.id},'${jsEsc(c.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>委託金設定</button>
         <button class="cc2-act cc2-pin" onclick="changePIN(${c.id},'${jsEsc(c.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>PIN変更</button>
         <button class="cc2-act cc2-memo" onclick="openCastMemoLog(${c.id},'${jsEsc(c.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9.5a2 2 0 0 0 1.4-.59l4.5-4.5A2 2 0 0 0 21 14.5V5a2 2 0 0 0-2-2z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/></svg>メモ</button>
@@ -10993,77 +10978,6 @@ async function openInactiveSheet(){
       </div>`).join('')
   }
   document.getElementById('inactive-overlay').classList.add('on')
-}
-
-// ── セラピストごとの招待（その人専用の登録URLを発行してコピーする）───────────
-// オーナーはこのURLをLINEで本人に送るだけ。本人がタップすると端末が登録され、
-// 以降その端末では「本人とオーナー」しかログインできない。
-// SaaS URL(shiftlink-app.jp等)専用。KYOUKANO(kyoukano.vercel.app)では ?join を無視する設計のため、
-// ボタン自体を出していない（renderCastList の SAAS_MODE 判定）。
-let _lastCastInviteUrl='', _lastCastInviteMsg=''
-async function inviteCast(castId, name){
-  const btnBox=document.getElementById('cast-invite-out')
-  try{
-    const j=await callManageDevices({action:'issue_code', cast_id:castId})
-    // ホスト名は直書きせず、いま開いているURLのドメインをそのまま使う
-    // LINEにそのまま貼れる案内文をコピーする。
-    // ★リンクだけを送ると2台登録されてしまう★
-    //   iPhoneはSafariとホーム画面アプリで保存領域が別。リンクを開いた時点でSafariが
-    //   登録され、ホーム画面に追加して開くと（start_urlに ?join= が引き継がれないため）
-    //   もう一度登録が必要になり、同じ人の端末が2つ並ぶ。
-    //   そこで「先にホーム画面へ追加 → アイコンから開いて店舗コードを入力」の手順にして、
-    //   登録を1回で終わらせる。コードは招待リンクと同じもの（7日間・本人専用）。
-    _lastCastInviteUrl=location.origin+'/'
-    _lastCastInviteMsg =
-      // 誰宛てかを必ず先頭に入れる。名前が無いと、発行に失敗して前の人の文面が
-      // クリップボードに残っていても気づけず、別人のコードを送ってしまうため。
-      '【' + name + 'さん用】\n\n'
-      + 'お疲れ様です！\n'
-      + '店舗アプリのURLが新しく変わりましたので、以下の手順で再ログインをお願いします。\n'
-      + '手順を間違えるとスムーズに登録できないので、必ずよく読んでからおこなってください\n\n'
-      + '①このリンクを開く（LINEで開いたら右下「…」から【Safariで開く】）\n'
-      + location.origin + '/\n\n'
-      + '②まだログインせず「ホーム画面に追加」してください\n'
-      + '（共有ボタン→ホーム画面に追加）\n\n'
-      + '③ホーム画面のアイコンから開く\n\n'
-      + '④「店舗コード」を聞かれたら入力\n'
-      + '　コード：' + j.code + '\n\n'
-      + '⑤自分の名前を選んでPINを入力（PINは今までと同じ）\n\n'
-      + '⑥指紋・顔認証と通知の許可をお願いします\n\n'
-      + '⚠️今までのアプリはまだ消さないでください'
-    const days=j.ttl_days||7
-    const t=document.getElementById('cast-invite-title')
-    const u=document.getElementById('cast-invite-url')
-    const e=document.getElementById('cast-invite-exp')
-    if(t) t.textContent=name+'さん専用の案内文（LINEで本人に送ってください）'
-    if(u) u.textContent=_lastCastInviteMsg
-    if(e) e.textContent='有効期限: '+(j.expires_at?new Date(j.expires_at).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):(days+'日間'))
-    // コピーできたらURL欄は出さない（押す→コピーされた、で完結させる）。
-    // コピーに失敗した環境でだけ、手でコピーできるようURL欄を出す。
-    let copied=false
-    try{ await navigator.clipboard.writeText(_lastCastInviteMsg); copied=true }catch(_){}
-    if(copied){
-      if(btnBox) btnBox.style.display='none'
-      toast(name+'さんの案内文をコピーしました（'+days+'日間有効）。LINEに貼って送ってください', 3000)
-    }else{
-      if(btnBox){ btnBox.style.display='block'; try{ btnBox.scrollIntoView({behavior:'smooth',block:'center'}) }catch(_){} }
-      toast('案内文を発行しました（'+days+'日間有効）。下の欄からコピーしてください', 3000)
-    }
-  }catch(err){
-    // 失敗したことを明確に伝える。ここで黙ると、前の人の案内文がクリップボードに
-    // 残ったままなので、それを別人に送ってしまう事故が起きる。
-    _lastCastInviteUrl=''; _lastCastInviteMsg=''
-    toast('招待の発行に失敗しました（'+(err.message||err)+'）。コピーはされていません', 4000)
-  }
-}
-async function copyCastInvite(){
-  if(!_lastCastInviteMsg) return
-  try{ await navigator.clipboard.writeText(_lastCastInviteMsg); toast('案内文をコピーしました') }
-  catch(e){ toast('コピーできませんでした。文面を長押しして選択してください', 3000) }
-}
-function closeCastInvite(){
-  const b=document.getElementById('cast-invite-out'); if(b) b.style.display='none'
-  _lastCastInviteUrl=''; _lastCastInviteMsg=''
 }
 
 async function deleteCast(castId, name){
