@@ -178,9 +178,9 @@
       .catch(()=>{
         sending = false
         btn.textContent = '送信する'
+        refreshSend()   // 先にボタンを戻す（この中で注記が消えるため、メッセージはこの後に入れる）
         const note=document.getElementById('send-note')
         if(note) note.textContent = '送信に失敗しました。もう一度お試しください。'
-        refreshSend()
       })
   }
 

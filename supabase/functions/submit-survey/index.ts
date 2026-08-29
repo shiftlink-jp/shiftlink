@@ -34,12 +34,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // 評価項目（この4つ以外は保存しない）
 const RATING_KEYS = ['service', 'skill', 'clean', 'total'] as const
 
-// 有効期限: URL発行から30日
+// 有効期限: URL発行(issued_at)から30日。URLをコピーし直すと issued_at が更新され期限も延びる
 const VALID_DAYS = 30
 
-function isExpired(createdAt: string | null): boolean {
-  if (!createdAt) return false
-  const t = Date.parse(createdAt)
+// 日時が空・壊れている場合は「期限切れではない」と扱う。
+// issued_at には DEFAULT now() があるため通常は起きないが、
+// 回答できずに問い合わせが来るより、受け付けてしまう方が実害が小さいため。
+function isExpired(issuedAt: string | null): boolean {
+  if (!issuedAt) return false
+  const t = Date.parse(issuedAt)
   if (isNaN(t)) return false
   return Date.now() - t > VALID_DAYS * 24 * 60 * 60 * 1000
 }
@@ -68,7 +71,7 @@ Deno.serve(async (req) => {
     // ── 対象のアンケートを1件だけ取得 ──
     const { data: row, error } = await supabase
       .from('surveys')
-      .select('id,store_name,cast_name,course,visit_date,submitted_at,created_at')
+      .select('id,store_name,cast_name,course,visit_date,submitted_at,issued_at')
       .eq('token', token)
       .maybeSingle()
 
@@ -84,13 +87,13 @@ Deno.serve(async (req) => {
     // ── GET: 状態を返す ──
     if (req.method === 'GET') {
       if (row.submitted_at) return json({ ok: true, state: 'submitted', ...info })
-      if (isExpired(row.created_at)) return json({ error: 'expired' }, 410)
+      if (isExpired(row.issued_at)) return json({ error: 'expired' }, 410)
       return json({ ok: true, state: 'open', ...info })
     }
 
     // ── POST: 回答を保存 ──
     if (row.submitted_at) return json({ error: 'already' }, 409)
-    if (isExpired(row.created_at)) return json({ error: 'expired' }, 410)
+    if (isExpired(row.issued_at)) return json({ error: 'expired' }, 410)
 
     // クライアントの値をそのまま入れず、既知の4キーを1〜5の整数として組み直す
     const src = (body?.ratings ?? {}) as Record<string, unknown>

@@ -9,6 +9,7 @@
 --   ・cast_name / course / visit_date / customer_no は発行時にコピーして持つ。
 --     予約が後から削除・変更されてもアンケート履歴が壊れないようにするため（JOINしない）。
 --   ・回答の重複は「submitted_at IS NULL のときだけ UPDATE する」で防ぐ。
+--   ・有効期限(30日)は issued_at を起点にする。URLをコピーし直すと期限も延びる。
 --
 -- 既存データ・既存挙動には影響しない（新規テーブル＋NULL許容の追加カラムのみ）。
 --
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS surveys (
   token          uuid NOT NULL, -- URLに載せる鍵
   ratings        jsonb,         -- {"service":5,"skill":4,"clean":5,"total":5}（1〜5の整数のみ）
   submitted_at   timestamptz,   -- NULL = 未回答
+  issued_at      timestamptz DEFAULT now(), -- URLを発行（コピー）した日時。有効期限30日の起点
   created_at     timestamptz DEFAULT now()
 );
 
@@ -69,10 +71,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- テーブル権限（RLSの手前の関門。sos_alerts と同じ運用）
-GRANT SELECT, INSERT, UPDATE, DELETE ON surveys TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON surveys TO anon, authenticated;
 GRANT USAGE, SELECT ON SEQUENCE surveys_id_seq TO anon, authenticated;
 
-COMMENT ON TABLE surveys IS '施術後アンケート。オーナーのみ閲覧（セラピストには見せない）';
+COMMENT ON TABLE surveys IS '施術後アンケート。アプリ上はオーナー画面にのみ表示する（RLSの分離単位は店舗）';
 
 -- ------------------------------------------------------------
 -- 3. アンケートURLと一緒にコピーされる文章

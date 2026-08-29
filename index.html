@@ -12311,10 +12311,10 @@ async function openRvDetail(rvId, shiftId, castName){
         <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         お客様用 予約確認URLをコピー
       </button>
-      <button class="rvd-btn-survey" onclick="copySurveyUrl(${r.id})" style="width:100%;margin-top:.5rem;padding:.7rem;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:700;font-size:.9rem;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
+      ${me?.is_owner?`<button class="rvd-btn-survey" onclick="copySurveyUrl(${r.id})" style="width:100%;margin-top:.5rem;padding:.7rem;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:700;font-size:.9rem;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
         <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6Z"/></svg>
         お客様用 アンケートURLをコピー
-      </button>
+      </button>`:''}
       <div class="rvd-actions">
         <button class="rvd-btn-edit" onclick="openRvEdit(${r.id})">編集</button>
         <button class="rvd-btn-del" onclick="deleteRv(${r.id})">削除</button>
@@ -12500,48 +12500,64 @@ function isMissingSurveyTable(error){
   return /surveys/.test(error.message||'') && /(does not exist|find the table)/i.test(error.message||'')
 }
 
+// 予約から、アンケートに写しておく内容を作る
+//   予約が後から削除・変更されてもアンケートの履歴が壊れないよう、値をコピーして持つ
+async function buildSurveySnapshot(rvId){
+  const {data:r}=await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
+  if(!r) return null
+  // 来店日・セラピストは shift から取得
+  const shId=r.shift_id||currentRvShiftId
+  let shift=null
+  if(shId){ const {data:sh}=await withStoreFilter(sb.from('shifts').select('date,cast_id').eq('id',shId)).maybeSingle(); shift=sh }
+  let castName=currentRvCastName||''
+  const castId=shift?.cast_id||null
+  if(!castName&&castId){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',castId)).maybeSingle(); castName=c?.name||'' }
+  return {
+    cast_id:castId,
+    cast_name:castName,
+    store_name:shopName(),
+    course:r.course||'',
+    customer_no:r.customer_no||null,
+    visit_date:shift?.date||null
+  }
+}
+
 // お客様用「アンケートURL」を生成してクリップボードにコピー
-//   ・予約1件につきアンケートは1枚。2回押しても同じURLをコピーする
-//   ・セラピスト名・コース・来店日はこの時点でコピーして保存する
-//     （予約を後から削除・変更してもアンケートの履歴が壊れないようにするため）
+//   ・予約1件につきアンケートは1枚。URLは何度押しても同じ
+//   ・押すたびに予約の最新内容を写し直す（copyRvUrl と同じ考え方）。
+//     セラピスト交代やコース変更のあとに押しても、正しいセラピストの評価として記録される
+//   ・押し直すと有効期限(30日)の起点も押した時点に戻る
+//   ・回答済みのアンケートは中身を動かさない（届いた評価と食い違わないようにするため）
 async function copySurveyUrl(rvId){
   try{
     let {data:sv}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
-    if(!sv){
-      const {data:r}=await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
-      if(!r){toast('予約データが見つかりません');return}
-      // 来店日・セラピストは shift から取得
-      const shId=r.shift_id||currentRvShiftId
-      let shift=null
-      if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,cast_id').eq('id',shId)).maybeSingle(); shift=s }
-      let castName=currentRvCastName||''
-      const castId=shift?.cast_id||null
-      if(!castName&&castId){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',castId)).maybeSingle(); castName=c?.name||'' }
 
-      const token=newPublicToken()
-      if(!token){toast('この環境ではURLを発行できません');return}
+    if(!sv||!sv.submitted_at){
+      const snap=await buildSurveySnapshot(rvId)
+      if(!snap){toast('予約データが見つかりません');return}
 
-      const payload=withStoreId({
-        reservation_id:rvId,
-        cast_id:castId,
-        cast_name:castName,
-        store_name:shopName(),
-        course:r.course||'',
-        customer_no:r.customer_no||null,
-        visit_date:shift?.date||null,
-        token
-      })
-      const {data:ins,error}=await sb.from('surveys').insert(payload).select().maybeSingle()
-      if(error){
-        // 035のマイグレーション未適用（テーブルが無い）は分かりやすく案内する
-        if(isMissingSurveyTable(error)){
-          toast('アンケートを使うには準備が1つ必要です。Claudeに「アンケートの準備をして」と伝えてください');return
-        }
-        // 同時に2回押された場合など、既に作られていたら作られた行を読み直す
-        const {data:again}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
-        if(!again){toast('アンケートURLの作成に失敗しました: '+error.message);return}
-        sv=again
-      } else sv=ins
+      if(!sv){
+        const token=newPublicToken()
+        if(!token){toast('この環境ではURLを発行できません');return}
+        const {data:ins,error}=await sb.from('surveys').insert(withStoreId({reservation_id:rvId,token,...snap})).select().maybeSingle()
+        if(error){
+          // 035のマイグレーション未適用（テーブルが無い）は分かりやすく案内する
+          if(isMissingSurveyTable(error)){
+            toast('アンケートを使うには準備が1つ必要です。Claudeに「アンケートの準備をして」と伝えてください');return
+          }
+          // 同時に2回押された場合など、既に作られていたら作られた行を読み直す
+          const {data:again}=await withStoreFilter(sb.from('surveys').select('*').eq('reservation_id',rvId)).maybeSingle()
+          if(!again){toast('アンケートURLの作成に失敗しました: '+error.message);return}
+          sv=again
+        } else sv=ins
+      } else {
+        // 2回目以降：予約が変わっているかもしれないので写し直す
+        const {data:upd}=await withStoreFilter(
+          sb.from('surveys').update({...snap,issued_at:new Date().toISOString()}).eq('id',sv.id)
+        ).select().maybeSingle()
+        // 写し直しに失敗しても発行済みURLは使えるので、そのまま続行する
+        if(upd) sv=upd
+      }
     }
 
     const url=`${location.origin}/s.html?t=${sv.token}`
@@ -12574,14 +12590,24 @@ async function loadSurveys(){
   }
 
   const ans=all.filter(s=>s.submitted_at&&s.ratings)
-  const rate=Math.round(ans.length/all.length*100)
+
+  // 件数は全体を数える（一覧は直近300件しか読まないので、件数まで300で頭打ちにしないため）
+  const [{count:issuedCnt},{count:answeredCnt}]=await Promise.all([
+    withStoreFilter(sb.from('surveys').select('id',{count:'exact',head:true})),
+    withStoreFilter(sb.from('surveys').select('id',{count:'exact',head:true})).not('submitted_at','is',null)
+  ])
+  const issuedN=issuedCnt??all.length
+  const answeredN=answeredCnt??ans.length
+  const rate=issuedN?Math.round(answeredN/issuedN*100):0
   const avgOf=(rows,key)=>rows.length?rows.reduce((s,r)=>s+(Number(r.ratings?.[key])||0),0)/rows.length:0
   const one=n=>(Math.round(n*10)/10).toFixed(1)
   const starStr=n=>{const k=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(k)+'☆'.repeat(5-k)}
+  // 日時を日本時間の YYYY-MM-DD にする
+  const jstYmd=iso=>{const dt=new Date(iso);return isNaN(dt)?'':new Date(dt.getTime()+9*3600*1000).toISOString().slice(0,10)}
   const bar=(v,max)=>`<div class="sv-bar"><div class="sv-bar-i" style="width:${max>0?Math.round(v/max*100):0}%"></div></div>`
 
   if(!ans.length){
-    area.innerHTML=`<div class="sv-empty">送信済み ${all.length}件。<br>まだ回答が届いていません。</div>`
+    area.innerHTML=`<div class="sv-empty">発行済み ${issuedN}件。<br>まだ回答が届いていません。</div>`
     return
   }
 
@@ -12617,7 +12643,7 @@ async function loadSurveys(){
   // 最近の回答（新しい順に30件）
   const recent=[...ans].sort((a,b)=>String(b.submitted_at).localeCompare(String(a.submitted_at))).slice(0,30)
   const items=recent.map(s=>{
-    const d=s.visit_date||String(s.submitted_at||'').slice(0,10)
+    const d=s.visit_date||jstYmd(s.submitted_at)
     const md=d?`${+d.slice(5,7)}/${+d.slice(8,10)}`:''
     const meta=[s.customer_no?'No.'+s.customer_no:'',s.cast_name||'',s.course||''].filter(Boolean).map(escapeHtml).join(' ・ ')
     const chips=SURVEY_QS.map(q=>`<span class="sv-chip">${escapeHtml(q.label)} ${Number(s.ratings?.[q.key])||0}</span>`).join('')
@@ -12635,7 +12661,7 @@ async function loadSurveys(){
     <div class="sv-hero">
       <div class="sv-hero-v">${one(total)}</div>
       <div class="sv-hero-st">${starStr(total)}</div>
-      <div class="sv-hero-sub">回答 ${ans.length}件 / 送信 ${all.length}件（回収率 ${rate}%）</div>
+      <div class="sv-hero-sub">回答 ${answeredN}件 / 発行 ${issuedN}件（回収率 ${rate}%）${ans.length<answeredN?'<br>平均は直近'+ans.length+'件の回答をもとに集計しています':''}</div>
     </div>
     <div class="sv-card"><div class="sv-card-t">項目別の平均</div>${qRows}</div>
     <div class="sv-card"><div class="sv-card-t">総合満足度の内訳</div>${distRows}</div>
