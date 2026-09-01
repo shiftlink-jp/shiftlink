@@ -2067,7 +2067,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v68';
+const SW_VER = 'v69';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -12394,10 +12394,10 @@ async function openRvDetail(rvId, shiftId, castName){
       </div>`:''}
       ${memoHtml}
       ${visitHtml}
-      <button class="rvd-btn-url" onclick="copyRvUrl(${r.id})" style="width:100%;margin-top:.2rem;padding:.7rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff9e3d);color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
+      ${me?.is_owner?`<button class="rvd-btn-url" onclick="copyRvUrl(${r.id})" style="width:100%;margin-top:.2rem;padding:.7rem;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff9e3d);color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
         <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         お客様用 予約確認URLをコピー
-      </button>
+      </button>`:''}
       ${me?.is_owner?`<button class="rvd-btn-survey" onclick="copySurveyUrl(${r.id})" style="width:100%;margin-top:.5rem;padding:.7rem;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:700;font-size:.9rem;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.4rem;cursor:pointer">
         <svg class="ei" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.4l-5.8 3.06 1.11-6.46-4.7-4.58 6.49-.94L12 2.6Z"/></svg>
         お客様用 アンケートURLをコピー
@@ -12474,6 +12474,8 @@ const _rvUrlBusy = new Set()
 const RV_URL_BUSY_MS = 15000   // 応答が返ってこないまま固まった場合の自動解除（これが無いとリロードするまで押せない）
 let _rvUrlSeq = 0              // 最後に押した行だけがクリップボードを書き換えるための番号
 async function copyRvUrl(rvId){
+  // お客様に渡すURLの発行は店舗（オーナー）だけ。ボタンを消すだけでなく関数側でも止める
+  if(!me?.is_owner){ toast('この操作は店舗のみ行えます'); return }
   if(_rvUrlBusy.has(rvId)) return
   _rvUrlBusy.add(rvId)
   // 通信が返ってこないと finally に来ないので、時間で必ず解除する
