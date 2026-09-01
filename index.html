@@ -1056,7 +1056,7 @@ tr:last-child td{border-bottom:none}
 .rv-row-status{font-size:.6875rem;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
 .rv-row-status.serving{color:var(--accent);background:var(--accent-f)}
 .rv-row-status.booked{color:var(--text2);background:var(--surface2)}
-.rv-row-copy{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;background:#fff;border:1.5px solid var(--accent);border-radius:9px;color:var(--accent);cursor:pointer;font-family:inherit}
+.rv-row-copy{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;background:#fff;border:1.5px solid var(--accent);border-radius:9px;color:var(--accent);cursor:pointer;font-family:inherit}
 .rv-row-copy:active{background:var(--accent-f)}
 .rv-row-copy .ei{width:15px;height:15px}
 .rv-cast-actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)}
@@ -1075,7 +1075,7 @@ tr:last-child td{border-bottom:none}
 .sh-close{float:right;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;font-size:1rem;color:var(--text3);cursor:pointer;line-height:28px;text-align:center;margin-top:-.1rem}
 
 /* TOAST */
-.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(28,28,30,.9);color:#fff;font-size:.84rem;font-weight:500;padding:.55rem 1.2rem;border-radius:99px;z-index:10000;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(28,28,30,.9);color:#fff;font-size:.84rem;font-weight:500;padding:.55rem 1.2rem;border-radius:99px;z-index:10000;transition:transform .3s;width:max-content;max-width:min(88vw,420px);white-space:pre-wrap;overflow-wrap:anywhere;text-align:center;line-height:1.5;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0)}
 .spin{text-align:center;color:var(--text3);font-size:.82rem;padding:2rem 0}
 .empty{text-align:center;color:var(--text3);font-size:.82rem;padding:2.5rem 0}
@@ -9449,6 +9449,8 @@ async function resolveSos(id){
 async function loadToday(){
   const td=todayNavDate||bizDay();const[y,m,d]=td.split('-')
   const isToday2=td===bizDay()
+  // 過ぎた日の予約確認URLはお客様が開けない（予約日の翌日で失効する）ので、コピーボタンは出さない
+  const isPastDay=td<bizDay()
   document.getElementById('today-lbl').textContent=y+'年'+parseInt(m)+'月'+parseInt(d)+'日'+(isToday2?' (今日)':'')
   // 問合せ数・シフト・セラピスト一覧を並列取得
   const inqEl=document.getElementById('today-inquiry')
@@ -9574,6 +9576,7 @@ async function loadToday(){
       const statusBadge=isServing
         ? `<div class="rv-row-status serving">接客中</div>`
         : `<div class="rv-row-status booked">予約</div>`
+      const copyBtn=isPastDay?'':`<button class="rv-row-copy" onclick="copyRvUrl(${r.id})" aria-label="予約確認URLをコピー" title="お客様用 予約確認URLをコピー"><svg class="ei" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`
       rvListHtml+=`<div class="rv-row">
           <div class="rv-row-time">
             <div class="rv-row-start">${checkin||'—'}</div>
@@ -9585,7 +9588,7 @@ async function loadToday(){
             <div class="rv-row-sub">${escapeHtml(r.course||'')}${r.shimei_type&&r.shimei_type!=='なし'?' ・ '+escapeHtml(r.shimei_type):''}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
           </div>
           ${statusBadge}
-          <button class="rv-row-copy" onclick="copyRvUrl(${r.id})" aria-label="予約確認URLをコピー" title="お客様用 予約確認URLをコピー"><svg class="ei" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+          ${copyBtn}
         </div>`
     })
     // インターバル計算：checkout_timeがあればそれを使い、なければcheckin+コース時間で推定
@@ -12468,31 +12471,47 @@ async function copyToClipboard(text){
 //   連打すると「トークン未発行」を2回読んでしまい、別々のトークンを発行→最後のPATCHだけがDBに残る。
 //   その結果クリップボードに入ったURLが無効になり、お客様が開けない事故になる。
 const _rvUrlBusy = new Set()
+const RV_URL_BUSY_MS = 15000   // 応答が返ってこないまま固まった場合の自動解除（これが無いとリロードするまで押せない）
+let _rvUrlSeq = 0              // 最後に押した行だけがクリップボードを書き換えるための番号
 async function copyRvUrl(rvId){
   if(_rvUrlBusy.has(rvId)) return
   _rvUrlBusy.add(rvId)
+  // 通信が返ってこないと finally に来ないので、時間で必ず解除する
+  const release=setTimeout(()=>_rvUrlBusy.delete(rvId),RV_URL_BUSY_MS)
+  // 別の行を押されたらこの処理は破棄する（誤タップして押し直したとき、
+  // 遅れて終わった前の行がクリップボードを黙って上書きしてしまうため）
+  const seq = ++_rvUrlSeq
+  const stale = () => seq !== _rvUrlSeq
   try{
     toast('URLを作成中...',5000)   // 数百ms待つので、押したことが分かるようにする
-    const {data:r} = await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
+    const {data:r,error:rvErr} = await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
+    if(stale()) return
+    if(rvErr){toast('予約を読み込めませんでした: '+rvErr.message,4000);return}
     if(!r){toast('予約データが見つかりません');return}
     // 予約日・セラピスト・ルームは shift から取得
     const shId = r.shift_id || currentRvShiftId
     let shift=null
     if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,room,cast_id').eq('id',shId)).maybeSingle(); shift=s }
-    // セラピスト名は shift から引くのが正。
-    // 本日タブの一覧から直接呼べるようになったので、直前に開いていた予約の名前が残る
-    // currentRvCastName を先に使うと、別のセラピストの名前でURLを発行してしまう。
+    // セラピスト名は必ず shift → casts から引く。
+    // 画面に残っている currentRvCastName へ寄せてはいけない：退店したセラピスト
+    // （casts だけ消えてシフトと予約は残る）だと名前が引けず、直前に開いていた
+    // 別のセラピストの名前でURLを発行してしまうため。引けないときは空にする
+    // （r.html は空ならセラピスト行そのものを出さない＝別人を名乗るより安全）。
     let castName = ''
     if(shift?.cast_id){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',shift.cast_id)).maybeSingle(); castName=c?.name||'' }
-    if(!castName) castName = currentRvCastName || ''
     // ルーム住所・駐車場
     let address='', parking='', roomName=shift?.room||''
     if(roomName){ const rm=(roomList||[]).find(x=>x.name===roomName); address=rm?.address||''; parking=rm?.parking||'' }
 
     // 金額計算（openPayConfirm と同じ・カード手数料込み）
-    const {data:courseList} = await withStoreFilter(sb.from('courses').select('*'))
-    const {data:optList} = await withStoreFilter(sb.from('options').select('*'))
-    const {data:discListAll} = await withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
+    // 3件は互いに独立。直列に待つとコピーまでの時間が延び、端末によっては
+    // 「タップ直後でないとクリップボードに書けない」制限に引っかかるので並列で取る。
+    const [{data:courseList},{data:optList},{data:discListAll}] = await Promise.all([
+      withStoreFilter(sb.from('courses').select('*')),
+      withStoreFilter(sb.from('options').select('*')),
+      withStoreFilter(sb.from('cast_discounts').select('*')).eq('cast_id',0)
+    ])
+    if(stale()) return
     let pj={}; try{pj=JSON.parse(r.payment||'{}')}catch(e){}
     const courseObj=(courseList||[]).find(c=>c.name===r.course)
     const coursePrice=courseObj?.price||0
@@ -12563,14 +12582,16 @@ async function copyRvUrl(rvId){
 
     const url=`${location.origin}/r.html?t=${token}`
     const msg=buildRvCopyText(url)
+    if(stale()) return
     const copied=await copyToClipboard(msg)
     // 一覧から直接押せるため、誰の分をコピーしたかを必ず名前で返す（隣の行の誤タップ対策）。
-    // トーストは1行固定なので名前は8文字で切る
+    // 名前は8文字で切る
     const nm=(r.customer_name||'').trim()
     const nmShort=nm?(nm.length>8?nm.slice(0,8)+'…':nm)+'様の':'この予約の'
-    toast(copied?nmShort+'予約確認URLをコピーしました':'コピー失敗: '+url)
-  }catch(e){ toast('エラー: '+(e?.message||e)) }
-  finally{ _rvUrlBusy.delete(rvId) }
+    toast(copied?nmShort+'予約確認URLをコピーしました'
+                :nmShort+'URLをコピーできませんでした。もう一度押してください',copied?1800:4500)
+  }catch(e){ if(!stale()) toast('エラー: '+(e?.message||e),4000) }
+  finally{ clearTimeout(release); _rvUrlBusy.delete(rvId) }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
