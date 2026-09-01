@@ -1056,6 +1056,9 @@ tr:last-child td{border-bottom:none}
 .rv-row-status{font-size:.6875rem;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
 .rv-row-status.serving{color:var(--accent);background:var(--accent-f)}
 .rv-row-status.booked{color:var(--text2);background:var(--surface2)}
+.rv-row-copy{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;background:#fff;border:1.5px solid var(--accent);border-radius:9px;color:var(--accent);cursor:pointer;font-family:inherit}
+.rv-row-copy:active{background:var(--accent-f)}
+.rv-row-copy .ei{width:15px;height:15px}
 .rv-cast-actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)}
 .rv-act-btn{border-radius:10px;padding:.6rem .5rem;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:.3rem;border:none;background:var(--btn-grad);color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(255,145,36,.22)}
 .rv-act-btn.primary{background:var(--btn-grad);color:#fff}
@@ -2064,7 +2067,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v67';
+const SW_VER = 'v68';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -9582,6 +9585,7 @@ async function loadToday(){
             <div class="rv-row-sub">${escapeHtml(r.course||'')}${r.shimei_type&&r.shimei_type!=='なし'?' ・ '+escapeHtml(r.shimei_type):''}${opts?' ・ '+opts:''}${discs?' ・ 割引:'+discs:''}</div>
           </div>
           ${statusBadge}
+          <button class="rv-row-copy" onclick="copyRvUrl(${r.id})" aria-label="予約確認URLをコピー" title="お客様用 予約確認URLをコピー"><svg class="ei" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
         </div>`
     })
     // インターバル計算：checkout_timeがあればそれを使い、なければcheckin+コース時間で推定
@@ -12460,16 +12464,27 @@ async function copyToClipboard(text){
 // お客様用「予約確認URL」を生成してクリップボードにコピー
 //   ・トークン(推測不能なUUID)を発行し、その時点の予約内容をスナップショットとして保存
 //   ・URLは r.html?t=<token>。予約日を過ぎると自動で無効（Edge Function側で判定）
+// 処理中の予約ID。本日タブの一覧から気軽に押せるようになったので、連打対策が要る。
+//   連打すると「トークン未発行」を2回読んでしまい、別々のトークンを発行→最後のPATCHだけがDBに残る。
+//   その結果クリップボードに入ったURLが無効になり、お客様が開けない事故になる。
+const _rvUrlBusy = new Set()
 async function copyRvUrl(rvId){
+  if(_rvUrlBusy.has(rvId)) return
+  _rvUrlBusy.add(rvId)
   try{
+    toast('URLを作成中...',5000)   // 数百ms待つので、押したことが分かるようにする
     const {data:r} = await withStoreFilter(sb.from('reservations').select('*').eq('id',rvId)).maybeSingle()
     if(!r){toast('予約データが見つかりません');return}
     // 予約日・セラピスト・ルームは shift から取得
     const shId = r.shift_id || currentRvShiftId
     let shift=null
     if(shId){ const {data:s}=await withStoreFilter(sb.from('shifts').select('date,room,cast_id').eq('id',shId)).maybeSingle(); shift=s }
-    let castName = currentRvCastName || ''
-    if(!castName && shift?.cast_id){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',shift.cast_id)).maybeSingle(); castName=c?.name||'' }
+    // セラピスト名は shift から引くのが正。
+    // 本日タブの一覧から直接呼べるようになったので、直前に開いていた予約の名前が残る
+    // currentRvCastName を先に使うと、別のセラピストの名前でURLを発行してしまう。
+    let castName = ''
+    if(shift?.cast_id){ const {data:c}=await withStoreFilter(sb.from('casts').select('name').eq('id',shift.cast_id)).maybeSingle(); castName=c?.name||'' }
+    if(!castName) castName = currentRvCastName || ''
     // ルーム住所・駐車場
     let address='', parking='', roomName=shift?.room||''
     if(roomName){ const rm=(roomList||[]).find(x=>x.name===roomName); address=rm?.address||''; parking=rm?.parking||'' }
@@ -12549,8 +12564,13 @@ async function copyRvUrl(rvId){
     const url=`${location.origin}/r.html?t=${token}`
     const msg=buildRvCopyText(url)
     const copied=await copyToClipboard(msg)
-    toast(copied?'文章とURLをコピーしました！LINE等に貼り付けてください':'コピー失敗: '+url)
+    // 一覧から直接押せるため、誰の分をコピーしたかを必ず名前で返す（隣の行の誤タップ対策）。
+    // トーストは1行固定なので名前は8文字で切る
+    const nm=(r.customer_name||'').trim()
+    const nmShort=nm?(nm.length>8?nm.slice(0,8)+'…':nm)+'様の':'この予約の'
+    toast(copied?nmShort+'予約確認URLをコピーしました':'コピー失敗: '+url)
   }catch(e){ toast('エラー: '+(e?.message||e)) }
+  finally{ _rvUrlBusy.delete(rvId) }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
