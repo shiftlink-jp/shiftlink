@@ -12578,7 +12578,7 @@ async function copyRvUrl(rvId){
       if(!token){ toast('この環境ではURLを発行できません');return }
     }
     const {error}=await withStoreFilter(sb.from('reservations').update({public_token:token,public_snapshot:snapshot})).eq('id',rvId)
-    if(error){toast('URL作成に失敗しました: '+error.message);return}
+    if(error){ if(!stale()) toast('URL作成に失敗しました: '+error.message,4000); return }
 
     const url=`${location.origin}/r.html?t=${token}`
     const msg=buildRvCopyText(url)
