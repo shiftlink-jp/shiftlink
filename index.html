@@ -2067,7 +2067,7 @@ tr:last-child td{border-bottom:none}
 #gantt-modal-overlay .gm2-tab-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
 </style>
 <script>
-const SW_VER = 'v69';
+const SW_VER = 'v70';
 
 // PWAインストール促進（PC＝Windows/Macのみ）
 let _pwaPromptEvent = null;
@@ -12587,9 +12587,10 @@ async function copyRvUrl(rvId){
     if(stale()) return
     const copied=await copyToClipboard(msg)
     // 一覧から直接押せるため、誰の分をコピーしたかを必ず名前で返す（隣の行の誤タップ対策）。
-    // 名前は8文字で切る
-    const nm=(r.customer_name||'').trim()
-    const nmShort=nm?(nm.length>8?nm.slice(0,8)+'…':nm)+'様の':'この予約の'
+    // 顧客名は登録時に「様」付きで保存されるので、そのまま足すと「様様」になる。
+    // 末尾の様を外してから8文字で切り、withSama で付け直す
+    const nm=(r.customer_name||'').trim().replace(/様\s*$/,'')
+    const nmShort=nm?withSama(nm.length>8?nm.slice(0,8)+'…':nm)+'の':'お客様の'
     toast(copied?nmShort+'予約確認URLをコピーしました'
                 :nmShort+'URLをコピーできませんでした。もう一度押してください',copied?1800:4500)
   }catch(e){ if(!stale()) toast('エラー: '+(e?.message||e),4000) }
